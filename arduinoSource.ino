@@ -4,13 +4,12 @@
 #include <SPI.h>
 
 // --------------------定数--------------------
-#define ON true
-#define OFF false
+#define ON false
+#define OFF true
 
 #define posInterval  200
 #define wnkInterval  100
-#define bzzInterbal  50
-
+#define bzzInterbal  200
 // --------------------ピン定義--------------------
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -106,13 +105,13 @@ void setup(void) {
 }
 
 void loop() {
-  unsigned long time = startTime - millis();
+  unsigned long time = millis() - startTime;
 
   if(digitalRead(wnkLeft) == LOW){
     if(wnkLeftStatus == OFF){
       tft.setCursor(0, 50+8*3);
       bzzTime = time + bzzInterbal;
-      tft.print(bzzTime);
+      tft.print("Zzz");
     }
     wnkLeftStatus = ON;
   }
@@ -120,7 +119,7 @@ void loop() {
     if(wnkLeftStatus == ON){
       tft.setCursor(0, 50+8*3);
       bzzTime = time + bzzInterbal;
-      tft.print(bzzTime);
+      tft.print("Zzz");
     }
     wnkLeftStatus = OFF;
   }
@@ -129,7 +128,7 @@ void loop() {
     if(wnkRightStatus == OFF){
       tft.setCursor(0, 50+8*3);
       bzzTime = time + bzzInterbal;
-      tft.print(bzzTime);
+      tft.print("Zzz");
     }
     wnkRightStatus = ON;
   }
@@ -137,13 +136,13 @@ void loop() {
     if(wnkRightStatus == ON){
       tft.setCursor(0, 50+8*3);
       bzzTime = time + bzzInterbal;
-      tft.print(bzzTime);
+      tft.print("Zzz");
     }
     wnkRightStatus = OFF;
   }
 
   if(bzzTime > 0 && bzzTime <= time ){
-    tft.fillRect(0, 50+8*3, 160, 8*3, ST77XX_GREEN);
+    tft.fillRect(0, 50+8*3, 6*3*3, 8*3, ST77XX_BLACK);
     bzzTime = 0;
   }
    
