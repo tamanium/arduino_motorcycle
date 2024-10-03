@@ -1,8 +1,10 @@
+// ビープ音を発生させるピン
 
-#define posN 1;
-#define posN 2;
-#define posN 3;
-#define posN 4;
+// ギアポジションに対応するピン
+#define pos1 1;
+#define pos2 2;
+#define pos3 3;
+#define pos4 4;
 #define posN 5;
 
 void setup(){
