@@ -49,3 +49,10 @@ char getPosChar(){
   }
   return dispChar;
 }
+
+bool getWinkerStatus(winkerPin){
+  if(digitalRead(winkerPin) == HIGH){
+    return true;
+  }
+  return flse;
+}
