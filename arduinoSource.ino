@@ -1,9 +1,9 @@
 
-#default posN 1;
-#default posN 2;
-#default posN 3;
-#default posN 4;
-#default posN 5;
+#define posN 1;
+#define posN 2;
+#define posN 3;
+#define posN 4;
+#define posN 5;
 
 void setup(){
 }
