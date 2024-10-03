@@ -1,4 +1,5 @@
-
+#define ON true
+#define OFF false;
 // ビープ音を発生させるピン
 #define bzzPin 29
 
