@@ -110,16 +110,20 @@ void loop() {
   if(digitalRead(wnkLeft) == LOW){
     if(wnkLeftStatus == OFF){
       tft.setCursor(0, 50+8*3);
-      bzzTime = time + bzzInterbal;
-      tft.print("Zzz");
+      if(bzzTime == 0){
+        bzzTime = time + bzzInterbal;
+        tft.print("Zzz");
+      }
     }
     wnkLeftStatus = ON;
   }
   else{
     if(wnkLeftStatus == ON){
       tft.setCursor(0, 50+8*3);
-      bzzTime = time + bzzInterbal;
-      tft.print("Zzz");
+      if(bzzTime == 0){
+        bzzTime = time + bzzInterbal;
+        tft.print("Zzz");
+      }
     }
     wnkLeftStatus = OFF;
   }
@@ -127,16 +131,20 @@ void loop() {
   if(digitalRead(wnkRight) == LOW){
     if(wnkRightStatus == OFF){
       tft.setCursor(0, 50+8*3);
-      bzzTime = time + bzzInterbal;
-      tft.print("Zzz");
+      if(bzzTime == 0){
+        bzzTime = time + bzzInterbal;
+        tft.print("Zzz");
+      }
     }
     wnkRightStatus = ON;
   }
   else{
     if(wnkRightStatus == ON){
       tft.setCursor(0, 50+8*3);
-      bzzTime = time + bzzInterbal;
-      tft.print("Zzz");
+      if(bzzTime == 0){
+        bzzTime = time + bzzInterbal;
+        tft.print("Zzz");
+      }
     }
     wnkRightStatus = OFF;
   }
