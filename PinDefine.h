@@ -1,5 +1,5 @@
-#ifndef PINDEFINE
-#define PINDEFINE
+#ifndef PINDEFINE_H_INCLUDE
+#define PINDEFINE_H_INCLUDE
 
 // --------------------ピン定義--------------------
 #define TFT_MOSI  3
@@ -9,17 +9,17 @@
 #define TFT_DC    7
 
 // ギアポジション入力ピン
-#define pos1  9
-#define pos2  10
-#define pos3  11
-#define pos4  12
-#define posN  13
+#define POS1_PIN  9
+#define POS2_PIN  10
+#define POS3_PIN  11
+#define POS4_PIN  12
+#define POSN_PIN  13
 
 // ウインカー対応ピン
-#define wnkRight 15
-#define wnkLeft 14
+#define WNK_RIGHT 15
+#define WNK_LEFT 14
 
 // ビープ音を発生させるピン
-#define bzzPin 29
+#define BZZ_PIN 29
 
 #endif
