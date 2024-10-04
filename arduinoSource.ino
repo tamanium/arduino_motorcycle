@@ -1,7 +1,5 @@
-// --------------------自作クラス--------------------
+// --------------------自作クラス・ピン定義--------------------
 #include "Winker.h"
-
-// --------------------ピン定義--------------------
 #include "PinDefine.h"
 
 // --------------------ライブラリ--------------------
@@ -54,14 +52,14 @@ Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 void setup(void) {
 
-  pinMode(pos1, INPUT_PULLUP);
-  pinMode(pos2, INPUT_PULLUP);
-  pinMode(pos3, INPUT_PULLUP);
-  pinMode(pos4, INPUT_PULLUP);
-  pinMode(posN, INPUT_PULLUP);
+  pinMode(POS1_PIN, INPUT_PULLUP);
+  pinMode(POS2_PIN, INPUT_PULLUP);
+  pinMode(POS3_PIN, INPUT_PULLUP);
+  pinMode(POS4_PIN, INPUT_PULLUP);
+  pinMode(POSN_PIN, INPUT_PULLUP);
 
-  pinMode(wnkRight, INPUT_PULLUP);
-  pinMode(wnkLeft, INPUT_PULLUP);
+  pinMode(WNK_RIGHT, INPUT_PULLUP);
+  pinMode(WNK_LEFT, INPUT_PULLUP);
 
   SPI.setTX(TFT_MOSI);
   SPI.setSCK(TFT_SCLK);
