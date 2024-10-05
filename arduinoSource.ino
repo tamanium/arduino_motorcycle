@@ -14,6 +14,7 @@
 #define posInterval  200
 #define wnkInterval  100
 #define bzzInterbal  200
+
 // --------------------ピン定義--------------------
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -42,7 +43,7 @@ char exPos = '-';
 unsigned long startTime = 0;
 unsigned long posTime = 0;
 unsigned long wnkTime = 0;
-unsigned long bzzTime = 0;
+unsigned long bzzTime = 1;
 
 bool wnkRightStatus = false;
 bool wnkLeftStatus = false;
@@ -81,14 +82,14 @@ void setup(void) {
   
   tft.fillScreen(ST77XX_BLACK);
 
-  tft.setCursor(0, 8*3);
+  tft.setCursor(8*5+4, 8*8);
 
-  tft.setTextSize(1);
+  tft.setTextSize(3);
   tft.print("gear");
 
   tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(3);
-  tft.setCursor(0, 0);
+  tft.setTextSize(8);
+  tft.setCursor(8*7+4, 0);
   tft.print(exPos);
 
 /*
@@ -113,9 +114,10 @@ void loop() {
 
   if(digitalRead(wnkLeft) == LOW){
     if(wnkLeftStatus == OFF){
-      tft.setCursor(0, 50+8*3);
+      tft.setCursor(0, 120);
       if(bzzTime == 0){
         bzzTime = time + bzzInterbal;
+        tft.setTextSize(1);
         tft.print("Zzz");
       }
     }
@@ -123,9 +125,10 @@ void loop() {
   }
   else{
     if(wnkLeftStatus == ON){
-      tft.setCursor(0, 50+8*3);
+      tft.setCursor(0, 120);
       if(bzzTime == 0){
         bzzTime = time + bzzInterbal;
+        tft.setTextSize(1);
         tft.print("Zzz");
       }
     }
@@ -134,9 +137,10 @@ void loop() {
 
   if(digitalRead(wnkRight) == LOW){
     if(wnkRightStatus == OFF){
-      tft.setCursor(0, 50+8*3);
+      tft.setCursor(0, 120);
       if(bzzTime == 0){
         bzzTime = time + bzzInterbal;
+        tft.setTextSize(1);
         tft.print("Zzz");
       }
     }
@@ -144,9 +148,10 @@ void loop() {
   }
   else{
     if(wnkRightStatus == ON){
-      tft.setCursor(0, 50+8*3);
+      tft.setCursor(0, 120);
       if(bzzTime == 0){
         bzzTime = time + bzzInterbal;
+        tft.setTextSize(1);
         tft.print("Zzz");
       }
     }
@@ -154,7 +159,7 @@ void loop() {
   }
 
   if(bzzTime > 0 && bzzTime <= time ){
-    tft.fillRect(0, 50+8*3, 6*3*3, 8*3, ST77XX_BLACK);
+    tft.fillRect(0, 120, 6*3, 8, ST77XX_BLACK);
     bzzTime = 0;
   }
    
@@ -165,8 +170,9 @@ void loop() {
     char pos = getPos();
 
     if(pos != exPos){
-      tft.fillRect(0,0,6*3,8*3,ST77XX_BLACK);
-      tft.setCursor(0, 0);
+      tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
+      tft.setCursor(8*7+4, 0);
+      tft.setTextSize(8);
       tft.print(pos);
       exPos = pos;
     }
