@@ -18,15 +18,6 @@
 
 #define timeFontSize 2
 
-
-GearPosition gearPos[6] = {
-  GearPosition(POSN, 'N'),
-  GearPosition(POS1, '1'),
-  GearPosition(POS2, '2'),
-  GearPosition(POS3, '3'),
-  GearPosition(POS4, '4')
-};
-
 // ウインカー対応ピン
 #define wnkRight 15
 #define wnkLeft 14
@@ -54,13 +45,15 @@ unsigned long realTimeLong = 0;
 
 // --------------------インスタンス--------------------
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
-/*
-GearPosition gearPos1 = GearPosition(pos1, '1');
-GearPosition gearPos1 = GearPosition(pos2, '2');
-GearPosition gearPos1 = GearPosition(pos3, '3');
-GearPosition gearPos1 = GearPosition(pos4, '4');
-GearPosition gearPos1 = GearPosition(posN, 'N');
-*/
+
+GearPosition gearPos[6] = {
+  GearPosition(POSN, 'N'),
+  GearPosition(POS1, '1'),
+  GearPosition(POS2, '2'),
+  GearPosition(POS3, '3'),
+  GearPosition(POS4, '4')
+};
+
 void setup(void) {
   
   Serial.begin(9600);
@@ -70,15 +63,6 @@ void setup(void) {
   for(int i=0; i<len i++){
     pinMode(gearPos[i].pin, INPUT_PULLUP);
   }
-  /*
-  pinMode(POS1_PIN, INPUT_PULLUP);
-  pinMode(POS2_PIN, INPUT_PULLUP);
-  pinMode(POS3_PIN, INPUT_PULLUP);
-  pinMode(POS4_PIN, INPUT_PULLUP);
-  pinMode(POSN_PIN, INPUT_PULLUP);
-  pinMode(WNK_RIGHT, INPUT_PULLUP);
-  pinMode(WNK_LEFT, INPUT_PULLUP);
-  */
 
   //SPI接続設定
   SPI.setTX(TFT_MOSI);
@@ -264,6 +248,20 @@ void loop() {
   wnkTime += wnkInterval;
 }
 
+/**
+ * ギアポジション表示値の取得
+ * @pram gearPos GearPosition[] ギアポジションクラス配列
+ * @pram len int型 配列の長さ
+ */
+char _getPos(GearPosition *gearPos, int len ){
+  for(int i=0; i<len; i++ ){
+    if(digitalRead(gearPos.pin) == LOW){
+      return gearPos.dispChar;
+    }
+  }
+  return '-';
+}
+
 //ギアポジション取得
 char getPos(){
   // ギアポジ表示値
@@ -286,6 +284,8 @@ char getPos(){
   }
   return pos;
 }
+
+
 
 
 void testdrawtext(char *text, uint16_t color) {
