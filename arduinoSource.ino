@@ -51,7 +51,7 @@ bool wnkLeftStatus = false;
 bool isWnkRight = false;
 bool isWnkLeft = false;
 
-char  realTime[6] = " 0:00";
+char  nowTime[6] = " 0:00";
 unsigned long realTimeLong = 0;
 
 // --------------------インスタンス--------------------
@@ -127,33 +127,31 @@ void loop() {
   unsigned long time = millis() - startTime;
   // --------------------時計機能--------------------
   // システム時間(秒)取得
-  unsigned long realTotalSec = time/1000;
+  unsigned long newTimeSec = time/1000;
 
   //int realSec = realTotalSec%60;
   //int realMins = realTotalSec/60;
-
-  int _realTimeMin1 = (realTotalSec%60)%10;
-  int _realTimeMin2 = (realTotalSec%60)/10;
-  int _realTimeHour1 = (realTotalSec/60)%10;
-  int _realTimeHour2 = (realTotalSec/60)/10;
-  char _realTime[6] = "  :  ";
-  _realTime[4] = '0'+_realTimeMin1;
-  _realTime[3] = '0'+_realTimeMin2;
-  _realTime[1] = '0'+_realTimeHour1;
-  _realTime[0] = '0'+_realTimeHour2;
   
-
-
+  // ダミー時刻表示用変数
+  // 表示char配列作成(arduinoでは array[n+1]で定義
+  char newTime[6] = "  :  ";
+  // 経過時間を各桁で文字列化
+  newTime[4] = '0' + (newTimeSec%60)%10;
+  newTime[3] = '0' + (newTimeSec%60)/10;
+  newTime[1] = '0' + (newTimeSec/60)%10;
+  newTime[0] = '0' + (newTimeSec/60)/10;
+  
   // フォント設定
   tft.setTextColor(ST77XX_WHITE);
   tft.setTextSize(2);
-  
+
+  // 経過時間表示処理
   for(int i=4; i>=0; i--){
-    if(realTime[i] != _realTime[i]){
+    if(nowTime[i] != newTime[i]){
       tft.fillRect(6*2*i, 128-8*2, 6*2, 8*2, ST7735_BLACK);
       tft.setCursor(6*2*i, 128-8*2);
-      tft.print(_realTime[i]);
-      realTime[i] = _realTime[i];
+      tft.print(newTime[i]);
+      realTime[i] = newTime[i];
     }
   }
 
