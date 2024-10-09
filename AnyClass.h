@@ -1,5 +1,5 @@
-#ifndef WINKER_H_INCLUDE
-#define WINKER_H_INCLUDE
+#ifndef ANYCLASS_H_INCLUDE
+#define ANYCLASS_H_INCLUDE
 
 class Winker{
 
