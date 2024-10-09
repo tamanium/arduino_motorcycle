@@ -18,10 +18,6 @@
 
 #define timeFontSize 2
 
-// ウインカー対応ピン
-#define wnkRight 15
-#define wnkLeft 14
-
 // ビープ音を発生させるピン
 #define bzzPin 29
 
@@ -46,7 +42,7 @@ unsigned long realTimeLong = 0;
 // --------------------インスタンス--------------------
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
-GearPosition gearPos[6] = {
+GearPosition gearArray[6] = {
   GearPosition(POSN, 'N'),
   GearPosition(POS1, '1'),
   GearPosition(POS2, '2'),
@@ -123,11 +119,6 @@ void loop() {
   // システム時間(秒)取得
   unsigned long newTimeSec = time/1000;
 
-  //int realSec = realTotalSec%60;
-  //int realMins = realTotalSec/60;
-
-
-
   // --------------------経過時間表示処理--------------------
   // 表示char配列作成(arduinoでは array[n+1]で定義
   char newTime[6] = "  :  ";
@@ -157,7 +148,7 @@ void loop() {
   }
 
   // --------------------経過時間表示処理--------------------
-  if(digitalRead(wnkLeft) == LOW){
+  if(digitalRead(WNK_LEFT) == LOW){
     if(wnkLeftStatus == OFF){
       tft.setCursor(160-6*3, 120);
       if(bzzTime == 0){
@@ -180,7 +171,7 @@ void loop() {
     wnkLeftStatus = OFF;
   }
 
-  if(digitalRead(wnkRight) == LOW){
+  if(digitalRead(WNK_RIGHT) == LOW){
     if(wnkRightStatus == OFF){
       tft.setCursor(160-6*3, 120);
       if(bzzTime == 0){
@@ -212,7 +203,8 @@ void loop() {
   // ギアポジ表示処理
   //if(posTime <= time ){
     // ギアポジション取得
-    char pos = getPos();
+    int arrayLen = sizeof(gearArray)/sizeof(GearPosition);
+    char pos = _getPos(gearArray, arrayLen);
 
     if(pos != exPos){
       tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
@@ -253,9 +245,9 @@ void loop() {
  * @pram gearPos GearPosition[] ギアポジションクラス配列
  * @pram len int型 配列の長さ
  */
-char _getPos(GearPosition *gearPos, int len ){
+char _getPos(GearPosition *gearArray, int len ){
   for(int i=0; i<len; i++ ){
-    if(digitalRead(gearPos.pin) == LOW){
+    if(digitalRead(gearArray.pin) == LOW){
       return gearPos.dispChar;
     }
   }
