@@ -32,13 +32,13 @@
 #define pos4  12
 #define posN  13
 
-GearPosition [6] = {
+GearPosition gearPos[6] = {
   GearPosition(posN, 'N'),
   GearPosition(pos1, '1'),
   GearPosition(pos2, '2'),
   GearPosition(pos3, '3'),
   GearPosition(pos4, '4')
-  };
+};
 
 // ウインカー対応ピン
 #define wnkRight 15
@@ -79,6 +79,11 @@ void setup(void) {
   Serial.begin(9600);
 
   //ピンモード設定
+  int len = sizeof(gearPos) / sizeof(GearPosition);
+  for(int i=0; i<len i++){
+    pinMode(gearPos[i].pin, INPUT_PULLUP);
+  }
+  /*
   pinMode(POS1_PIN, INPUT_PULLUP);
   pinMode(POS2_PIN, INPUT_PULLUP);
   pinMode(POS3_PIN, INPUT_PULLUP);
@@ -86,6 +91,7 @@ void setup(void) {
   pinMode(POSN_PIN, INPUT_PULLUP);
   pinMode(WNK_RIGHT, INPUT_PULLUP);
   pinMode(WNK_LEFT, INPUT_PULLUP);
+  */
 
   //SPI接続設定
   SPI.setTX(TFT_MOSI);
