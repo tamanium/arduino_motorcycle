@@ -1,6 +1,6 @@
 // --------------------ライブラリ--------------------
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
 #include <SPI.h>
 
 // --------------------自作クラス・ピン定義--------------------
@@ -11,7 +11,6 @@
 
 
 // --------------------変数--------------------
-char exPos = '-';
 
 unsigned long startTime = 0;
 unsigned long posTime = 0;
@@ -27,10 +26,12 @@ bool isWnkLeft = false;
 char  nowTime[6] = " 0:00";
 unsigned long realTimeLong = 0;
 
+int timeFontSize = 2;
+
 // --------------------インスタンス--------------------
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
-GearPosition gearArray[6] = {
+GearPosition gearArray[] = {
   GearPosition(POSN, 'N'),
   GearPosition(POS1, '1'),
   GearPosition(POS2, '2'),
@@ -42,21 +43,13 @@ void setup(void) {
   
   Serial.begin(9600);
 
-  //ピンモード設定
-  int len = sizeof(gearPos) / sizeof(GearPosition);
-  for(int i=0; i<len i++){
-    pinMode(gearPos[i].pin, INPUT_PULLUP);
-  }
-
   //SPI接続設定
   SPI.setTX(TFT_MOSI);
   SPI.setSCK(TFT_SCLK);
 
-  // ディスプレイ初期化
+  // ディスプレイ初期化・画面向き・画面リセット
   tft.initR(INITR_BLACKTAB);
-  // 画面向き
   tft.setRotation(3);
-  // 黒背景で表示リセット
   tft.fillScreen(ST77XX_BLACK);
   
   // 初期表示
@@ -76,7 +69,7 @@ void setup(void) {
   tft.setTextColor(ST77XX_WHITE);
   tft.setTextSize(8);
   tft.setCursor(8*7+4, 0);
-  tft.print(exPos);
+  tft.print('-');
 
   // 時計表示開始
   tft.setTextColor(ST77XX_WHITE);
@@ -95,7 +88,7 @@ void setup(void) {
   delay(150);
   */
 
-  //起動時の時間を取得
+  // 起動時の時間を取得
   startTime = millis();
   posTime = startTime + posInterval;
   wnkTime = startTime + wnkInterval;
@@ -108,33 +101,13 @@ void loop() {
   unsigned long newTimeSec = time/1000;
 
   // --------------------経過時間表示処理--------------------
-  // 表示char配列作成(arduinoでは array[n+1]で定義
-  char newTime[6] = "  :  ";
-  // 経過時間を各桁で文字列化
-  newTime[4] = '0' + (newTimeSec%60)%10;
-  newTime[3] = '0' + (newTimeSec%60)/10;
-  newTime[1] = '0' + (newTimeSec/60)%10;
-  newTime[0] = '0' + (newTimeSec/60)/10;
+  timeDisplay(newTimeSec);
   
-  // フォント設定
-  tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(timeFontSize);
+  // --------------------ギアポジ表示処理--------------------
+  int arrayLen = sizeof(gearArray)/sizeof(GearPosition);
+  gearDisplay(gearArray, arrayLen);
 
-  for(int i=4; i>=0; i--){
-    // 値が同じ場合処理スキップ
-    if(nowTime[i] == newTime[i]){
-      continue;
-    }
-    // 該当表示をクリア
-    tft.fillRect(6*timeFontSize*i, 128-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST7735_BLACK);
-    // カーソル設定
-    tft.setCursor(6*timeFontSize*i, 128-8*timeFontSize);
-    // 数値を表示
-    tft.print(newTime[i]);
-    // 表示データを格納
-    realTime[i] = newTime[i];
-  }
-
+  /*
   // --------------------経過時間表示処理--------------------
   if(digitalRead(WNK_LEFT) == LOW){
     if(wnkLeftStatus == OFF){
@@ -188,20 +161,7 @@ void loop() {
   }
    
 
-  // ギアポジ表示処理
-  //if(posTime <= time ){
-    // ギアポジション取得
-    int arrayLen = sizeof(gearArray)/sizeof(GearPosition);
-    char pos = _getPos(gearArray, arrayLen);
-
-    if(pos != exPos){
-      tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
-      tft.setCursor(8*7+4, 0);
-      tft.setTextSize(8);
-      tft.print(pos);
-      exPos = pos;
-    }
-    posTime += posInterval;  
+  posTime += posInterval;  
   //}
     if(wnkRightStatus == ON){
       if(isWnkRight == false){
@@ -226,51 +186,89 @@ void loop() {
     }
 
   wnkTime += wnkInterval;
+*/
+}
+
+void timeDisplay(long totalSec){
+  // 保持用char配列
+  static char  nowTime[6] = " 0:00";
+  static int len = sizeof(nowTime)/sizeof(char);
+  // 表示char配列作成(arduinoでは array[n+1]で定義
+  char newTime[6] = "  :  ";
+
+  // 経過時間を各桁で文字列化
+  newTime[4] = '0' + (totalSec%60)%10;
+  newTime[3] = '0' + (totalSec%60)/10;
+  newTime[1] = '0' + (totalSec/60)%10;
+  newTime[0] = '0' + (totalSec/60)/10;
+  
+  // フォント設定
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(timeFontSize);
+
+  for(int i=len-2; i>=0; i--){
+    // 値が同じ場合処理スキップ
+    if(nowTime[i] == newTime[i]){
+      continue;
+    }
+    // 表示データを格納
+    nowTime[i] = newTime[i];
+    // 該当表示をクリア
+    tft.fillRect(6*timeFontSize*i, 128-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST7735_BLACK);
+    // カーソル設定
+    tft.setCursor(6*timeFontSize*i, 128-8*timeFontSize);
+    // 数値を表示
+    tft.print(nowTime[i]);
+  }
+}
+
+/**
+ * ギアポジションの表示処理
+ * @param gearArray GearPositionクラス(ポインタ) ギアポジションクラス配列
+ * @param len int型 配列の長さ
+ */
+void gearDisplay(GearPosition *gearArray, int len){
+  // 表示値保持用変数
+  static char nowGearPos = '-';
+  // エッジカウント変数
+  static int countEdge = 0;
+  // 現在のギアポジション表示文字列取得
+  char newGearPos = getGearPos(gearArray, len);
+
+  // エッジカウント変数加算
+  if(nowGearPos != newGearPos){
+    countEdge++;
+  }
+  else{
+    countEdge = 0;
+    return;
+  }
+
+  // カウント変数が一定数以上となった場合
+  if(10 <= countEdge){
+    // 格納用変数に代入
+    nowGearPos = newGearPos;
+    // 表示値削除・カーソル設定・フォント設定・表示処理
+    tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
+    tft.setCursor(8*7+4, 0);
+    tft.setTextSize(8);
+    tft.print(nowGearPos);
+    // カウント変数リセット
+    countEdge = 0;
+  }
 }
 
 /**
  * ギアポジション表示値の取得
- * @pram gearPos GearPosition[] ギアポジションクラス配列
- * @pram len int型 配列の長さ
+ * @param gearArray GearPositionクラス(ポインタ) ギアポジションクラス配列
+ * @param len int型 配列の長さ
+ * @return char
  */
-char _getPos(GearPosition *gearArray, int len ){
+char getGearPos(GearPosition *gearArray, int len ){
   for(int i=0; i<len; i++ ){
-    if(digitalRead(gearArray.pin) == LOW){
-      return gearPos.dispChar;
+    if(digitalRead(gearArray[i].pin) == LOW){
+      return gearArray[i].dispChar;
     }
   }
   return '-';
-}
-
-//ギアポジション取得
-char getPos(){
-  // ギアポジ表示値
-  char pos = '-';
-  // ギアポジ取得
-  if(digitalRead(pos1) == LOW){
-    pos = '1';
-  }
-  else if(digitalRead(pos2) == LOW){
-    pos = '2';
-  }
-  else if(digitalRead(pos3) == LOW){
-    pos = '3';
-  }
-  else if(digitalRead(pos4) == LOW){
-    pos = '4';
-  }
-  else if(digitalRead(posN) == LOW){
-    pos = 'N';
-  }
-  return pos;
-}
-
-
-
-
-void testdrawtext(char *text, uint16_t color) {
-  tft.setCursor(0, 0);
-  tft.setTextColor(color);
-  tft.setTextWrap(true);
-  tft.print(text);
 }

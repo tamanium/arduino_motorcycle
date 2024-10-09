@@ -12,7 +12,7 @@
 #define POSN  13
 #define POS1  9
 #define POS2  10
-#define POS3　11
+#define POS3  11
 #define POS4  12
 
 // ウインカー対応ピン
