@@ -9,11 +9,11 @@
 #define TFT_DC    7
 
 // ギアポジション入力ピン
-#define POS1_PIN  9
-#define POS2_PIN  10
-#define POS3_PIN  11
-#define POS4_PIN  12
-#define POSN_PIN  13
+#define POS1  9
+#define POS2  10
+#define POS3　 11
+#define POS4  12
+#define POSN  13
 
 // ウインカー対応ピン
 #define WNK_RIGHT 15
