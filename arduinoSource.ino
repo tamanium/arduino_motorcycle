@@ -1,6 +1,6 @@
 // --------------------自作クラス・ピン定義--------------------
 //#include "Winker.h"
-//#include "GearPosition.h"
+#include "GearPosition.h"
 #include "PinDefine.h"
 
 // --------------------ライブラリ--------------------
@@ -31,6 +31,14 @@
 #define pos3  11
 #define pos4  12
 #define posN  13
+
+GearPosition [6] = {
+  GearPosition(posN, 'N'),
+  GearPosition(pos1, '1'),
+  GearPosition(pos2, '2'),
+  GearPosition(pos3, '3'),
+  GearPosition(pos4, '4')
+  };
 
 // ウインカー対応ピン
 #define wnkRight 15
