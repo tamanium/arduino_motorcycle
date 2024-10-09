@@ -1,27 +1,16 @@
 // --------------------自作クラス・ピン定義--------------------
 //#include "Winker.h"
-#include "GearPosition.h"
-#include "Pins.h"
-#include "Define.h"
+#include "GearPosition.h"  //ギアポジションクラス
+#include "Pins.h"          //ピン設定
+#include "Define.h"        //値定義
 
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include <SPI.h>
 
-// --------------------定数--------------------
-#define ON false
-#define OFF true
-
-#define posInterval  200
-#define wnkInterval  100
-#define bzzInterbal  200
-
-#define timeFontSize 2
-
 // ビープ音を発生させるピン
 #define bzzPin 29
-
 
 // --------------------変数--------------------
 char exPos = '-';
