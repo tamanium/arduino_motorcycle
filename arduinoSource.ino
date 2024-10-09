@@ -1,5 +1,6 @@
 // --------------------自作クラス・ピン定義--------------------
 //#include "Winker.h"
+//#include "GearPosition.h"
 #include "PinDefine.h"
 
 // --------------------ライブラリ--------------------
@@ -58,7 +59,13 @@ unsigned long realTimeLong = 0;
 
 // --------------------インスタンス--------------------
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
-
+/*
+GearPosition gearPos1 = GearPosition(pos1, '1');
+GearPosition gearPos1 = GearPosition(pos2, '2');
+GearPosition gearPos1 = GearPosition(pos3, '3');
+GearPosition gearPos1 = GearPosition(pos4, '4');
+GearPosition gearPos1 = GearPosition(posN, 'N');
+*/
 void setup(void) {
   
   Serial.begin(9600);
