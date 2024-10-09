@@ -11,7 +11,7 @@
 // ギアポジション入力ピン
 #define POS1  9
 #define POS2  10
-#define POS3　 11
+#define POS3　11
 #define POS4  12
 #define POSN  13
 
