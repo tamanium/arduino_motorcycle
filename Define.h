@@ -1,8 +1,8 @@
-#ifndef DEFINE_H_HEADER
-#define DEFINE_H_HEADER
+#ifndef DEFINE_H_INCLUDE
+#define DEFINE_H_INCLUDE
 
-#define ON false
-#define OFF true
+#define ON true
+#define OFF false
 
 #define posInterval  200
 #define wnkInterval  100
