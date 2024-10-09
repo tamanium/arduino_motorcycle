@@ -15,6 +15,8 @@
 #define wnkInterval  100
 #define bzzInterbal  200
 
+#define timeFontSize 2
+
 // --------------------ピン定義--------------------
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -131,8 +133,10 @@ void loop() {
 
   //int realSec = realTotalSec%60;
   //int realMins = realTotalSec/60;
-  
-  // ダミー時刻表示用変数
+
+
+
+  // --------------------経過時間表示処理--------------------
   // 表示char配列作成(arduinoでは array[n+1]で定義
   char newTime[6] = "  :  ";
   // 経過時間を各桁で文字列化
@@ -143,18 +147,24 @@ void loop() {
   
   // フォント設定
   tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(2);
+  tft.setTextSize(timeFontSize);
 
-  // 経過時間表示処理
   for(int i=4; i>=0; i--){
-    if(nowTime[i] != newTime[i]){
-      tft.fillRect(6*2*i, 128-8*2, 6*2, 8*2, ST7735_BLACK);
-      tft.setCursor(6*2*i, 128-8*2);
-      tft.print(newTime[i]);
-      realTime[i] = newTime[i];
+    // 値が同じ場合処理スキップ
+    if(nowTime[i] == newTime[i]){
+      continue;
     }
+    // 該当表示をクリア
+    tft.fillRect(6*timeFontSize*i, 128-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST7735_BLACK);
+    // カーソル設定
+    tft.setCursor(6*timeFontSize*i, 128-8*timeFontSize);
+    // 数値を表示
+    tft.print(newTime[i]);
+    // 表示データを格納
+    realTime[i] = newTime[i];
   }
 
+  // --------------------経過時間表示処理--------------------
   if(digitalRead(wnkLeft) == LOW){
     if(wnkLeftStatus == OFF){
       tft.setCursor(160-6*3, 120);
