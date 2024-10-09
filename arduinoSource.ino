@@ -18,26 +18,13 @@
 
 #define timeFontSize 2
 
-// --------------------ピン定義--------------------
-#define TFT_MOSI  3
-#define TFT_SCLK  2
-#define TFT_CS    6
-#define TFT_RST   8
-#define TFT_DC    7
-
-// ギアポジション入力ピン
-#define pos1  9
-#define pos2  10
-#define pos3  11
-#define pos4  12
-#define posN  13
 
 GearPosition gearPos[6] = {
-  GearPosition(posN, 'N'),
-  GearPosition(pos1, '1'),
-  GearPosition(pos2, '2'),
-  GearPosition(pos3, '3'),
-  GearPosition(pos4, '4')
+  GearPosition(POSN, 'N'),
+  GearPosition(POS1, '1'),
+  GearPosition(POS2, '2'),
+  GearPosition(POS3, '3'),
+  GearPosition(POS4, '4')
 };
 
 // ウインカー対応ピン
