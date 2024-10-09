@@ -1,7 +1,8 @@
 // --------------------自作クラス・ピン定義--------------------
 //#include "Winker.h"
 #include "GearPosition.h"
-#include "PinDefine.h"
+#include "Pins.h"
+#include "Define.h"
 
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>    // Core graphics library
