@@ -1,6 +1,7 @@
 #ifndef GEAR_POSITION_H_INCLUDE
 #define GEAR_POSITION_H_INCLUDE
 
+
 class GearPosition{
   private:
     // 読み取りピン
@@ -14,11 +15,28 @@ class GearPosition{
 /**
  *コンストラクタ
  */
-GearPosition::GearPosition(int pin, char word){
+GearPosition::GearPosition(int p, char c){
   // 読み取りピンを定義
-  this->pin = pin;
+  pin = p;
   // 表示文字定義
-  this->word = word;
+  word = c;
+  // ピンモード定義
+  pinMode(pin, INPUT_PULLUP);
 }
-
+/**
+ * 状態読み取り
+ * LOWの場合true
+ */
+bool GearPosition::getStatus(){
+  if(digitalRead(pin) == LOW){
+    return true;
+  }
+  return false;
+}
+/**
+ * 対応char取得
+ */
+char GearPosition::getWord(){
+  return word;
+}
 #endif
