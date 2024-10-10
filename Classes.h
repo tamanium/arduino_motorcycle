@@ -1,17 +1,14 @@
-#ifndef STRUCTS_H_INCLUDE
-#define STRUCTS_H_INCLUDE
-
-#define ON true;
-#define OFF false;
+#ifndef CLASSES_H_INCLUDE
+#define CLASSES_H_INCLUDE
 
 // ギアポジションクラス
-class _GearPosition{
+class GearPosition{
 	private:
 		int pin;		// 読み取りピン番号
 		char dispChar;	// 表示値
 	public:
 		// コンストラクタ
-		_GearPosition(int pin, char dispChar){
+		GearPosition(int pin, char dispChar){
 			this->pin		= pin;
 			this->dispChar	= dispChar;
 			pinMode(this->pin, INPUT_PULLUP);
@@ -29,6 +26,7 @@ class _GearPosition{
 		}
 };
 
+// ウインカークラス
 class Winker{
 	private:
 		int pin;			// 読み取りピン番号
@@ -38,16 +36,21 @@ class Winker{
 		// コンストラクタ
 		Winker(int pin){
 			this->pin = pin;
-			status = OFF;
-			statusHolder = 0;
+			status = ON;
+			statusHist = 0;
 			pinMode(this->pin, INPUT_PULLUP);
 		}
 		//【Getter】ウインカー状態
 		bool getStatus(){
-			return status;
+			if(digitalRead(pin) == LOW){
+        return true;
+      }
+      return false;
+      //return status;
 		}
+    /*
 		// エッジを取得(チャタリング対策済)
-		bool getEdge(bool &status){
+		bool getEdge(){
 			byte newStatus = 0;
 			bool returnBool = false;
 			// ピンの状態を取得
@@ -59,38 +62,23 @@ class Winker{
 			// 仮変数にウインカー状態履歴を代入
 			byte tmp = statusHist;
 			// 状態ONの履歴をカウント
-			int count;
+			byte count = 0;
 			for(byte count=0; tmp!=0; tmp&=tmp-1){
 				count++;
 			}
 			// OFFで直近8回中6回以上ONの場合
 			if(status == OFF && 6 <= count){
-				this->status = ON;
+				status = ON;
 				returnBool = true;
 			}
 			// ONで直近8回中2回以下ONの場合
 			else if(status == ON && count <= 2){
-				this->status = OFF;
+				status = OFF;
 				returnBool = true;
-				
 			}
-			status = this->status;
 			return returnBool;
 		}
-}
-
-// ギアポジション構造体
-struct GearPosition{
-	int pin;		// 読み取りピン番号
-	char dispChar;	// 表示文字
-	
-	// コンストラクタ
-	GearPosition(int pin, char dispChar){
-		this->pin		= pin;
-		this->dispChar	= dispChar;
-		// ピンモード設定
-		pinMode(this->pin, INPUT_PULLUP);
-	};
+    */
 };
 
 #endif

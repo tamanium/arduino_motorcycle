@@ -4,9 +4,10 @@
 #include <SPI.h>
 
 // --------------------自作クラス・ピン定義--------------------
-#include "Structs.h"	//構造体
-#include "Pins.h"		//ピン設定
+
 #include "Define.h"		//値定義
+#include "Pins.h"		//ピン設定
+#include "Classes.h"	//クラス
 
 
 // --------------------変数--------------------
@@ -40,19 +41,11 @@ GearPosition gearArray[] = {
 };
 int gearArrayLen = sizeof(gearArray)/sizeof(GearPosition);
 
-_GearPosition _gearArray[] = {
-	_GearPosition(POSN, 'N'),
-	_GearPosition(POS1, '1'),
-	_GearPosition(POS2, '2'),
-	_GearPosition(POS3, '3'),
-	_GearPosition(POS4, '4')
-};
-int _gearArrayLen = sizeof(_gearArray)/sizeof(_GearPosition);
 // ウインカー設定
-Winker winkers[3] = {
+Winker winkers[] = {
 	Winker(WNK_LEFT),
 	Winker(WNK_RIGHT)
-}
+};
 
 void setup(void) {
   
@@ -119,71 +112,15 @@ void loop() {
 	timeDisplay(newTimeSec);
   
 	// --------------------ギアポジ表示処理--------------------
-	int arrayLen = sizeof(gearArray)/sizeof(GearPosition);
-	gearDisplay(gearArray, arrayLen);
+	gearDisplay(gearArray, gearArrayLen);
 	
 	// --------------------ウインカー表示処理--------------------
-	for(int i=0;i<2;i++){
-		bool status = false;
-		if(winkers[i].getEdge(status) == true){
-			if(status == ON){
-				tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
-			}
-			else{
-				tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
-			}
-		}
-	}
-	
-	
-/*
-	// --------------------経過時間表示処理--------------------
-	if(digitalRead(WNK_LEFT) == LOW){
-		if(wnkLeftStatus == OFF){
-			tft.setCursor(160-6*3, 120);
-			if(bzzTime == 0){
-				bzzTime = time + bzzInterbal;
-				tft.setTextSize(1);
-				tft.print("Zzz");
-			}
-		}
-		wnkLeftStatus = ON;
-	}
-	else{
-		if(wnkLeftStatus == ON){
-			tft.setCursor(160-6*3, 120);
-			if(bzzTime == 0){
-				bzzTime = time + bzzInterbal;
-				tft.setTextSize(1);
-				tft.print("Zzz");
-			}
-		}
-		wnkLeftStatus = OFF;
-	}
-
-	if(digitalRead(WNK_RIGHT) == LOW){
-		if(wnkRightStatus == OFF){
-			tft.setCursor(160-6*3, 120);
-			if(bzzTime == 0){
-				bzzTime = time + bzzInterbal;
-				tft.setTextSize(1);
-				tft.print("Zzz");
-			}
-		}
-		wnkRightStatus = ON;
-	}
-	else{
-		if(wnkRightStatus == ON){
-			tft.setCursor(160-6*3, 128-8);
-			if(bzzTime == 0){
-				bzzTime = time + bzzInterbal;
-				tft.setTextSize(1);
-				tft.print("Zzz");
-			}
-		}
-		wnkRightStatus = OFF;
-	}
-*/
+  if(winkers[0].getStatus() == true){
+    tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
+  }
+  else{
+    tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
+  }
 }
 
 void timeDisplay(long totalSec){
@@ -231,7 +168,6 @@ void gearDisplay(GearPosition *gearArray, int len){
 	static int countEdge = 0;
 	// 現在のギアポジション表示文字列取得
 	char newGear = getGearPos(gearArray, len);
-	//char newGear = _getGearPos(gearArray, len);
 
 	// エッジカウント変数加算
 	if(nowGear != newGear){
@@ -262,28 +198,9 @@ void gearDisplay(GearPosition *gearArray, int len){
  * @param len int型 配列の長さ
  * @return char
  */
-//char getGearPos(_GearPosition *gearArray, int len ){
 char getGearPos(GearPosition *gearArray, int len ){
 	for(int i=0; i<len; i++ ){
-		//if(_gearArray[i].isActive() == true){
-		//	return gearArray[i].getChar();
-		//}
-		if(digitalRead(gearArray[i].pin) == LOW){
-			return gearArray[i].dispChar;
-		}
-	}
-	return '-';
-}
-
-/**
- * ギアポジション表示値の取得
- * @param gearArray GearPositionクラス(ポインタ) ギアポジションクラス配列
- * @param len int型 配列の長さ
- * @return char
- */
-char _getGearPos(_GearPosition *gearArray, int len ){
-	for(int i=0; i<len; i++ ){
-		if(_gearArray[i].isOn() == true){
+		if(gearArray[i].isActive() == true){
 			return gearArray[i].getChar();
 		}
 	}
