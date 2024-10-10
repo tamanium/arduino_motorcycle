@@ -1,79 +1,95 @@
 #ifndef STRUCTS_H_INCLUDE
 #define STRUCTS_H_INCLUDE
 
-// 表示情報構造体
-struct DisplayInfo{
-	
-	int x;			// カーソル座標x
-	int y;			// カーソル座標y
-	int bg;			// 背景色
-	int textSize;	// テキストサイズ
-	
-	//コンストラクタ
-	DisplayInfo(int x, int y, int bg, int textSize){
-		this->x = x;
-		this->y = y;
-		this->bg = bg;
-		this->textSize = textSize;
-	};
-};
+#define ON true;
+#define OFF false;
+
 // ギアポジションクラス
 class _GearPosition{
 	private:
 		int pin;		// 読み取りピン番号
 		char dispChar;	// 表示値
-	
 	public:
 		// コンストラクタ
 		_GearPosition(int pin, char dispChar){
-			this->pin = pin;
-			this->dispChar = dispChar;
+			this->pin		= pin;
+			this->dispChar	= dispChar;
 			pinMode(this->pin, INPUT_PULLUP);
 		}
-		bool isOn(){
+		// 【Getter】表示値
+		char getChar(){
+			return dispChar;
+		}
+		// ポジションが自身か判定（表示値を参照渡し）
+		bool isActive(){
 			if(digitalRead(pin) == LOW){
 				return true;
 			}
 			return false;
 		}
-		// 表示値を出力
-		char getCharIfOn(){
-			// 読み取り結果がLOWだった場合
-			if(digitalRead(pin) == LOW){
-				return dispChar;
+};
+
+class Winker{
+	private:
+		int pin;			// 読み取りピン番号
+		bool status;		// ウインカー状態
+		byte statusHist;	// ウインカー状態履歴 
+	public:
+		// コンストラクタ
+		Winker(int pin){
+			this->pin = pin;
+			status = OFF;
+			statusHolder = 0;
+			pinMode(this->pin, INPUT_PULLUP);
+		}
+		//【Getter】ウインカー状態
+		bool getStatus(){
+			return status;
+		}
+		// エッジを取得(チャタリング対策済)
+		bool getEdge(bool &status){
+			byte newStatus = 0;
+			bool returnBool = false;
+			// ピンの状態を取得
+			if(digitalRead(pin) == HIGH){
+				newStatus = 1;
 			}
+			// 右に1シフトさせて最下位ビットに上位結果を代入
+			statusHist = (statusHist << 1) | newStatus;
+			// 仮変数にウインカー状態履歴を代入
+			byte tmp = statusHist;
+			// 状態ONの履歴をカウント
+			int count;
+			for(byte count=0; tmp!=0; tmp&=tmp-1){
+				count++;
+			}
+			// OFFで直近8回中6回以上ONの場合
+			if(status == OFF && 6 <= count){
+				this->status = ON;
+				returnBool = true;
+			}
+			// ONで直近8回中2回以下ONの場合
+			else if(status == ON && count <= 2){
+				this->status = OFF;
+				returnBool = true;
+				
+			}
+			status = this->status;
+			return returnBool;
 		}
 }
 
 // ギアポジション構造体
 struct GearPosition{
-	
 	int pin;		// 読み取りピン番号
 	char dispChar;	// 表示文字
+	
 	// コンストラクタ
 	GearPosition(int pin, char dispChar){
-		this->pin = pin;
-		this->dispChar = dispChar;
+		this->pin		= pin;
+		this->dispChar	= dispChar;
 		// ピンモード設定
 		pinMode(this->pin, INPUT_PULLUP);
-	};
-};
-
-// ウインカー構造体
-struct Winker{
-	
-	int pin;		// 読み取りピン番号 
-	bool status;	// 状態
-	// コンストラクタ
-	Winker(int pin){
-		this->pin = pin;
-		this->status = 0;
-		// ピンモード設定
-		pinMode(this->pin, INPUT_PULLUP);
-	};
-	
-	readWinker(){
-		
 	};
 };
 

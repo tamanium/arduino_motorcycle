@@ -28,8 +28,9 @@ unsigned long realTimeLong = 0;
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
+// ディスプレイ設定
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
-
+// ギアポジション設定
 GearPosition gearArray[] = {
 	GearPosition(POSN, 'N'),
 	GearPosition(POS1, '1'),
@@ -37,14 +38,21 @@ GearPosition gearArray[] = {
 	GearPosition(POS3, '3'),
 	GearPosition(POS4, '4')
 };
+int gearArrayLen = sizeof(gearArray)/sizeof(GearPosition);
 
-_GearPosition gearArray[] = {
+_GearPosition _gearArray[] = {
 	_GearPosition(POSN, 'N'),
 	_GearPosition(POS1, '1'),
 	_GearPosition(POS2, '2'),
 	_GearPosition(POS3, '3'),
 	_GearPosition(POS4, '4')
 };
+int _gearArrayLen = sizeof(_gearArray)/sizeof(_GearPosition);
+// ウインカー設定
+Winker winkers[3] = {
+	Winker(WNK_LEFT),
+	Winker(WNK_RIGHT)
+}
 
 void setup(void) {
   
@@ -102,18 +110,31 @@ void setup(void) {
 }
 
 void loop() {
-  unsigned long time = millis() - startTime;
-  // --------------------時計機能--------------------
-  // システム時間(秒)取得
-  unsigned long newTimeSec = time/1000;
+	unsigned long time = millis() - startTime;
+	// --------------------時計機能--------------------
+	// システム時間(秒)取得
+	unsigned long newTimeSec = time/1000;
 
-  // --------------------経過時間表示処理--------------------
-  timeDisplay(newTimeSec);
+	// --------------------経過時間表示処理--------------------
+	timeDisplay(newTimeSec);
   
-  // --------------------ギアポジ表示処理--------------------
+	// --------------------ギアポジ表示処理--------------------
 	int arrayLen = sizeof(gearArray)/sizeof(GearPosition);
 	gearDisplay(gearArray, arrayLen);
-	//_gearDisplay(_gearArray, arrayLen);
+	
+	// --------------------ウインカー表示処理--------------------
+	for(int i=0;i<2;i++){
+		bool status = false;
+		if(winkers[i].getEdge(status) == true){
+			if(status == ON){
+				tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
+			}
+			else{
+				tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
+			}
+		}
+	}
+	
 	
 /*
 	// --------------------経過時間表示処理--------------------
@@ -162,37 +183,6 @@ void loop() {
 		}
 		wnkRightStatus = OFF;
 	}
-
-	if(bzzTime > 0 && bzzTime <= time ){
-		tft.fillRect(160-6*3, 120, 6*3, 8, ST77XX_BLACK);
-		bzzTime = 0;
-	}
-   
-
-	posTime += posInterval;  
-	//}
-	if(wnkRightStatus == ON){
-		if(isWnkRight == false){
-			tft.fillTriangle(160-32, 0, 160-32, 62, 160-0, 31, ST7735_YELLOW);
-			isWnkRight = true;
-		}
-	}
-	else if(isWnkRight == true){
-		tft.fillRect(160-32, 0, 32, 63, ST77XX_BLACK);
-		isWnkRight = false;
-	}
-
-	if(wnkLeftStatus == ON){
-		if(isWnkLeft == false){
-			tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
-			isWnkLeft = true;
-		}
-	}
-	else if(isWnkLeft == true){
-		tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
-		isWnkLeft = false;
-	}
-	wnkTime += wnkInterval;
 */
 }
 
@@ -236,14 +226,15 @@ void timeDisplay(long totalSec){
  */
 void gearDisplay(GearPosition *gearArray, int len){
 	// 表示値保持用変数
-	static char nowGearPos = '-';
+	static char nowGear = '-';
 	// エッジカウント変数
 	static int countEdge = 0;
 	// 現在のギアポジション表示文字列取得
-	char newGearPos = getGearPos(gearArray, len);
+	char newGear = getGearPos(gearArray, len);
+	//char newGear = _getGearPos(gearArray, len);
 
 	// エッジカウント変数加算
-	if(nowGearPos != newGearPos){
+	if(nowGear != newGear){
 		countEdge++;
 	}
 	else{
@@ -254,12 +245,12 @@ void gearDisplay(GearPosition *gearArray, int len){
 	// カウント変数が一定数以上となった場合
 	if(10 <= countEdge){
 		// 格納用変数に代入
-		nowGearPos = newGearPos;
+		nowGear = newGear;
 		// 表示値削除・カーソル設定・フォント設定・表示処理
 		tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
 		tft.setCursor(8*7+4, 0);
 		tft.setTextSize(8);
-		tft.print(nowGearPos);
+		tft.print(nowGear);
 		// カウント変数リセット
 		countEdge = 0;
 	}
@@ -271,8 +262,12 @@ void gearDisplay(GearPosition *gearArray, int len){
  * @param len int型 配列の長さ
  * @return char
  */
+//char getGearPos(_GearPosition *gearArray, int len ){
 char getGearPos(GearPosition *gearArray, int len ){
 	for(int i=0; i<len; i++ ){
+		//if(_gearArray[i].isActive() == true){
+		//	return gearArray[i].getChar();
+		//}
 		if(digitalRead(gearArray[i].pin) == LOW){
 			return gearArray[i].dispChar;
 		}
@@ -287,12 +282,10 @@ char getGearPos(GearPosition *gearArray, int len ){
  * @return char
  */
 char _getGearPos(_GearPosition *gearArray, int len ){
-	char dispChar = '-';
 	for(int i=0; i<len; i++ ){
-		dispChar = _gearArray[i].getCharIfOn();
-		if(dispChar != '-'){
-			break;
+		if(_gearArray[i].isOn() == true){
+			return gearArray[i].getChar();
 		}
 	}
-	return dispChar;
+	return '-';
 }
