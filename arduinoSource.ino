@@ -5,10 +5,16 @@
 
 // --------------------自作クラス・ピン定義--------------------
 
-#include "Define.h"		//値定義
-#include "Pins.h"		//ピン設定
-#include "Classes.h"	//クラス
+#include "Define.h"			//値定義
+#include "Pins.h"			//ピン設定
+#include "GearPositions.h"	//ギアポジションクラス
+#include "Winker.h"			//ウインカークラス
 
+
+// --------------------定数--------------------
+const int monitorInterval = 10;//ms
+const int displayInterval = 50;//ms
+//const int gearDispInterval = 100;//ms
 
 // --------------------変数--------------------
 
@@ -16,12 +22,7 @@ unsigned long startTime = 0;
 unsigned long posTime = 0;
 unsigned long wnkTime = 0;
 unsigned long bzzTime = 1;
-
-bool wnkRightStatus = false;
-bool wnkLeftStatus = false;
-
-bool isWnkRight = false;
-bool isWnkLeft = false;
+unsigned long displayTime = 0;
 
 char  nowTime[6] = " 0:00";
 unsigned long realTimeLong = 0;
@@ -32,21 +33,12 @@ int timeFontSize = 2;
 // ディスプレイ設定
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
 // ギアポジション設定
-GearPosition gearArray[] = {
-	GearPosition(POSN, 'N'),
-	GearPosition(POS1, '1'),
-	GearPosition(POS2, '2'),
-	GearPosition(POS3, '3'),
-	GearPosition(POS4, '4')
-};
-int gearArrayLen = sizeof(gearArray)/sizeof(GearPosition);
-
+int gears[] = {POSN, POS1, POS2, POS3, POS4};
+GearPosition gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
 // ウインカー設定
-Winker winkers[] = {
-	Winker(WNK_LEFT),
-	Winker(WNK_RIGHT)
-};
+Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
 
+// ------------------------------初期設定------------------------------
 void setup(void) {
   
 	Serial.begin(9600);
@@ -66,14 +58,16 @@ void setup(void) {
 	tft.setTextSize(3);
 	tft.setTextWrap(true);
 	tft.print("hello");
+	
 	delay(2000);
   
-	// ギアポジション表示開始
+	// ギアポジション表示開始その1
 	tft.fillScreen(ST77XX_BLACK);
 	tft.setCursor(8*5+4, 8*8);
 	tft.setTextSize(3);
 	tft.print("gear");
-
+	
+	// ギアポジション表示開始その2
 	tft.setTextColor(ST77XX_WHITE);
 	tft.setTextSize(8);
 	tft.setCursor(8*7+4, 0);
@@ -102,28 +96,102 @@ void setup(void) {
 	wnkTime = startTime + wnkInterval;
 }
 
+// ------------------------------ループ------------------------------
 void loop() {
+	// 経過時間(ms)取得
 	unsigned long time = millis() - startTime;
-	// --------------------時計機能--------------------
-	// システム時間(秒)取得
-	unsigned long newTimeSec = time/1000;
-
-	// --------------------経過時間表示処理--------------------
-	timeDisplay(newTimeSec);
-  
-	// --------------------ギアポジ表示処理--------------------
-	gearDisplay(gearArray, gearArrayLen);
 	
-	// --------------------ウインカー表示処理--------------------
-  if(winkers[0].getStatus() == true){
-    tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
-  }
-  else{
-    tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
-  }
+	// 各種モニタリング・更新
+	if(monitorTime <= time){
+		gearPositions.monitor();
+		winkers.monitor();
+		monitorTime += monitorInterval;
+	}
+	
+	// 各種表示処理
+	if(displayTime <= time){
+		timeDisplay(time/1000, tft);
+		gearDisplay(gearPositions.getGear(), tft);
+		winkersDisplay(winkers, tft);
+		displayTime += displayInterval;
+	}
+	
+	/*
+	// ウインカー表示処理
+	if(winkers[0].getStatus() == true){
+		tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
+	}
+	else{
+		tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
+	}
+	*/
 }
 
-void timeDisplay(long totalSec){
+// ------------------------------メソッド------------------------------
+/**
+ * ギアポジションの表示処理
+ * @param dispChar char型 表示文字列
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
+void gearDisplay(char dispChar, Adafruit_ST7735 &tft){
+	// バッファ文字列
+	static char bufferChar = '-';
+	// 文字列比較
+	if(bufferChar != dispChar){
+		// バッファ文字列を上書き
+		bufferChar = dispChar;
+		// 表示処理
+		tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
+		tft.setCursor(8*7+4, 0);
+		tft.setTextSize(8);
+		tft.print(bufferChar);
+	}
+}
+
+/**
+ * ウインカー表示処理
+ * @param winkers Winkers型 ウインカークラス
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
+void winkersDisplay(Winkers &winkers, Adafruit_ST7735 &tft){
+	// バッファ状態
+	static bool bufferStatusLeft = false;
+	static bool bufferStatusRight = false;
+	
+	// 左ウインカー状態を判定
+	if(bufferStatusLeft != winkers.getStatusLeft()){
+		// バッファ状態を上書き
+		bufferStatusLeft = winkers.getStatusLeft();
+		if(bufferStatusLeft == true){
+			// 図形表示
+			tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
+		}
+		else{
+			// 図形削除
+			tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
+		}
+	}
+	// 右ウインカー状態を判定
+	if(bufferStatusRight != winkers.getStatusRight()){
+		// バッファ状態を上書き
+		bufferStatusRight = winkers.getStatusRight();
+		if(bufferStatusRight == true){
+			// 図形表示
+			tft.fillTriangle(160-31, 0, 160-31, 62, 160-0, 31, ST7735_YELLOW);
+		}
+		else{
+			// 図形削除
+			tft.fillRect(160-0, 0, 32, 63, ST77XX_BLACK);
+		}
+	}
+}
+
+/**
+ * 経過時間表示処理
+ * @param totalSec long型 経過時間(秒)
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
+void timeDisplay(long totalSec, Adafruit_ST7735 &tft){
 	// 保持用char配列
 	static char  nowTime[6] = " 0:00";
 	static int len = sizeof(nowTime)/sizeof(char);
@@ -154,55 +222,4 @@ void timeDisplay(long totalSec){
 		// 数値を表示
 		tft.print(nowTime[i]);
 	}
-}
-
-/**
- * ギアポジションの表示処理
- * @param gearArray GearPositionクラス(ポインタ) ギアポジションクラス配列
- * @param len int型 配列の長さ
- */
-void gearDisplay(GearPosition *gearArray, int len){
-	// 表示値保持用変数
-	static char nowGear = '-';
-	// エッジカウント変数
-	static int countEdge = 0;
-	// 現在のギアポジション表示文字列取得
-	char newGear = getGearPos(gearArray, len);
-
-	// エッジカウント変数加算
-	if(nowGear != newGear){
-		countEdge++;
-	}
-	else{
-		countEdge = 0;
-		return;
-	}
-
-	// カウント変数が一定数以上となった場合
-	if(10 <= countEdge){
-		// 格納用変数に代入
-		nowGear = newGear;
-		// 表示値削除・カーソル設定・フォント設定・表示処理
-		tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
-		tft.setCursor(8*7+4, 0);
-		tft.setTextSize(8);
-		tft.print(nowGear);
-		// カウント変数リセット
-		countEdge = 0;
-	}
-}
-
-/**
- * ギアポジション表示値の取得
- * @param gearArray GearPositionクラス(ポインタ) ギアポジションクラス配列
- * @param len int型 配列の長さ
- * @return char
- */
-char getGearPos(GearPosition *gearArray, int len ){
-	for(int i=0; i<len; i++ ){
-		if(gearArray[i].isActive() == true){
-			return gearArray[i].getChar();
-		}
-	}
-	return '-';
 }

@@ -4,8 +4,4 @@
 #define ON true
 #define OFF false
 
-#define posInterval  200
-#define wnkInterval  100
-#define bzzInterbal  200
-
 #endif
