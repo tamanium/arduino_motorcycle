@@ -23,10 +23,10 @@ unsigned long posTime = 0;
 unsigned long wnkTime = 0;
 unsigned long bzzTime = 1;
 unsigned long displayTime = 0;
+unsigned long monitorTime = 0;
 
 char  nowTime[6] = " 0:00";
 unsigned long realTimeLong = 0;
-
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
@@ -34,7 +34,7 @@ int timeFontSize = 2;
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
 // ギアポジション設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
-GearPosition gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
+GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
 // ウインカー設定
 Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
 
@@ -92,8 +92,6 @@ void setup(void) {
 
 	// 起動時の時間を取得
 	startTime = millis();
-	posTime = startTime + posInterval;
-	wnkTime = startTime + wnkInterval;
 }
 
 // ------------------------------ループ------------------------------
@@ -177,11 +175,11 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST7735 &tft){
 		bufferStatusRight = winkers.getStatusRight();
 		if(bufferStatusRight == true){
 			// 図形表示
-			tft.fillTriangle(160-31, 0, 160-31, 62, 160-0, 31, ST7735_YELLOW);
+			tft.fillTriangle(160-31-1, 0, 160-31-1, 62, 160-0-1, 31, ST7735_YELLOW);
 		}
 		else{
 			// 図形削除
-			tft.fillRect(160-0, 0, 32, 63, ST77XX_BLACK);
+			tft.fillRect(160-31-1, 0, 32, 63, ST77XX_BLACK);
 		}
 	}
 }

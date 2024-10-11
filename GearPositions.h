@@ -6,32 +6,39 @@
 // ギアポジションクラス
 class GearPositions{
 	private:
-		Gear Gears[5];	// ギアクラス配列
+		Gear gears[5];	// ギアクラス配列
 		char nowGear;	// 現在のギア表示値
 		int numOfGear;	// ギア個数
 	public:
-		// コンストラクタ
-		GearPositions(int &pins, int len){
-			for(int i=0; i<len; i++){
-				char _char = '0';
-				if(i==0){
-					_char = 'N'
-				}
-				else{
-					_char += i;
-				}
-				this->Gear[i] = Gear(pins[i], _char);
-			}
-			this->numOfGear = len;
-			this->nowGear = '-';
-		}
+		GearPositions(int *pins, int len);  // コンストラクタ
+    char getGear();  // 【Getter】表示値
+    void monitor();  // 現在のギア表示値を更新
 };
+
+/**
+ * コンストラクタ
+ * @param nowGear char型 表示値
+ */
+GearPositions::GearPositions(int *pins, int len){
+  for(int i=0; i<len; i++){
+    char _char = '0';
+    if(i==0){
+      _char = 'N';
+    }
+    else{
+      _char += i;
+    }
+    this->gears[i] = Gear(pins[i], _char);
+  }
+  this->numOfGear = len;
+  this->nowGear = '-';
+}
 
 /**
  * 【Getter】表示値
  * @return nowGear char型 表示値
  */
-void GearPositions::getGear(){
+char GearPositions::getGear(){
 	return this->nowGear;
 }
 
@@ -43,11 +50,11 @@ void GearPositions::monitor(){
 	static int counter = 0;
 	static char bufferGear = '-';
 	// 現在のギア表示値を宣言
-	char newChar = '-'
+	char newGear = '-';
 	// ギア配列でループし、現在のギア表示値を取得
 	for(int i=0; i<this->numOfGear; i++){
-		if(Gears[i].isActive() == true){
-			newChar = Gears[i].getChar();
+		if(this->gears[i].isActive() == true){
+			newGear = this->gears[i].getChar();
 			break;
 		}
 	}
@@ -66,7 +73,7 @@ void GearPositions::monitor(){
 	// 5カウント以上の場合
 	if(5 <= counter){
 		// 現在ギアに直前ギアを代入し、カウンタをリセット
-		this->nowChar = bufferChar;
+		this->nowGear = bufferGear;
 		counter = 0;
 	}
 }

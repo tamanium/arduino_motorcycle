@@ -1,5 +1,5 @@
-#ifndef GEARPOSITION_H_INCLUDE
-#define GEARPOSITION_H_INCLUDE
+#ifndef GEAR_H_INCLUDE
+#define GEAR_H_INCLUDE
 
 // ギアポジションクラス
 class Gear{
@@ -7,17 +7,29 @@ class Gear{
 		int pin;		// 読み取りピン番号
 		char dispChar;	// 表示値
 	public:
-		// コンストラクタ
-		Gear(int pin, char dispChar){
-			this->pin		= pin;
-			this->dispChar	= dispChar;
-			pinMode(this->pin, INPUT_PULLUP);
-		}
-		// 【Getter】表示値
-		char getChar();
-		// ポジションが自身か判定（表示値を参照渡し）
-		bool isActive();
+		Gear();// コンストラクタ
+		Gear(int p, char c);// コンストラクタ
+		char getChar();// 【Getter】表示値
+		bool isActive();// ポジションが自身か判定（表示値を参照渡し）
 };
+
+/**
+ * デフォルトコンストラクタ
+ */
+Gear::Gear(){
+  
+}
+
+/**
+ * コンストラクタ
+ * @param pin int型 表示値
+ * @param dispChar char型 表示値
+ */
+Gear::Gear(int pin, char dispChar){
+  this->pin = pin;
+  this->dispChar = dispChar;
+  pinMode(this->pin, INPUT_PULLUP);
+}
 
 /**
  * 【Getter】表示値
