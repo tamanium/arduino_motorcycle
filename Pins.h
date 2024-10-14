@@ -8,6 +8,11 @@
 #define TFT_RST   8
 #define TFT_DC    7
 
+// --------------------ピン定義--------------------
+#define THM_MOSI  3
+#define THM_SCLK  2
+#define THM_CS    1
+
 // ギアポジション入力ピン
 #define POSN  13
 #define POS1  9

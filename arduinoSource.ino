@@ -1,6 +1,7 @@
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
+#include "MAX6675.h"
 #include <SPI.h>
 
 // --------------------自作クラス・ピン定義--------------------
@@ -24,6 +25,7 @@ unsigned long wnkTime = 0;
 unsigned long bzzTime = 1;
 unsigned long displayTime = 0;
 unsigned long monitorTime = 0;
+unsigned long tempTime = 0;
 
 char  nowTime[6] = " 0:00";
 unsigned long realTimeLong = 0;
@@ -38,6 +40,8 @@ GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
 // ウインカー設定
 Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
 
+MAX6675 thermoCouple(THM_CS, THM_MOSI, THM_SCLK);
+
 // ------------------------------初期設定------------------------------
 void setup(void) {
   
@@ -47,8 +51,12 @@ void setup(void) {
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
 
+    thermoCouple.begin();
+    thermoCouple.setSPIspeed(4000000);
+
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.initR(INITR_BLACKTAB);
+    tft.setSPISpeed(4000000);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
@@ -79,17 +87,6 @@ void setup(void) {
 	tft.setCursor(0,128-8*2);
 	tft.print("00:00");
 
-/*
-	tone(tonePin, 220);
-	delay(100);
-	noTone(tonePin);
-	delay(150);
-	tone(tonePin, 220);
-	delay(100);
-	noTone(tonePin);
-	delay(150);
-*/
-
 	// 起動時の時間を取得
 	startTime = millis();
 }
@@ -99,7 +96,14 @@ void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis() - startTime;
 	
-	// 各種モニタリング・更新
+    if(tempTime <= time){
+        //Serial.print(thermoCouple.read());
+        //Serial.print("\ttemp: ");
+        //Serial.println(thermoCouple.getTemperature());
+        tempTime += 2000;
+    }
+	
+    // 各種モニタリング・更新
 	if(monitorTime <= time){
 		gearPositions.monitor();
 		winkers.monitor();
