@@ -6,9 +6,30 @@
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			//値定義
-#include "Pins.h"			//ピン設定
 #include "GearPositions.h"	//ギアポジションクラス
 #include "Winker.h"			//ウインカークラス
+
+// --------------------ピン定義--------------------
+// SPI
+#define SPI_MOSI  3
+#define SPI_SCLK  2
+// ディスプレイ
+#define TFT_CS    6
+#define TFT_RST   8
+#define TFT_DC    7
+// 温度計
+#define THM_CS    1
+// ギアポジション
+#define POSN  13
+#define POS1  9
+#define POS2  10
+#define POS3  11
+#define POS4  12
+// ウインカー
+#define WNK_RIGHT 15
+#define WNK_LEFT 14
+// ビープ音
+#define BZZ_PIN 29
 
 
 // --------------------定数--------------------
@@ -17,41 +38,32 @@ const int displayInterval = 30;//ms
 //const int gearDispInterval = 100;//ms
 
 // --------------------変数--------------------
-
-unsigned long startTime = 0;
-unsigned long posTime = 0;
-unsigned long wnkTime = 0;
-unsigned long bzzTime = 1;
-unsigned long displayTime = 0;
-unsigned long monitorTime = 0;
-unsigned long tempTime = 0;
+unsigned long displayTime = 0;	// 表示処理にて使用
+unsigned long monitorTime = 0;	// 各種読み取りにて使用
+unsigned long tempTime = 0;		// 温度測定にて使用
 
 char  nowTime[6] = " 0:00";
-unsigned long realTimeLong = 0;
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-// ディスプレイ設定
 //Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
-Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
-// ギアポジション設定
+Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 //GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
-GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));
-// ウインカー設定
+GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
 //Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
-Winkers winkers(WNK_LEFT, WNK_RIGHT);
-// 温度計設定
+Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
 //MAX6675 thermoCouple = MAX6675(THM_CS, THM_MOSI, THM_SCLK);
-MAX6675 thermoCouple(THM_CS, THM_MOSI, THM_SCLK);
+MAX6675 thermoCouple(THM_CS, SPI_MOSI, SPI_SCLK);// 温度計設定
+
 // ------------------------------初期設定------------------------------
 void setup(void) {
   
 	Serial.begin(9600);
 
 	//SPI接続設定
-	SPI.setTX(TFT_MOSI);
-	SPI.setSCK(TFT_SCLK);
+	SPI.setTX(SPI_MOSI);
+	SPI.setSCK(SPI_SCLK);
 
 	// 温度計設定
 	thermoCouple.begin();
@@ -91,13 +103,13 @@ void setup(void) {
 	tft.print("00:00");
 
 	// 起動時の時間を取得
-	startTime = millis();
+	offsetTime = millis();
 }
 
 // ------------------------------ループ------------------------------
 void loop() {
 	// 経過時間(ms)取得
-	unsigned long time = millis() - startTime;
+	unsigned long time = millis();
 	
     if(tempTime <= time){
         //Serial.print(thermoCouple.read());
@@ -120,16 +132,6 @@ void loop() {
 		winkersDisplay(winkers, tft);
 		displayTime += displayInterval;
 	}
-	
-	/*
-	// ウインカー表示処理
-	if(winkers[0].getStatus() == true){
-		tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
-	}
-	else{
-		tft.fillRect(0, 0, 32, 63, ST77XX_BLACK);
-	}
-	*/
 }
 
 // ------------------------------メソッド------------------------------
