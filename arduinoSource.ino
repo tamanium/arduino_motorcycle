@@ -5,7 +5,6 @@
 #include <SPI.h>
 
 // --------------------自作クラス・ピン定義--------------------
-
 #include "Define.h"			//値定義
 #include "Pins.h"			//ピン設定
 #include "GearPositions.h"	//ギアポジションクラス
@@ -39,7 +38,7 @@ int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
 // ウインカー設定
 Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
-
+// 温度計設定
 MAX6675 thermoCouple(THM_CS, THM_MOSI, THM_SCLK);
 
 // ------------------------------初期設定------------------------------
@@ -50,13 +49,13 @@ void setup(void) {
 	//SPI接続設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
-
-    thermoCouple.begin();
-    thermoCouple.setSPIspeed(4000000);
+	
+	thermoCouple.begin();
+	thermoCouple.setSPIspeed(4000000);
 
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.initR(INITR_BLACKTAB);
-    tft.setSPISpeed(4000000);
+	tft.setSPISpeed(4000000);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
