@@ -1,4 +1,5 @@
 #include "Winker.h"
+
 /**
  * コンストラクタ
  * @param pinLeft int 左ウインカーピン
@@ -36,9 +37,9 @@ void Winkers::monitor(){
 	// 現在のウインカー状態(1は左ウインカー、0は右ウインカー)
 	bool newStatusLR[] = {false, false};
 
-  // ピンを配列化
+    // ピンを配列化
 	int pins[] = {this->pinRight, this->pinLeft};
-  // 各ピンを読み取りウインカー状態へセット
+    // 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
 		if(digitalRead(pins[i]) == HIGH){
 			newStatusLR[i] = true;

@@ -1,4 +1,5 @@
 #include "Gear.h"
+#include <Arduino.h>
 
 /**
  * デフォルトコンストラクタ

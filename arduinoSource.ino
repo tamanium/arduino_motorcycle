@@ -46,14 +46,10 @@ char  nowTime[6] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-//Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
 Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
-//GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
-//Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
 Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
-//MAX6675 thermoCouple = MAX6675(THM_CS, THM_MOSI, THM_SCLK);
 MAX6675 thermoCouple(THM_CS, SPI_MOSI, SPI_SCLK);// 温度計設定
 
 // ------------------------------初期設定------------------------------
@@ -67,11 +63,10 @@ void setup(void) {
 
 	// 温度計設定
 	thermoCouple.begin();
-	thermoCouple.setSPIspeed(4000000); //4MHz
-
+	//thermoCouple.setSPIspeed(4000000); //4MHz
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.initR(INITR_BLACKTAB);
-	tft.setSPISpeed(4000000); //4MHz
+	//tft.setSPISpeed(4000000); //4MHz
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
@@ -101,9 +96,6 @@ void setup(void) {
 	tft.setTextSize(2);
 	tft.setCursor(0,128-8*2);
 	tft.print("00:00");
-
-	// 起動時の時間を取得
-	offsetTime = millis();
 }
 
 // ------------------------------ループ------------------------------
@@ -112,12 +104,13 @@ void loop() {
 	unsigned long time = millis();
 	
     if(tempTime <= time){
-        //Serial.print(thermoCouple.read());
-        //Serial.print("\ttemp: ");
-        //Serial.println(thermoCouple.getTemperature());
+        //int status = thermoCouple.read();
+        //Serial.print(status);
+        Serial.print("\ttemp: ");
+        float temp = thermoCouple.getTemperature();
+        Serial.print(temp);
         tempTime += 2000;
     }
-	
     // 各種モニタリング・更新
 	if(monitorTime <= time){
 		gearPositions.monitor();

@@ -61,5 +61,3 @@ void GearPositions::monitor(){
 		counter = 0;
 	}
 }
-
-#endif

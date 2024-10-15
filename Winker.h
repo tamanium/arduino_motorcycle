@@ -1,5 +1,6 @@
 #ifndef WINKERS_H_INCLUDE
 #define WINKERS_H_INCLUDE
+#include <Arduino.h>
 
 // ウインカークラス
 class Winkers{
