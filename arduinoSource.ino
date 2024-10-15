@@ -32,15 +32,18 @@ int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
 // ディスプレイ設定
-Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
+//Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 // ギアポジション設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
-GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
+//GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
+GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));
 // ウインカー設定
-Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
+//Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
+Winkers winkers(WNK_LEFT, WNK_RIGHT);
 // 温度計設定
-MAX6675 thermoCouple = MAX6675(THM_CS, THM_MOSI, THM_SCLK);
-
+//MAX6675 thermoCouple = MAX6675(THM_CS, THM_MOSI, THM_SCLK);
+MAX6675 thermoCouple(THM_CS, THM_MOSI, THM_SCLK);
 // ------------------------------初期設定------------------------------
 void setup(void) {
   
