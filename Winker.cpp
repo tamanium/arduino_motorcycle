@@ -44,11 +44,11 @@ void Winkers::monitor(){
 			newStatusLR[i] = true;
 		}
 	
-	    // 直前状態と左取得状態が異なる場合
+	    // 直前状態と取得状態が異なる場合
 		if(bufferStatusLR[i] != newStatusLR[i]) {
-			// 左ビットを更新・左カウンタを加算
+			// 直前状態を更新・カウンタをリセット
 			bufferStatusLR[i] = newStatusLR[i];
-			counter[i]++;
+			counter[i] = 0;
 		}
 		// 現在状態と直前状態が異なる場合
 		else if(this->statusLR[i] != bufferStatusLR[i]){
