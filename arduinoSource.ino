@@ -12,8 +12,8 @@
 
 
 // --------------------定数--------------------
-const int monitorInterval = 10;//ms
-const int displayInterval = 50;//ms
+const int monitorInterval = 5;//ms
+const int displayInterval = 30;//ms
 //const int gearDispInterval = 100;//ms
 
 // --------------------変数--------------------
