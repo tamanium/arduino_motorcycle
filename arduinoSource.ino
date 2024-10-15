@@ -39,7 +39,7 @@ GearPositions gearPositions = GearPositions(gears, sizeof(gears)/sizeof(int));
 // ウインカー設定
 Winkers winkers = Winkers(WNK_LEFT, WNK_RIGHT);
 // 温度計設定
-MAX6675 thermoCouple(THM_CS, THM_MOSI, THM_SCLK);
+MAX6675 thermoCouple = MAX6675(THM_CS, THM_MOSI, THM_SCLK);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -49,13 +49,14 @@ void setup(void) {
 	//SPI接続設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
-	
+
+	// 温度計設定
 	thermoCouple.begin();
-	thermoCouple.setSPIspeed(4000000);
+	thermoCouple.setSPIspeed(4000000); //4MHz
 
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.initR(INITR_BLACKTAB);
-	tft.setSPISpeed(4000000);
+	tft.setSPISpeed(4000000); //4MHz
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
