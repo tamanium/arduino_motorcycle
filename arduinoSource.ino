@@ -1,8 +1,8 @@
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
-#include "MAX6675.h"
 #include <SPI.h>
+#include "MAX6675.h"
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			//値定義
@@ -10,15 +10,16 @@
 #include "Winker.h"			//ウインカークラス
 
 // --------------------ピン定義--------------------
-// SPI
-#define SPI_MOSI  3
-#define SPI_SCLK  2
 // ディスプレイ
+#define TFT_MOSI  3
+#define TFT_SCLK  2
 #define TFT_CS    6
 #define TFT_RST   8
 #define TFT_DC    7
 // 温度計
-#define THM_CS    1
+#define THM_SO    3
+#define THM_SCLK  2
+#define THM_CS    27
 // ギアポジション
 #define POSN  13
 #define POS1  9
@@ -50,7 +51,7 @@ Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
 Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
-MAX6675 thermoCouple(THM_CS, SPI_MOSI, SPI_SCLK);// 温度計設定
+MAX6675 thermoCouple(THM_CS, THM_SO, THM_SCLK);// 温度計設定
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -58,9 +59,9 @@ void setup(void) {
 	Serial.begin(9600);
 
 	//SPI接続設定
-	SPI.setTX(SPI_MOSI);
-	SPI.setSCK(SPI_SCLK);
-
+	//SPI.setTX(THM_SO);
+	//SPI.setSCK(THM_SCLK);
+    SPI.begin();
 	// 温度計設定
 	thermoCouple.begin();
 	//thermoCouple.setSPIspeed(4000000); //4MHz
