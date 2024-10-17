@@ -17,17 +17,15 @@
 
 // --------------------ピン定義--------------------
 // ディスプレイ
-#define TFT_MOSI  3
-#define TFT_SCLK  2
-//#define TFT_MOSI  n // 解決2.にて使用 SPI1のやつを使用
-//#define TFT_SCLK  m // 解決2.にて使用 SPI1のやつを使用
-#define TFT_CS    6
-#define TFT_RST   8
-#define TFT_DC    7
+#define TFT_MOSI  15 // 解決2.にて使用 SPI1のやつを使用
+#define TFT_SCLK  14 // 解決2.にて使用 SPI1のやつを使用
+#define TFT_CS    26
+#define TFT_RST   28
+#define TFT_DC    27
 // 温度計
-#define THM_SO    3
-#define THM_SCLK  2
-#define THM_CS    27
+#define THM_SO    8
+#define THM_SCLK  6
+#define THM_CS    7
 // ギアポジション
 #define POSN  13
 #define POS1  9
@@ -35,11 +33,10 @@
 #define POS3  11
 #define POS4  12
 // ウインカー
-#define WNK_RIGHT 15
-#define WNK_LEFT 14
+#define WNK_RIGHT 1
+#define WNK_LEFT 0
 // ビープ音
 #define BZZ_PIN 29
-
 
 // --------------------定数--------------------
 const int monitorInterval = 5;//ms
@@ -55,8 +52,7 @@ char nowTime[] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
-//Adafruit_ST7735 tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定 解決2.にて使用
+Adafruit_ST7735 tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
 Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
@@ -67,17 +63,15 @@ void setup(void) {
   
 	Serial.begin(9600);
 
-	//SPI接続設定
-	//SPI.setTX(THM_SO);
-	//SPI.setSCK(THM_SCLK);
-    //SPI.begin(TFT_CS);
+	//SPI1接続設定
+	SPI1.setTX(TFT_MOSI);
+	SPI1.setSCK(TFT_SCLK);
 	// 温度計設定
 	thermoCouple.begin();
     
 	// ディスプレイ初期化・画面向き・画面リセット
-    selectTFT();
+    //selectTFT();
 	tft.initR(INITR_BLACKTAB);
-	//tft.setSPISpeed(4000000); //4MHz
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
@@ -107,19 +101,24 @@ void setup(void) {
 	tft.setTextSize(2);
 	tft.setCursor(0,128-8*2);
 	tft.print("00:00");
-    unselectTFT();
 }
 
 // ------------------------------ループ------------------------------
 void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-	
     if(tempTime <= time){
         thermoCouple.read();
         Serial.print("\ttemp: ");
         float temp = thermoCouple.getTemperature();
-        Serial.print(temp);
+        Serial.println(temp);
+		// 該当表示をクリア
+		tft.fillRect(160-6*timeFontSize*6, 128-8*timeFontSize, 6*timeFontSize*6, 8*timeFontSize, ST7735_BLACK);
+		// カーソル設定
+		tft.setCursor(160-6*timeFontSize*6, 128-8*timeFontSize);
+		// 数値を表示
+		tft.print(temp);
+		tft.print('c');
         tempTime += 2000;
     }
     // 各種モニタリング・更新
@@ -130,11 +129,9 @@ void loop() {
 	}
 	// 各種表示処理
 	if(displayTime <= time){
-        selectTFT();// 解決1.にて使用 SPI1のやつを使用
 		timeDisplay(time/1000, tft);
 		gearDisplay(gearPositions.getGear(), tft);
 		winkersDisplay(winkers, tft);
-        unselectTFT();// 解決1.にて使用 SPI1のやつを使用
 		displayTime += displayInterval;
 	}
 }
@@ -234,14 +231,4 @@ void timeDisplay(long totalSec, Adafruit_ST7735 &tft){
 		// 数値を表示
 		tft.print(nowTime[i]);
 	}
-}
-/**
- * 経過時間表示処理
- */
-void selectTFT(){ 
-    digitalWrite(TFT_CS, LOW);
-}
-
-void unselectTFT(){
-    digitalWrite(TFT_CS, HIGH);
 }
