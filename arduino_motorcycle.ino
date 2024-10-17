@@ -36,14 +36,14 @@
 // --------------------定数--------------------
 const int monitorInterval = 5;//ms
 const int displayInterval = 30;//ms
-//const int gearDispInterval = 100;//ms
 
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理にて使用
 unsigned long monitorTime = 0;	// 各種読み取りにて使用
 unsigned long tempTime = 0;		// 温度測定にて使用
 
-char  nowTime[6] = " 0:00";
+int csPins[] = {TFT_CS, THM_CS};
+char nowTime[] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
@@ -61,11 +61,13 @@ void setup(void) {
 	//SPI接続設定
 	//SPI.setTX(THM_SO);
 	//SPI.setSCK(THM_SCLK);
-    SPI.begin();
+    //SPI.begin(TFT_CS);
 	// 温度計設定
 	thermoCouple.begin();
 	//thermoCouple.setSPIspeed(4000000); //4MHz
+    
 	// ディスプレイ初期化・画面向き・画面リセット
+    selectTFT();
 	tft.initR(INITR_BLACKTAB);
 	//tft.setSPISpeed(4000000); //4MHz
 	tft.setRotation(3);
@@ -97,6 +99,7 @@ void setup(void) {
 	tft.setTextSize(2);
 	tft.setCursor(0,128-8*2);
 	tft.print("00:00");
+    unselectTFT();
 }
 
 // ------------------------------ループ------------------------------
@@ -105,8 +108,7 @@ void loop() {
 	unsigned long time = millis();
 	
     if(tempTime <= time){
-        //int status = thermoCouple.read();
-        //Serial.print(status);
+        thermoCouple.read();
         Serial.print("\ttemp: ");
         float temp = thermoCouple.getTemperature();
         Serial.print(temp);
@@ -118,12 +120,13 @@ void loop() {
 		winkers.monitor();
 		monitorTime += monitorInterval;
 	}
-	
 	// 各種表示処理
 	if(displayTime <= time){
+        selectTFT();
 		timeDisplay(time/1000, tft);
 		gearDisplay(gearPositions.getGear(), tft);
 		winkersDisplay(winkers, tft);
+        unselectTFT();
 		displayTime += displayInterval;
 	}
 }
@@ -223,4 +226,14 @@ void timeDisplay(long totalSec, Adafruit_ST7735 &tft){
 		// 数値を表示
 		tft.print(nowTime[i]);
 	}
+}
+/**
+ * 経過時間表示処理
+ */
+void selectTFT(){ 
+    digitalWrite(TFT_CS, LOW);
+}
+
+void unselectTFT(){
+    digitalWrite(TFT_CS, HIGH);
 }
