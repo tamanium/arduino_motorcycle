@@ -5,15 +5,15 @@
 #include "MAX6675.h"
 
 // --------------------自作クラス・ピン定義--------------------
-#include "Define.h"			//値定義
-#include "GearPositions.h"	//ギアポジションクラス
-#include "Winker.h"			//ウインカークラス
+#include "Define.h"			// 値定義
+#include "GearPositions.h"	// ギアポジションクラス
+#include "Winker.h"			// ウインカークラス
 
 // --------------------ピン定義--------------------
 // ディスプレイ
 #define TFT_MOSI  3
 #define TFT_SCLK  2
-#define TFT_CS    5
+#define TFT_CS    6 // ←変更候補 SPI0 CSnのピンに割り当ててみよう
 #define TFT_RST   8
 #define TFT_DC    7
 // 温度計
