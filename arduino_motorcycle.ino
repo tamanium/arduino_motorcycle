@@ -6,9 +6,10 @@
 
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>
-#include <Adafruit_ST7735.h>
+//#include <Adafruit_ST7735.h>
+#include <Adafruit_ST7789.h>
 #include <SPI.h>
-#include "MAX6675.h"
+//#include "MAX6675.h"
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -19,9 +20,10 @@
 // ディスプレイ
 #define TFT_MOSI  3
 #define TFT_SCLK  2
+#define TFT_BL    5
 #define TFT_CS    6
-#define TFT_RST   8
 #define TFT_DC    7
+#define TFT_RST   8
 // ギアポジション
 #define POSN  13
 #define POS1  9
@@ -47,7 +49,8 @@ char nowTime[] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
+//Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
+Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
 Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
@@ -56,14 +59,15 @@ Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
 void setup(void) {
   
 	Serial.begin(9600);
-
+    analogWrite(TFT_BL,30);
 	//SPI1接続設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
     
 	// ディスプレイ初期化・画面向き・画面リセット
-	tft.initR(INITR_BLACKTAB);
-	tft.setRotation(3);
+	//tft.initR(INITR_BLACKTAB);
+	tft.init(240,320);
+    tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
 	// 初期表示
@@ -119,7 +123,7 @@ void loop() {
  * @param dispChar char型 表示文字列
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void gearDisplay(char dispChar, Adafruit_ST7735 &tft){
+void gearDisplay(char dispChar, Adafruit_ST77xx &tft){
 	// バッファ文字列
 	static char bufferChar = '-';
 	// 文字列比較
@@ -139,7 +143,7 @@ void gearDisplay(char dispChar, Adafruit_ST7735 &tft){
  * @param winkers Winkers型 ウインカークラス
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void winkersDisplay(Winkers &winkers, Adafruit_ST7735 &tft){
+void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 	// バッファ状態
 	static bool bufferStatusLeft = false;
 	static bool bufferStatusRight = false;
@@ -150,7 +154,7 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST7735 &tft){
 		bufferStatusLeft = winkers.getStatusLeft();
 		if(bufferStatusLeft == true){
 			// 図形表示
-			tft.fillTriangle(31, 0, 31, 62, 0, 31, ST7735_YELLOW);
+			tft.fillTriangle(31, 0, 31, 62, 0, 31, ST77XX_YELLOW);
 		}
 		else{
 			// 図形削除
@@ -163,7 +167,7 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST7735 &tft){
 		bufferStatusRight = winkers.getStatusRight();
 		if(bufferStatusRight == true){
 			// 図形表示
-			tft.fillTriangle(160-31-1, 0, 160-31-1, 62, 160-0-1, 31, ST7735_YELLOW);
+			tft.fillTriangle(160-31-1, 0, 160-31-1, 62, 160-0-1, 31, ST77XX_YELLOW);
 		}
 		else{
 			// 図形削除
@@ -177,7 +181,7 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST7735 &tft){
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void timeDisplay(long totalSec, Adafruit_ST7735 &tft){
+void timeDisplay(long totalSec, Adafruit_ST77xx &tft){
 	// 保持用char配列
 	static char  nowTime[6] = " 0:00";
 	static int len = sizeof(nowTime)/sizeof(char);
@@ -202,7 +206,7 @@ void timeDisplay(long totalSec, Adafruit_ST7735 &tft){
 		// 表示データを格納
 		nowTime[i] = newTime[i];
 		// 該当表示をクリア
-		tft.fillRect(6*timeFontSize*i, 128-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST7735_BLACK);
+		tft.fillRect(6*timeFontSize*i, 128-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST77XX_BLACK);
 		// カーソル設定
 		tft.setCursor(6*timeFontSize*i, 128-8*timeFontSize);
 		// 数値を表示
