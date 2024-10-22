@@ -17,15 +17,11 @@
 
 // --------------------ピン定義--------------------
 // ディスプレイ
-#define TFT_MOSI  15 // 解決2.にて使用 SPI1のやつを使用
-#define TFT_SCLK  14 // 解決2.にて使用 SPI1のやつを使用
-#define TFT_CS    26
-#define TFT_RST   28
-#define TFT_DC    27
-// 温度計
-#define THM_SO    8
-#define THM_SCLK  6
-#define THM_CS    7
+#define TFT_MOSI  3
+#define TFT_SCLK  2
+#define TFT_CS    6
+#define TFT_RST   8
+#define TFT_DC    7
 // ギアポジション
 #define POSN  13
 #define POS1  9
@@ -33,8 +29,8 @@
 #define POS3  11
 #define POS4  12
 // ウインカー
-#define WNK_RIGHT 1
-#define WNK_LEFT 0
+#define WNK_RIGHT 15
+#define WNK_LEFT 14
 // ビープ音
 #define BZZ_PIN 29
 
@@ -47,16 +43,14 @@ unsigned long displayTime = 0;	// 表示処理にて使用
 unsigned long monitorTime = 0;	// 各種読み取りにて使用
 unsigned long tempTime = 0;		// 温度測定にて使用
 
-int csPins[] = {TFT_CS, THM_CS};
 char nowTime[] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-Adafruit_ST7735 tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
+Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
 Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
-MAX6675 thermoCouple(THM_CS, THM_SO, THM_SCLK);// 温度計設定
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -64,13 +58,10 @@ void setup(void) {
 	Serial.begin(9600);
 
 	//SPI1接続設定
-	SPI1.setTX(TFT_MOSI);
-	SPI1.setSCK(TFT_SCLK);
-	// 温度計設定
-	thermoCouple.begin();
+	SPI.setTX(TFT_MOSI);
+	SPI.setSCK(TFT_SCLK);
     
 	// ディスプレイ初期化・画面向き・画面リセット
-    //selectTFT();
 	tft.initR(INITR_BLACKTAB);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
@@ -107,21 +98,7 @@ void setup(void) {
 void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-    if(tempTime <= time){
-        thermoCouple.read();
-        Serial.print("\ttemp: ");
-        float temp = thermoCouple.getTemperature();
-        Serial.println(temp);
-		// 該当表示をクリア
-		tft.fillRect(160-6*timeFontSize*6, 128-8*timeFontSize, 6*timeFontSize*6, 8*timeFontSize, ST7735_BLACK);
-		// カーソル設定
-		tft.setCursor(160-6*timeFontSize*6, 128-8*timeFontSize);
-		// 数値を表示
-		tft.print(temp);
-		tft.print('c');
-        tempTime += 2000;
-    }
-    // 各種モニタリング・更新
+  // 各種モニタリング・更新
 	if(monitorTime <= time){
 		gearPositions.monitor();
 		winkers.monitor();
