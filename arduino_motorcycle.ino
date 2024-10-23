@@ -6,10 +6,10 @@
 
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>
-//#include <Adafruit_ST7735.h>
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
-//#include "MAX6675.h"
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -17,6 +17,9 @@
 #include "Winker.h"			// ウインカークラス
 
 // --------------------ピン定義--------------------
+// GPS
+#define GPS_TX 0
+#define GPS_RX 1
 // ディスプレイ
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -37,19 +40,24 @@
 #define BZZ_PIN 29
 
 // --------------------定数--------------------
-const int monitorInterval = 5;//ms
-const int displayInterval = 30;//ms
+const int GPS_INTERVAL = 5000;//ms
+const int MONITOR_INTERVAL = 5;//ms
+const int DISPLAY_INTERVAL = 30;//ms
+
+const int BUFFER_LENGTH = 128;
 
 // --------------------変数--------------------
-unsigned long displayTime = 0;	// 表示処理にて使用
-unsigned long monitorTime = 0;	// 各種読み取りにて使用
+unsigned long displayTime = 0;	// 表示処理
+unsigned long monitorTime = 0;	// 各種読み取り
+unsigned long GPSTime = 0;	// GPSデータ取得・表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 
 char nowTime[] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-//Adafruit_ST7735 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
+TinyGPSPlus gps;
+SoftwareSerial ss(GPS_RX, GPS_TX);
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
@@ -57,8 +65,18 @@ Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
-  
+    
+    // デバッグ用シリアル設定
 	Serial.begin(9600);
+    
+    // GPS
+    //Serial1.setTX(GPS_TX);
+    //Serial1.setRX(GPS_RX);
+	//Serial1.begin(9600);
+    ss.begin(9600);
+
+
+    // ピン設定
     analogWrite(TFT_BL,30);
 	//SPI1接続設定
 	SPI.setTX(TFT_MOSI);
@@ -100,20 +118,88 @@ void setup(void) {
 
 // ------------------------------ループ------------------------------
 void loop() {
+    
+    //char static buf[128];
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-  // 各種モニタリング・更新
+
+
+    if(GPSTime <= time){
+        int i=0;
+        //char _buf[128];
+        while(ss.available() > 0){
+            char _data = ss.read();
+            //_buf[i] = _data;
+            Serial.print(_data);
+            gps.encode(_data);
+            i++;
+        }
+        Serial.println("");
+        /*
+	    tft.setTextWrap(true);
+        tft.setCursor(200,0);
+        tft.setTextColor(ST77XX_BLACK);
+        tft.print(buf);
+
+        tft.setCursor(200,0);
+        tft.setTextColor(ST77XX_WHITE);
+        tft.print(_buf);
+        memcpy(buf, _buf, sizeof(_buf)/sizeof(char));
+        */
+        Serial.println("");
+
+        // 衛星数
+        Serial.print("Satellite Count:");
+        if(gps.satellites.isValid() == true){
+            Serial.println(gps.satellites.value());
+        }
+        else{
+            Serial.println("-");
+        }
+        // 緯度, 経度
+        Serial.print("lat,lon:");
+        if(gps.location.isValid() == true){
+            Serial.print(gps.location.lat(), 6);
+            Serial.print(",");
+            Serial.println(gps.location.lng(), 6);
+        }
+        else{
+            Serial.println("-,-");
+        }
+        // 高度
+        Serial.print("altitude");
+        if(gps.altitude.isValid() == true){
+            Serial.println(gps.altitude.meters(), 6);
+        }
+        else{
+            Serial.println("-");
+        }
+        // 速度
+        Serial.print("Speed:");
+        if(gps.speed.isValid() == true){
+            Serial.println(gps.speed.kmph());
+        }
+        else{
+            Serial.println("-");
+        }
+        // 改行
+        Serial.println("");
+
+        GPSTime += GPS_INTERVAL;
+    }
+
+    // 各種モニタリング・更新
 	if(monitorTime <= time){
 		gearPositions.monitor();
 		winkers.monitor();
-		monitorTime += monitorInterval;
+		monitorTime += MONITOR_INTERVAL;
 	}
 	// 各種表示処理
 	if(displayTime <= time){
 		timeDisplay(time/1000, tft);
 		gearDisplay(gearPositions.getGear(), tft);
 		winkersDisplay(winkers, tft);
-		displayTime += displayInterval;
+		displayTime += DISPLAY_INTERVAL;
 	}
 }
 
