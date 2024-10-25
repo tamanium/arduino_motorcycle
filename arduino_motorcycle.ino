@@ -8,8 +8,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
-#include <TinyGPS++.h>
-#include <SoftwareSerial.h>
+#include <RTClib.h>
+
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -17,9 +17,9 @@
 #include "Winker.h"			// ウインカークラス
 
 // --------------------ピン定義--------------------
-// GPS
-#define GPS_TX 0
-#define GPS_RX 1
+
+#define I2C_SCL   5
+#define I2C_TX    4
 // ディスプレイ
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -34,13 +34,13 @@
 #define POS3  11
 #define POS4  12
 // ウインカー
-#define WNK_RIGHT 15
-#define WNK_LEFT 14
+#define WNK_RIGHT 26
+#define WNK_LEFT 27
 // ビープ音
 #define BZZ_PIN 29
 
 // --------------------定数--------------------
-const int GPS_INTERVAL = 5000;//ms
+const int CLOCK_INTERVAL = 50;//ms
 const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
 
@@ -49,15 +49,15 @@ const int BUFFER_LENGTH = 128;
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
-unsigned long GPSTime = 0;	// GPSデータ取得・表示
+unsigned long ClockTime = 0;	// GPSデータ取得・表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 
+//String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
 int timeFontSize = 2;
 
 // --------------------インスタンス--------------------
-TinyGPSPlus gps;
-SoftwareSerial ss(GPS_RX, GPS_TX);
+RTC_DS1307 rtc;
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
@@ -68,16 +68,16 @@ void setup(void) {
     
     // デバッグ用シリアル設定
 	Serial.begin(9600);
-    
-    // GPS
-    //Serial1.setTX(GPS_TX);
-    //Serial1.setRX(GPS_RX);
-	//Serial1.begin(9600);
-    ss.begin(9600);
 
+    Wire.setSDA(I2C_TX);
+    Wire.setSCL(I2C_SCL);
+    rtc.begin();
 
+    rtc.adjust(DateTime(2024,10,26,12,41,0));
+    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
     // ピン設定
     analogWrite(TFT_BL,30);
+
 	//SPI1接続設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
@@ -110,10 +110,12 @@ void setup(void) {
 	tft.print('-');
 
 	// 時計表示開始
+    /*
 	tft.setTextColor(ST77XX_WHITE);
 	tft.setTextSize(2);
 	tft.setCursor(0,128-8*2);
-	tft.print("00:00");
+	tft.print(defaultRealTime);
+    */
 }
 
 // ------------------------------ループ------------------------------
@@ -122,71 +124,6 @@ void loop() {
     //char static buf[128];
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-
-
-    if(GPSTime <= time){
-        int i=0;
-        //char _buf[128];
-        while(ss.available() > 0){
-            char _data = ss.read();
-            //_buf[i] = _data;
-            Serial.print(_data);
-            gps.encode(_data);
-            i++;
-        }
-        Serial.println("");
-        /*
-	    tft.setTextWrap(true);
-        tft.setCursor(200,0);
-        tft.setTextColor(ST77XX_BLACK);
-        tft.print(buf);
-
-        tft.setCursor(200,0);
-        tft.setTextColor(ST77XX_WHITE);
-        tft.print(_buf);
-        memcpy(buf, _buf, sizeof(_buf)/sizeof(char));
-        */
-        Serial.println("");
-
-        // 衛星数
-        Serial.print("Satellite Count:");
-        if(gps.satellites.isValid() == true){
-            Serial.println(gps.satellites.value());
-        }
-        else{
-            Serial.println("-");
-        }
-        // 緯度, 経度
-        Serial.print("lat,lon:");
-        if(gps.location.isValid() == true){
-            Serial.print(gps.location.lat(), 6);
-            Serial.print(",");
-            Serial.println(gps.location.lng(), 6);
-        }
-        else{
-            Serial.println("-,-");
-        }
-        // 高度
-        Serial.print("altitude");
-        if(gps.altitude.isValid() == true){
-            Serial.println(gps.altitude.meters(), 6);
-        }
-        else{
-            Serial.println("-");
-        }
-        // 速度
-        Serial.print("Speed:");
-        if(gps.speed.isValid() == true){
-            Serial.println(gps.speed.kmph());
-        }
-        else{
-            Serial.println("-");
-        }
-        // 改行
-        Serial.println("");
-
-        GPSTime += GPS_INTERVAL;
-    }
 
     // 各種モニタリング・更新
 	if(monitorTime <= time){
@@ -197,6 +134,7 @@ void loop() {
 	// 各種表示処理
 	if(displayTime <= time){
 		timeDisplay(time/1000, tft);
+        realTimeDisplay(tft);
 		gearDisplay(gearPositions.getGear(), tft);
 		winkersDisplay(winkers, tft);
 		displayTime += DISPLAY_INTERVAL;
@@ -267,6 +205,68 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
+void realTimeDisplay(Adafruit_ST77xx &tft){
+	// 保持用char配列
+    static String realTime = "";
+    String _realTime = "";
+
+    DateTime now = rtc.now();
+	_realTime += now.year();
+    _realTime += '/';
+    uint16_t tmp = now.month();
+    if(tmp < 10){
+        _realTime +='0';
+    }
+    _realTime += tmp;
+    _realTime += '/';
+    tmp = now.day();
+    if(tmp < 10){
+        _realTime +='0';
+    }
+    _realTime += tmp;
+    _realTime += ' ';
+    tmp = now.hour();
+    if(tmp < 10){
+        _realTime +='0';
+    }
+    _realTime += tmp;
+    _realTime += ':';
+    tmp = now.minute();
+    if(tmp < 10){
+        _realTime +='0';
+    }
+    _realTime += tmp;
+    _realTime += ':';
+    tmp = now.second();
+    if(tmp < 10){
+        _realTime +='0';
+    }
+    _realTime += tmp;
+    if(realTime.equals(_realTime) == 0){
+        //return;
+    }
+	// フォント設定
+	tft.setTextColor(ST77XX_BLACK);
+	tft.setTextSize(timeFontSize);
+    // カーソル設定
+	tft.setCursor(6*timeFontSize*0, 128-8*timeFontSize);
+    // 前回表示を削除
+    tft.print(realTime);
+
+	tft.setTextColor(ST77XX_WHITE);
+    // カーソル設定
+	tft.setCursor(6*timeFontSize*0, 128-8*timeFontSize);
+    // 表示
+    tft.print(_realTime);
+
+    realTime = String(_realTime);
+}
+
+/**
+ * 経過時間表示処理
+ * @param totalSec long型 経過時間(秒)
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
 void timeDisplay(long totalSec, Adafruit_ST77xx &tft){
 	// 保持用char配列
 	static char  nowTime[6] = " 0:00";
@@ -292,9 +292,9 @@ void timeDisplay(long totalSec, Adafruit_ST77xx &tft){
 		// 表示データを格納
 		nowTime[i] = newTime[i];
 		// 該当表示をクリア
-		tft.fillRect(6*timeFontSize*i, 128-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST77XX_BLACK);
+		tft.fillRect(6*timeFontSize*i, 200-8*timeFontSize, 6*timeFontSize, 8*timeFontSize, ST77XX_BLACK);
 		// カーソル設定
-		tft.setCursor(6*timeFontSize*i, 128-8*timeFontSize);
+		tft.setCursor(6*timeFontSize*i, 200-8*timeFontSize);
 		// 数値を表示
 		tft.print(nowTime[i]);
 	}
