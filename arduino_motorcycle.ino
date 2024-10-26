@@ -18,8 +18,8 @@
 
 // --------------------ピン定義--------------------
 
-#define I2C_SCL   5
-#define I2C_TX    4
+#define I2C_SCL   27
+#define I2C_SDA   26
 // ディスプレイ
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -34,8 +34,8 @@
 #define POS3  11
 #define POS4  12
 // ウインカー
-#define WNK_RIGHT 26
-#define WNK_LEFT 27
+#define WNK_RIGHT 15
+#define WNK_LEFT  14
 // ビープ音
 #define BZZ_PIN 29
 
@@ -46,11 +46,23 @@ const int DISPLAY_INTERVAL = 30;//ms
 
 const int BUFFER_LENGTH = 128;
 
+enum TimeItem{
+    YEAR,
+    MONTH,
+    DAY,
+    HOUR,
+    MINUTE,
+    SECOND
+};
+
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long ClockTime = 0;	// GPSデータ取得・表示
 unsigned long tempTime = 0;		// 温度測定にて使用
+
+// 保持用char配列
+uint16_t timeItems[6] = {0,0,0,0,0,0};
 
 //String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
@@ -69,11 +81,10 @@ void setup(void) {
     // デバッグ用シリアル設定
 	Serial.begin(9600);
 
-    Wire.setSDA(I2C_TX);
-    Wire.setSCL(I2C_SCL);
-    rtc.begin();
+    Wire1.setSDA(I2C_SDA);
+    Wire1.setSCL(I2C_SCL);
+    rtc.begin(&Wire1);
 
-    rtc.adjust(DateTime(2024,10,26,12,41,0));
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
     // ピン設定
     analogWrite(TFT_BL,30);
@@ -116,6 +127,11 @@ void setup(void) {
 	tft.setCursor(0,128-8*2);
 	tft.print(defaultRealTime);
     */
+    
+    tft.setCursor(6*timeFontSize*0, 128-8*timeFontSize);
+	tft.setTextSize(2);
+    tft.print("    /  /     :  :");
+
 }
 
 // ------------------------------ループ------------------------------
@@ -206,60 +222,45 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
 void realTimeDisplay(Adafruit_ST77xx &tft){
-	// 保持用char配列
+    static const uint8_t timeIndex[6] = {0,5,8,11,14,17};
     static String realTime = "";
-    String _realTime = "";
+    
+    int newTimeItems[6] = {0,0,0,0,0,0};
 
     DateTime now = rtc.now();
-	_realTime += now.year();
-    _realTime += '/';
-    uint16_t tmp = now.month();
-    if(tmp < 10){
-        _realTime +='0';
-    }
-    _realTime += tmp;
-    _realTime += '/';
-    tmp = now.day();
-    if(tmp < 10){
-        _realTime +='0';
-    }
-    _realTime += tmp;
-    _realTime += ' ';
-    tmp = now.hour();
-    if(tmp < 10){
-        _realTime +='0';
-    }
-    _realTime += tmp;
-    _realTime += ':';
-    tmp = now.minute();
-    if(tmp < 10){
-        _realTime +='0';
-    }
-    _realTime += tmp;
-    _realTime += ':';
-    tmp = now.second();
-    if(tmp < 10){
-        _realTime +='0';
-    }
-    _realTime += tmp;
-    if(realTime.equals(_realTime) == 0){
-        //return;
-    }
-	// フォント設定
-	tft.setTextColor(ST77XX_BLACK);
+    newTimeItems[YEAR] = now.year();
+    newTimeItems[MONTH] = now.month();
+    newTimeItems[DAY] = now.day();
+    newTimeItems[HOUR] = now.hour();
+    newTimeItems[MINUTE] = now.minute();
+    newTimeItems[SECOND] = now.second();
+
 	tft.setTextSize(timeFontSize);
-    // カーソル設定
-	tft.setCursor(6*timeFontSize*0, 128-8*timeFontSize);
-    // 前回表示を削除
-    tft.print(realTime);
 
-	tft.setTextColor(ST77XX_WHITE);
-    // カーソル設定
-	tft.setCursor(6*timeFontSize*0, 128-8*timeFontSize);
-    // 表示
-    tft.print(_realTime);
+    for(int i=0; i<sizeof(timeItems)/sizeof(uint16_t); i++){
+        
+        if(timeItems[i] != newTimeItems[i]){
+            // ----------削除処理----------
+            // 背景色・カーソル設定・値表示
+            tft.setTextColor(ST77XX_BLACK);
+            tft.setCursor(6*timeFontSize*timeIndex[i], 128-8*timeFontSize);
+            if(i!=YEAR && timeItems[i] < 10){
+                tft.print('0');
+            }
+            tft.print(timeItems[i]);
+            // ----------表示処理----------
+            // 背景色・カーソル設定・値表示
+            tft.setTextColor(ST77XX_WHITE);
+            tft.setCursor(6*timeFontSize*timeIndex[i], 128-8*timeFontSize);
+            if(i!=YEAR && newTimeItems[i] < 10){
+                tft.print('0');
+            }
+            tft.print(newTimeItems[i]);
 
-    realTime = String(_realTime);
+            // 保持値更新
+            timeItems[i] = newTimeItems[i];
+        }
+    }
 }
 
 /**
