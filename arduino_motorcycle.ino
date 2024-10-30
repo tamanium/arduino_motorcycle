@@ -19,10 +19,10 @@
 #include "Winker.h"			// ウインカークラス
 
 // --------------------ピン定義--------------------
-
+// I2C
 #define I2C_SCL   27
 #define I2C_SDA   26
-// ディスプレイ
+// ディスプレイ・SPI
 #define TFT_MOSI  3
 #define TFT_SCLK  2
 #define TFT_BL    5
@@ -38,16 +38,17 @@
 // ウインカー
 #define WNK_RIGHT 15
 #define WNK_LEFT  14
-// ビープ音
+// ウインカー音
 #define BZZ_PIN 29
 
 // --------------------定数--------------------
-const int CLOCK_INTERVAL = 50;//ms
+// 
+const int CLOCK_INTERVAL = 250;//ms
 const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
 
 const uint8_t DATE_INDEXES[3] ={0,5,8};
-const uint8_t TIME_INDEXES[2/*3*/] = {0,3/*,6*/};
+const uint8_t TIME_INDEXES[2] = {0,3};
 const int FONT_HEIGHT = 8;
 const int FONT_WIDTH = 6;
 const int FONT_SIZE_TIME = 3;
@@ -70,6 +71,7 @@ enum TimeItem{
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
+unsigned long clockTime = 0;	// 時計表示
 unsigned long ClockTime = 0;	// GPSデータ取得・表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 
@@ -92,23 +94,24 @@ void setup(void) {
     
     // デバッグ用シリアル設定
 	Serial.begin(9600);
-
+	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
-    rtc.begin(&Wire1);
 
-    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
-    // ピン設定
-    analogWrite(TFT_BL,30);
-
-	//SPI1接続設定
+	//SPI1設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
+    // ディスプレイ明るさ設定(0-255)
+    analogWrite(TFT_BL,30);
     
+	//RTC起動
+    rtc.begin(&Wire1);
+	// 時計合わせ
+    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+	
 	// ディスプレイ初期化・画面向き・画面リセット
-	//tft.initR(INITR_BLACKTAB);
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
-    tft.setRotation(3);
+	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
 	// 初期表示
@@ -131,19 +134,9 @@ void setup(void) {
 	tft.setTextSize(8);
 	tft.setCursor(200, 0);
 	tft.print('-');
-
-	// 時計表示開始
-    /*
-	tft.setTextColor(ST77XX_WHITE);
-	tft.setTextSize(2);
-	tft.setCursor(0,128-8*2);
-	tft.print(defaultRealTime);
-    */
     
     tft.setFont();
 	tft.setTextSize(FONT_SIZE_TIME);
-    //tft.setCursor(0, 240-FONT_HEIGHT*FONT_SIZE_TIME*2);
-    //tft.print("    /  /");
     tft.setCursor(0, DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
     tft.print("  :  ");
 
@@ -151,8 +144,6 @@ void setup(void) {
 
 // ------------------------------ループ------------------------------
 void loop() {
-    
-    //char static buf[128];
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 
@@ -162,10 +153,14 @@ void loop() {
 		winkers.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
+	// 時計表示処理
+	if(clockTime <= time){
+        realTimeDisplay(tft);
+		cloclTime += CLOCK_INTERVAL
+	}
 	// 各種表示処理
 	if(displayTime <= time){
 		timeDisplay(time/1000, tft);
-        realTimeDisplay(tft);
 		gearDisplay(gearPositions.getGear(), tft);
 		winkersDisplay(winkers, tft);
 		displayTime += DISPLAY_INTERVAL;
@@ -183,12 +178,12 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
 	static char nowGear = '-';
 	// 文字列比較
 	if(nowGear != newGear){
-		// 表示処理
-		//tft.fillRect(8*7+4,0,6*8,8*8,ST77XX_BLACK);
+		// ----------表示文字削除----------
 		tft.setTextSize(8);
 		tft.setCursor(200, 0);
         tft.setTextColor(ST77XX_BLACK);
         tft.print(nowGear);
+		// ----------新規文字表示----------
 		tft.setCursor(200, 0);
         tft.setTextColor(ST77XX_WHITE);
 		tft.print(newGear);
@@ -211,6 +206,8 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 	if(bufferStatusLeft != winkers.getStatusLeft()){
 		// バッファ状態を上書き
 		bufferStatusLeft = winkers.getStatusLeft();
+		displayLeft(bufferStatusLeft, tft);
+		/*
 		if(bufferStatusLeft == true){
 			// 図形表示
 			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
@@ -219,11 +216,14 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 			// 図形削除
 			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
 		}
+  		*/
 	}
 	// 右ウインカー状態を判定
 	if(bufferStatusRight != winkers.getStatusRight()){
 		// バッファ状態を上書き
 		bufferStatusRight = winkers.getStatusRight();
+		displayRight(bufferStatusRight, tft);
+		/*
 		if(bufferStatusRight == true){
 			// 図形表示
 			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW);
@@ -232,9 +232,41 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 			// 図形削除
 			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
 		}
+  		*/
 	}
 }
 
+/**
+ * 左ウインカーのディスプレイ表示処理
+ * @param status bool型 true...点灯, false...消灯
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
+void displayLeft(bool status, Adafruit_ST77xx &tft){
+		if(status == true){
+			// 図形表示
+			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
+		}
+		else{
+			// 図形削除
+			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
+		}
+}
+
+/**
+ * 右ウインカーのディスプレイ表示処理
+ * @param status bool型 true...点灯, false...消灯
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
+void displayRight(bool status, Adafruit_ST77xx &tft){
+		if(status == true){
+			// 図形表示
+			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW);
+		}
+		else{
+			// 図形削除
+			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
+		}
+}
 /**
  * 経過時間表示処理
  * @param totalSec long型 経過時間(秒)
@@ -247,40 +279,11 @@ void realTimeDisplay(Adafruit_ST77xx &tft){
     int newTimeItems[3] = {0,0,0};
 
     DateTime now = rtc.now();
-    //newDateItems[YEAR] = now.year();
-    //newDateItems[MONTH] = now.month();
-    //newDateItems[DAY] = now.day();
     newTimeItems[HOUR] = now.hour();
     newTimeItems[MINUTE] = now.minute();
-    //newTimeItems[SECOND] = now.second();
 
     tft.setFont();
 	tft.setTextSize(FONT_SIZE_TIME);
-    /*
-    //日付データでループ
-    for(int i=0; i<sizeof(dateItems)/sizeof(uint16_t); i++){
-        if(dateItems[i] != newDateItems[i]){
-            // ----------削除処理----------
-            // 背景色・カーソル設定・値表示
-            tft.setTextColor(ST77XX_BLACK);
-            tft.setCursor(FONT_WIDTH*FONT_SIZE_TIME*DATE_INDEXES[i], 240-FONT_HEIGHT*FONT_SIZE_TIME*2);
-            if(i!=YEAR && dateItems[i] < 10){
-                tft.print('0');
-            }
-            tft.print(dateItems[i]);
-            // ----------表示処理----------
-            // 背景色・カーソル設定・値表示
-            tft.setTextColor(ST77XX_WHITE);
-            tft.setCursor(FONT_WIDTH*FONT_SIZE_TIME*DATE_INDEXES[i], 240-FONT_HEIGHT*FONT_SIZE_TIME*2);
-            if(i!=YEAR && newDateItems[i] < 10){
-                tft.print('0');
-            }
-            tft.print(newDateItems[i]);
-            // 保持値更新
-            dateItems[i] = newDateItems[i];
-        }
-    }
-    */
     // 時刻データでループ
     for(int i=0; i<sizeof(timeItems)/sizeof(uint16_t); i++){
         if(timeItems[i] != newTimeItems[i]){
@@ -288,7 +291,7 @@ void realTimeDisplay(Adafruit_ST77xx &tft){
             // 背景色・カーソル設定・値表示
             tft.setTextColor(ST77XX_BLACK);
             tft.setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
-            if(timeItems[i]<10){
+            if(timeItems[i] < 10){
                 tft.print('0');
             }
             tft.print(timeItems[i]);
@@ -296,7 +299,7 @@ void realTimeDisplay(Adafruit_ST77xx &tft){
             // 背景色・カーソル設定・値表示
             tft.setTextColor(ST77XX_WHITE);
             tft.setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
-            if(newTimeItems[i]<10){
+            if(newTimeItems[i] < 10){
                 tft.print('0');
             }
             tft.print(newTimeItems[i]);
