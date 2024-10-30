@@ -156,7 +156,7 @@ void loop() {
 	// 時計表示処理
 	if(clockTime <= time){
         realTimeDisplay(tft);
-		cloclTime += CLOCK_INTERVAL
+		clockTime += CLOCK_INTERVAL;
 	}
 	// 各種表示処理
 	if(displayTime <= time){
@@ -178,8 +178,8 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
 	static char nowGear = '-';
 	// 文字列比較
 	if(nowGear != newGear){
-		// ----------表示文字削除----------
 		tft.setTextSize(8);
+		// ----------表示文字削除----------
 		tft.setCursor(200, 0);
         tft.setTextColor(ST77XX_BLACK);
         tft.print(nowGear);
@@ -204,35 +204,17 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 	
 	// 左ウインカー状態を判定
 	if(bufferStatusLeft != winkers.getStatusLeft()){
-		// バッファ状態を上書き
+		// バッファ上書き
 		bufferStatusLeft = winkers.getStatusLeft();
+        // ディスプレイ表示処理
 		displayLeft(bufferStatusLeft, tft);
-		/*
-		if(bufferStatusLeft == true){
-			// 図形表示
-			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
-		}
-		else{
-			// 図形削除
-			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
-		}
-  		*/
 	}
 	// 右ウインカー状態を判定
 	if(bufferStatusRight != winkers.getStatusRight()){
-		// バッファ状態を上書き
+		// バッファ上書き
 		bufferStatusRight = winkers.getStatusRight();
-		displayRight(bufferStatusRight, tft);
-		/*
-		if(bufferStatusRight == true){
-			// 図形表示
-			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW);
-		}
-		else{
-			// 図形削除
-			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
-		}
-  		*/
+		// ディスプレイ表示処理
+        displayRight(bufferStatusRight, tft);
 	}
 }
 
@@ -245,11 +227,10 @@ void displayLeft(bool status, Adafruit_ST77xx &tft){
 		if(status == true){
 			// 図形表示
 			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
+            return;
 		}
-		else{
-			// 図形削除
-			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
-		}
+        // 図形削除
+        tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
 }
 
 /**
@@ -261,11 +242,10 @@ void displayRight(bool status, Adafruit_ST77xx &tft){
 		if(status == true){
 			// 図形表示
 			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW);
+            return;
 		}
-		else{
-			// 図形削除
-			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
-		}
+        // 図形削除
+        tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
 }
 /**
  * 経過時間表示処理
@@ -273,12 +253,11 @@ void displayRight(bool status, Adafruit_ST77xx &tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
 void realTimeDisplay(Adafruit_ST77xx &tft){
-    static String realTime = "";
-    
-    //int newDateItems[3] = {0,0,0};
+    // 時刻用変数
     int newTimeItems[3] = {0,0,0};
-
+    // 現在時刻取得
     DateTime now = rtc.now();
+    // 時間・分取得
     newTimeItems[HOUR] = now.hour();
     newTimeItems[MINUTE] = now.minute();
 
