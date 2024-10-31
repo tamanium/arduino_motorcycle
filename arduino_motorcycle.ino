@@ -42,10 +42,10 @@
 #define BZZ_PIN 29
 
 // --------------------定数--------------------
-// 
 const int CLOCK_INTERVAL = 250;//ms
 const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
+const int BUZZER_DURATION = 100;//ms
 
 const uint8_t DATE_INDEXES[3] ={0,5,8};
 const uint8_t TIME_INDEXES[2] = {0,3};
@@ -73,6 +73,7 @@ unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long clockTime = 0;	// 時計表示
 unsigned long tempTime = 0;		// 温度測定にて使用
+unsigned long bzzTime = 0;
 
 // 保持用char配列
 //uint16_t dateItems[3] = {0,0,0};
@@ -82,7 +83,7 @@ uint16_t timeItems[3] = {0,0,0};
 char nowTime[] = " 0:00";
 
 
-struct Triangle_coordinates {
+struct Triangle_coordinate {
 	int x1;
 	int y1;
 	int x2;
@@ -174,8 +175,17 @@ void loop() {
 	if(displayTime <= time){
 		timeDisplay(time/1000, tft);
 		gearDisplay(gearPositions.getGear(), tft);
-		winkersDisplay(winkers, tft);
+		bool isSwitchStatus = winkersDisplay(winkers, tft);
+		if(isSwitchStatus == true && bzzTime == 0 ){
+			// digitalWrite(BZZ_PIN, HIGH);
+			bzzTime = time + BUZZER_DURATION;
+		}
 		displayTime += DISPLAY_INTERVAL;
+	}
+
+	if(bzzTime != 0 && bzzTime <= time){
+		// divitalWrite(BZZ_PIN, LOW);
+		bzzTime = 0;
 	}
 }
 
@@ -208,11 +218,14 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
  * ウインカー表示処理
  * @param winkers Winkers型 ウインカークラス
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
 void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 	// バッファ状態
 	static bool bufferStatusLeft = false;
 	static bool bufferStatusRight = false;
+
+	bool isSwitchStatus = false;
 	
 	// 左ウインカー状態を判定
 	if(bufferStatusLeft != winkers.getStatusLeft()){
@@ -220,14 +233,17 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 		bufferStatusLeft = winkers.getStatusLeft();
         // ディスプレイ表示処理
 		displayLeft(bufferStatusLeft, tft);
+		isSwitchStatus = true;
 	}
 	// 右ウインカー状態を判定
 	if(bufferStatusRight != winkers.getStatusRight()){
 		// バッファ上書き
 		bufferStatusRight = winkers.getStatusRight();
 		// ディスプレイ表示処理
-        displayRight(bufferStatusRight, tft);
+        displayRight(bufferStatusRight, tft););
+		isSwitchStatus = true;
 	}
+	return isSwitchStatus;
 }
 
 /**
