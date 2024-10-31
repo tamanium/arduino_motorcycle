@@ -72,7 +72,6 @@ enum TimeItem{
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long clockTime = 0;	// 時計表示
-unsigned long ClockTime = 0;	// GPSデータ取得・表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 
 // 保持用char配列
@@ -82,7 +81,20 @@ uint16_t timeItems[3] = {0,0,0};
 //String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
 
+
+struct Triangle_coordinates {
+	int x1;
+	int y1;
+	int x2;
+	int y2;
+	int x3;
+	int y3;
+};
+
 // --------------------インスタンス--------------------
+
+Triangle_coordinates left = (30, 0, 30, 160, 0, 80};
+Triangle_coordinates right = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
 RTC_DS1307 rtc;
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
@@ -226,11 +238,13 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 void displayLeft(bool status, Adafruit_ST77xx &tft){
 		if(status == true){
 			// 図形表示
-			tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
-            return;
+			//tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
+            tft.fillTriangle(left.x1, left.y1, left.x2, left.y2, left.x3, left.y3, ST77XX_YELLOW);
+			return;
 		}
         // 図形削除
-        tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
+        //tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
+		tft.fillTriangle(left.x1, left.y1, left.x2, left.y2, left.x3, left.y3, ST77XX_BLACK);
 }
 
 /**
@@ -241,11 +255,13 @@ void displayLeft(bool status, Adafruit_ST77xx &tft){
 void displayRight(bool status, Adafruit_ST77xx &tft){
 		if(status == true){
 			// 図形表示
-			tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW);
+			//tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW
+            tft.fillTriangle(right.x1, right.y1, right.x2, right.y2, right.x3, right.y3, ST77XX_YELLOW);
             return;
 		}
         // 図形削除
-        tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
+        //tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
+        tft.fillTriangle(right.x1, right.y1, right.x2, right.y2, right.x3, right.y3, ST77XX_BLACK);
 }
 /**
  * 経過時間表示処理
