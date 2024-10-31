@@ -1,9 +1,6 @@
 // 課題解決1. TFTへデータ送信前後でcsピンのHIGH-LOWを変更
 // 課題解決2. SPI1を利用して接続
 
-
-
-
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
@@ -11,7 +8,6 @@
 #include <RTClib.h>
 #include <Fonts/FreeMono24pt7b.h>
 #include <Fonts/FreeSerif24pt7b.h>
-
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -94,8 +90,8 @@ struct Triangle_coordinate {
 
 // --------------------インスタンス--------------------
 
-Triangle_coordinates left = (30, 0, 30, 160, 0, 80};
-Triangle_coordinates right = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
+Triangle_coordinate left = {30, 0, 30, 160, 0, 80};
+Triangle_coordinate right = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
 RTC_DS1307 rtc;
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
@@ -220,7 +216,7 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
-void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
+bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 	// バッファ状態
 	static bool bufferStatusLeft = false;
 	static bool bufferStatusRight = false;
@@ -240,7 +236,7 @@ void winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 		// バッファ上書き
 		bufferStatusRight = winkers.getStatusRight();
 		// ディスプレイ表示処理
-        displayRight(bufferStatusRight, tft););
+        displayRight(bufferStatusRight, tft);
 		isSwitchStatus = true;
 	}
 	return isSwitchStatus;
