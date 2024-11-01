@@ -35,13 +35,17 @@
 #define WNK_RIGHT 15
 #define WNK_LEFT  14
 // ウインカー音
-#define BZZ_PIN 29
+#define BZZ_PIN 28
+// 疑似ウインカーリレー
+#define DMY_RELAY 0
+
 
 // --------------------定数--------------------
 const int CLOCK_INTERVAL = 250;//ms
 const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
 const int BUZZER_DURATION = 100;//ms
+const int WINKER_DURATION = 380;//ms
 // 時刻表示の時・分表示位置
 const uint8_t TIME_INDEXES[2] = {0,3};
 // フォントの寸法
@@ -69,6 +73,8 @@ unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long clockTime = 0;	// 時計表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 unsigned long bzzTime = 0;
+
+unsigned long debugWinkerTime  = 0; //疑似ウインカー
 
 // 保持用char配列
 //uint16_t dateItems[3] = {0,0,0};
@@ -123,11 +129,14 @@ void setup(void) {
 	SPI.setSCK(TFT_SCLK);
     // ディスプレイ明るさ設定(0-255)
     analogWrite(TFT_BL,30);
-    
+    // 疑似ウインカーリレー
+    pinMode(DMY_RELAY, OUTPUT);
+    // ウインカー音
+    pinMode(BZZ_PIN, OUTPUT);
 	//RTC起動
     rtc.begin(&Wire1);
 	// 時計合わせ
-    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 	
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
@@ -166,6 +175,17 @@ void setup(void) {
 void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
+   
+    // 疑似ウインカーリレー
+    if(debugWinkerTime <= time){
+        if(digitalRead(DMY_RELAY) == HIGH){
+            digitalWrite(DMY_RELAY, LOW);
+        }
+        else{
+            digitalWrite(DMY_RELAY, HIGH);
+        }
+        debugWinkerTime += WINKER_DURATION;
+    }
 
     // 各種モニタリング・更新
 	if(monitorTime <= time){
@@ -186,16 +206,18 @@ void loop() {
 		// ウインカー点灯状態が切り替わった場合
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
-			// digitalWrite(BZZ_PIN, HIGH);
-			// 時間設定
+			digitalWrite(BZZ_PIN, HIGH);
+			//tone(BZZ_PIN,880);
+            // 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
 		displayTime += DISPLAY_INTERVAL;
 	}
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
-		// divitalWrite(BZZ_PIN, LOW);
-		bzzTime = 0;
+		digitalWrite(BZZ_PIN, LOW);
+		//noTone(BZZ_PIN);
+        bzzTime = 0;
 	}
 }
 
