@@ -90,16 +90,19 @@ struct Triangle_coordinate {
 struct Coordinate {
 	int x;
 	int y;
-}
+};
 
 // --------------------インスタンス--------------------
 // 表示座標
-Triangle_coordinate TriCoords[2];
-triCoords[0] = {30, 0, 30, 160, 0, 80};
-triCoords[1] = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
+Triangle_coordinate triCoords[2] = {
+    {30, 0, 30, 160, 0, 80},
+    {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80}
+};
+
 //Triangle_coordinate leftCoord = {30, 0, 30, 160, 0, 80};
 //Triangle_coordinate rightCoord = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
-Coordinate gearCoord = {200,0}
+
+Coordinate gearCoord = {200,0};
 RTC_DS1307 rtc;
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
@@ -229,76 +232,69 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
  */
 bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 	// バッファ状態
-	static bool bufferStatusLeft = false;
-	static bool bufferStatusRight = false;
+    static bool buffer[2] = {false, false}; 
+    // 返却用フラグ
+	bool isSwitched = false;
 
-	bool isSwitchStatus = false;
-	
-	// 左ウインカー状態を判定
-	if(bufferStatusLeft != winkers.getStatusLeft()){
-		// バッファ上書き
-		bufferStatusLeft = winkers.getStatusLeft();
-        // ディスプレイ表示処理
-		//displayLeft(bufferStatusLeft, tft);
-		displayTriangle(triCoords[LEFT], bufferStatusLeft, tft)
-		isSwitchStatus = true;
-	}
-	// 右ウインカー状態を判定
-	if(bufferStatusRight != winkers.getStatusRight()){
-		// バッファ上書き
-		bufferStatusRight = winkers.getStatusRight();
-		// ディスプレイ表示処理
-        //displayRight(bufferStatusRight, tft);
-		displayTriangle(triCoords[RIGHT], bufferStatusLeft, tft)
-		isSwitchStatus = true;
-	}
-	return isSwitchStatus;
+	for(int side=LEFT; side<=RIGHT; side++){
+        // 左ウインカー状態を判定
+        if(buffer[side] != winkers.getStatus(side)){
+            // バッファ上書き
+            buffer[side] = winkers.getStatus(side);
+            // ディスプレイ表示処理
+            displayTriangle(triCoords[side], buffer[side], tft);
+            // フラグ立てる
+            isSwitched = true;
+        }
+    }
+	return isSwitched;
 }
 
 /**
  * 左ウインカーのディスプレイ表示処理
  * @param status bool型 true...点灯, false...消灯
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
- */
+ 
 void displayLeft(bool status, Adafruit_ST77xx &tft){
 	// 文字色宣言（初期値は黒）
-	uint16_t color = ST77XX_BLACK
+	uint16_t color = ST77XX_BLACK;
 	// 条件trueの場合は文字色変更
 	if(status == true){
 		color = ST77XX_YELLOW;
 	}
 	// 図形表示（BLACKの場合は削除）
-	tft.fillTriangle(leftCoord.x1,
-					 leftCoord.y1,
-					 leftCoord.x2,
-					 leftCoord.y2,
-					 leftCoord.x3,
-					 leftCoord.y3,
-					 ST77XX_BLACK);
+	tft.fillTriangle(triCoords[LEFT].x1,
+					 triCoords[LEFT].y1,
+					 triCoords[LEFT].x2,
+					 triCoords[LEFT].y2,
+					 triCoords[LEFT].x3,
+					 triCoords[LEFT].y3,
+					 color);
 }
-
+*/
 /**
  * 右ウインカーのディスプレイ表示処理
  * @param status bool型 true...点灯, false...消灯
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
- */
+ 
 void displayRight(bool status, Adafruit_ST77xx &tft){
 	// 文字色宣言（初期値は黒）
-	uint16_t color = ST77XX_BLACK
+	uint16_t color = ST77XX_BLACK;
+
 	// 条件trueの場合は文字色変更
 	if(status == true){
 		color = ST77XX_YELLOW;
 	}
 	// 図形表示（BLACKの場合は削除）
-	tft.fillTriangle(rightCoord.x1,
-					 rightCoord.y1,
-					 rightCoord.x2,
-					 rightCoord.y2,
-					 rightCoord.x3,
-					 rightCoord.y3,
+	tft.fillTriangle(triCoords[RIGHT].x1,
+					 triCoords[RIGHT].y1,
+					 triCoords[RIGHT].x2,
+					 triCoords[RIGHT].y2,
+					 triCoords[RIGHT].x3,
+					 triCoords[RIGHT].y3,
 					 color);
 }
-
+*/
 /**
  * 三角形表示処理
  * @param coord Triangle_coordinate型 
@@ -307,7 +303,7 @@ void displayRight(bool status, Adafruit_ST77xx &tft){
  */
 void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx &tft){
 	// 文字色宣言（初期値は黒）
-	uint16_t color = ST77XX_BLACK
+	uint16_t color = ST77XX_BLACK;
 	// 条件trueの場合は文字色変更
 	if(status == true){
 		color = ST77XX_YELLOW;
@@ -335,7 +331,7 @@ void realTimeDisplay(Adafruit_ST77xx &tft){
     tft.setFont();
 	tft.setTextSize(FONT_SIZE_TIME);
     // 時刻データでループ
-    for(int i=0; i<sizeof(timeItems)/sizeof(uint16_t); i++){
+    for(int i=0; i<(sizeof(timeItems)/sizeof(uint16_t)); i++){
         if(timeItems[i] != newTimeItems[i]){
             // ----------削除処理----------
             // 背景色・カーソル設定・値表示

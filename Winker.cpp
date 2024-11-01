@@ -13,6 +13,20 @@ Winkers::Winkers(int pinLeft, int pinRight){
 	pinMode(this->pinLeft, INPUT_PULLUP);
 	pinMode(this->pinRight, INPUT_PULLUP);
 }
+
+/**
+ * 【Getter】ウインカー状態を取得
+ * @param i int型 インデックス
+ * @return bool型 ウインカーが点灯している場合true
+ */
+bool Winkers::getStatus(int i){
+    // 配列数以上の数値の場合false
+    if(sizeof(this->statusLR)/sizeof(bool) <= i){
+        return false;
+    }
+	return this->statusLR[i];
+}
+
 /**
  * 【Getter】左ウインカー状態を取得
  * @return bool型 ウインカーが点灯している場合true
