@@ -42,20 +42,19 @@ const int CLOCK_INTERVAL = 250;//ms
 const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
 const int BUZZER_DURATION = 100;//ms
-
-const uint8_t DATE_INDEXES[3] ={0,5,8};
+// 時刻表示の時・分表示位置
 const uint8_t TIME_INDEXES[2] = {0,3};
+// フォントの寸法
 const int FONT_HEIGHT = 8;
 const int FONT_WIDTH = 6;
 const int FONT_SIZE_TIME = 3;
-
+// ディスプレイの解像度
 const int DISP_WIDTH = 320;
 const int DISP_HEIGHT = 240;
 
-enum DateItem{
-    YEAR,
-    MONTH,
-    DAY
+enum LR{
+    LEFT,
+    RIGHT
 };
 
 enum TimeItem{
@@ -88,10 +87,19 @@ struct Triangle_coordinate {
 	int y3;
 };
 
-// --------------------インスタンス--------------------
+struct Coordinate {
+	int x;
+	int y;
+}
 
-Triangle_coordinate left = {30, 0, 30, 160, 0, 80};
-Triangle_coordinate right = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
+// --------------------インスタンス--------------------
+// 表示座標
+Triangle_coordinate TriCoords[2];
+triCoords[0] = {30, 0, 30, 160, 0, 80};
+triCoords[1] = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
+//Triangle_coordinate leftCoord = {30, 0, 30, 160, 0, 80};
+//Triangle_coordinate rightCoord = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
+Coordinate gearCoord = {200,0}
 RTC_DS1307 rtc;
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
@@ -172,13 +180,16 @@ void loop() {
 		timeDisplay(time/1000, tft);
 		gearDisplay(gearPositions.getGear(), tft);
 		bool isSwitchStatus = winkersDisplay(winkers, tft);
+		// ウインカー点灯状態が切り替わった場合
 		if(isSwitchStatus == true && bzzTime == 0 ){
+			// ブザーON
 			// digitalWrite(BZZ_PIN, HIGH);
+			// 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
 		displayTime += DISPLAY_INTERVAL;
 	}
-
+	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		// divitalWrite(BZZ_PIN, LOW);
 		bzzTime = 0;
@@ -198,11 +209,11 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
 	if(nowGear != newGear){
 		tft.setTextSize(8);
 		// ----------表示文字削除----------
-		tft.setCursor(200, 0);
+		tft.setCursor(gearCoord.x, gearCoord.y);
         tft.setTextColor(ST77XX_BLACK);
         tft.print(nowGear);
 		// ----------新規文字表示----------
-		tft.setCursor(200, 0);
+		tft.setCursor(gearCoord.x, gearCoord.y);
         tft.setTextColor(ST77XX_WHITE);
 		tft.print(newGear);
 		// バッファ文字列を上書き
@@ -228,7 +239,8 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 		// バッファ上書き
 		bufferStatusLeft = winkers.getStatusLeft();
         // ディスプレイ表示処理
-		displayLeft(bufferStatusLeft, tft);
+		//displayLeft(bufferStatusLeft, tft);
+		displayTriangle(triCoords[LEFT], bufferStatusLeft, tft)
 		isSwitchStatus = true;
 	}
 	// 右ウインカー状態を判定
@@ -236,7 +248,8 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
 		// バッファ上書き
 		bufferStatusRight = winkers.getStatusRight();
 		// ディスプレイ表示処理
-        displayRight(bufferStatusRight, tft);
+        //displayRight(bufferStatusRight, tft);
+		displayTriangle(triCoords[RIGHT], bufferStatusLeft, tft)
 		isSwitchStatus = true;
 	}
 	return isSwitchStatus;
@@ -248,15 +261,20 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
 void displayLeft(bool status, Adafruit_ST77xx &tft){
-		if(status == true){
-			// 図形表示
-			//tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_YELLOW);
-            tft.fillTriangle(left.x1, left.y1, left.x2, left.y2, left.x3, left.y3, ST77XX_YELLOW);
-			return;
-		}
-        // 図形削除
-        //tft.fillTriangle(30, 0, 30, 160, 0, 80, ST77XX_BLACK);
-		tft.fillTriangle(left.x1, left.y1, left.x2, left.y2, left.x3, left.y3, ST77XX_BLACK);
+	// 文字色宣言（初期値は黒）
+	uint16_t color = ST77XX_BLACK
+	// 条件trueの場合は文字色変更
+	if(status == true){
+		color = ST77XX_YELLOW;
+	}
+	// 図形表示（BLACKの場合は削除）
+	tft.fillTriangle(leftCoord.x1,
+					 leftCoord.y1,
+					 leftCoord.x2,
+					 leftCoord.y2,
+					 leftCoord.x3,
+					 leftCoord.y3,
+					 ST77XX_BLACK);
 }
 
 /**
@@ -265,15 +283,40 @@ void displayLeft(bool status, Adafruit_ST77xx &tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
 void displayRight(bool status, Adafruit_ST77xx &tft){
-		if(status == true){
-			// 図形表示
-			//tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_YELLOW
-            tft.fillTriangle(right.x1, right.y1, right.x2, right.y2, right.x3, right.y3, ST77XX_YELLOW);
-            return;
-		}
-        // 図形削除
-        //tft.fillTriangle(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80, ST77XX_BLACK);
-        tft.fillTriangle(right.x1, right.y1, right.x2, right.y2, right.x3, right.y3, ST77XX_BLACK);
+	// 文字色宣言（初期値は黒）
+	uint16_t color = ST77XX_BLACK
+	// 条件trueの場合は文字色変更
+	if(status == true){
+		color = ST77XX_YELLOW;
+	}
+	// 図形表示（BLACKの場合は削除）
+	tft.fillTriangle(rightCoord.x1,
+					 rightCoord.y1,
+					 rightCoord.x2,
+					 rightCoord.y2,
+					 rightCoord.x3,
+					 rightCoord.y3,
+					 color);
+}
+
+/**
+ * 三角形表示処理
+ * @param coord Triangle_coordinate型 
+ * @param status bool型 true...点灯, false...消灯
+ * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
+void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx &tft){
+	// 文字色宣言（初期値は黒）
+	uint16_t color = ST77XX_BLACK
+	// 条件trueの場合は文字色変更
+	if(status == true){
+		color = ST77XX_YELLOW;
+	}
+	// 図形表示（BLACKの場合は削除）
+	tft.fillTriangle(coord.x1, coord.y1,
+					 coord.x2, coord.y2,
+					 coord.x3, coord.y3,
+					 color);
 }
 /**
  * 経過時間表示処理
