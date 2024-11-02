@@ -18,6 +18,11 @@ GearPositions::GearPositions(int *pins, int len){
   this->nowGear = '-';
 }
 
+void GearPositions::begin(Adafruit_PCF8574 *pcf){
+    for(int i=0;i<5;i++){
+        this->gears[i].begin(pcf);
+    }
+}
 /**
  * 【Getter】表示値
  * @return nowGear char型 表示値
@@ -29,7 +34,7 @@ char GearPositions::getGear(){
 /**
  * 現在のギア表示値を更新
  */
-void GearPositions::monitor(){
+void GearPositions::monitor(Adafruit_PCF8574 *pcf){
 	// カウンタ・直前ギア
 	static int counter = 0;
 	static char bufferGear = '-';
@@ -37,7 +42,7 @@ void GearPositions::monitor(){
 	char newGear = '-';
 	// ギア配列でループし、現在のギア表示値を取得
 	for(int i=0; i<this->numOfGear; i++){
-		if(this->gears[i].isActive() == true){
+		if(this->gears[i].isActive(pcf) == true){
 			newGear = this->gears[i].getChar();
 			break;
 		}

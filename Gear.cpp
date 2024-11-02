@@ -1,5 +1,4 @@
 #include "Gear.h"
-#include <Arduino.h>
 
 /**
  * デフォルトコンストラクタ
@@ -16,7 +15,14 @@ Gear::Gear(){
 Gear::Gear(int pin, char dispChar){
   this->pin = pin;
   this->dispChar = dispChar;
-  pinMode(this->pin, INPUT_PULLUP);
+  //pinMode(this->pin, INPUT_PULLUP);
+}
+
+/**
+ * //ピン読み取り設定
+ */
+void Gear::begin(Adafruit_PCF8574 *pcf){
+    pcf->pinMode(this->pin, INPUT_PULLUP);
 }
 
 /**
@@ -31,8 +37,8 @@ char Gear::getChar(){
  * ポジションが自分自身か判定
  * @return 自分自身がポジションとなっている場合true
  */
-bool Gear::isActive(){
-	if(digitalRead(pin) == LOW){
+bool Gear::isActive(Adafruit_PCF8574 *pcf){
+	if(pcf->digitalRead(pin) == LOW){
 		return true;
 	}
 	return false;

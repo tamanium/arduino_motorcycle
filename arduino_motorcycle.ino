@@ -6,8 +6,7 @@
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
 #include <RTClib.h>
-#include <Fonts/FreeMono24pt7b.h>
-#include <Fonts/FreeSerif24pt7b.h>
+#include <Adafruit_PCF8574.h>
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -16,8 +15,8 @@
 
 // --------------------ピン定義--------------------
 // I2C
-#define I2C_SCL   27
-#define I2C_SDA   26
+#define I2C_SCL   15
+#define I2C_SDA   14
 // ディスプレイ・SPI
 #define TFT_MOSI  3
 #define TFT_SCLK  2
@@ -25,19 +24,21 @@
 #define TFT_CS    6
 #define TFT_DC    7
 #define TFT_RST   8
-// ギアポジション
-#define POSN  13
-#define POS1  9
-#define POS2  10
-#define POS3  11
-#define POS4  12
-// ウインカー
-#define WNK_RIGHT 15
-#define WNK_LEFT  14
+// ギアポジション(IOエキスパンダ)
+#define POSN  2
+#define POS1  7
+#define POS2  6
+#define POS3  5
+#define POS4  4
+// ウインカー(IOエキスパンダ)
+#define WNK_LEFT  0
+#define WNK_RIGHT 1
 // ウインカー音
-#define BZZ_PIN 28
+#define BZZ_PIN 27
 // 疑似ウインカーリレー
 #define DMY_RELAY 0
+// IOエキスパンダのアドレス
+#define PCF_ADDRESS 0x27
 
 
 // --------------------定数--------------------
@@ -114,6 +115,7 @@ Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
 Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
+Adafruit_PCF8574 pcf;// IOエキスパンダ
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -123,6 +125,27 @@ void setup(void) {
 	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
+    // IOエキスパンダ
+    pcf.begin(PCF_ADDRESS, &Wire1);
+    /*
+    // IOエキスパンダ初期設定
+    for (uint8_t p=0; p<8; p++) {
+        // 回路改造まで3は不使用
+        if(p==3){
+            continue;
+        }
+        pcf.pinMode(p, INPUT_PULLUP);
+    }
+    */
+    // ギアポジ読み取り設定
+    gearPositions.begin(&pcf);
+    // ウインカー読み取り設定
+    winkers.begin(&pcf);
+	//RTC起動
+    rtc.begin(&Wire1);
+	// 時計合わせ
+    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+
 
 	//SPI1設定
 	SPI.setTX(TFT_MOSI);
@@ -133,10 +156,6 @@ void setup(void) {
     pinMode(DMY_RELAY, OUTPUT);
     // ウインカー音
     pinMode(BZZ_PIN, OUTPUT);
-	//RTC起動
-    rtc.begin(&Wire1);
-	// 時計合わせ
-    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 	
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
@@ -189,20 +208,20 @@ void loop() {
 
     // 各種モニタリング・更新
 	if(monitorTime <= time){
-		gearPositions.monitor();
-		winkers.monitor();
+		gearPositions.monitor(&pcf);
+		winkers.monitor(&pcf);
 		monitorTime += MONITOR_INTERVAL;
 	}
 	// 時計表示処理
 	if(clockTime <= time){
-        realTimeDisplay(tft);
+        realTimeDisplay(&tft);
 		clockTime += CLOCK_INTERVAL;
 	}
 	// 各種表示処理
 	if(displayTime <= time){
 		timeDisplay(time/1000, tft);
-		gearDisplay(gearPositions.getGear(), tft);
-		bool isSwitchStatus = winkersDisplay(winkers, tft);
+		gearDisplay(gearPositions.getGear(), &tft);
+		bool isSwitchStatus = winkersDisplay(winkers, &tft);
 		// ウインカー点灯状態が切り替わった場合
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
@@ -227,20 +246,20 @@ void loop() {
  * @param dispChar char型 表示文字列
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void gearDisplay(char newGear, Adafruit_ST77xx &tft){
+void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 	// バッファ文字列
 	static char nowGear = '-';
 	// 文字列比較
 	if(nowGear != newGear){
-		tft.setTextSize(8);
+		tft->setTextSize(8);
 		// ----------表示文字削除----------
-		tft.setCursor(gearCoord.x, gearCoord.y);
-        tft.setTextColor(ST77XX_BLACK);
-        tft.print(nowGear);
+		tft->setCursor(gearCoord.x, gearCoord.y);
+        tft->setTextColor(ST77XX_BLACK);
+        tft->print(nowGear);
 		// ----------新規文字表示----------
-		tft.setCursor(gearCoord.x, gearCoord.y);
-        tft.setTextColor(ST77XX_WHITE);
-		tft.print(newGear);
+		tft->setCursor(gearCoord.x, gearCoord.y);
+        tft->setTextColor(ST77XX_WHITE);
+		tft->print(newGear);
 		// バッファ文字列を上書き
 		nowGear = newGear;
 	}
@@ -252,7 +271,7 @@ void gearDisplay(char newGear, Adafruit_ST77xx &tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
-bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx &tft){
+bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
 	// バッファ状態
     static bool buffer[2] = {false, false}; 
     // 返却用フラグ
@@ -323,7 +342,7 @@ void displayRight(bool status, Adafruit_ST77xx &tft){
  * @param status bool型 true...点灯, false...消灯
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx &tft){
+void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tft){
 	// 文字色宣言（初期値は黒）
 	uint16_t color = ST77XX_BLACK;
 	// 条件trueの場合は文字色変更
@@ -331,7 +350,7 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx &tf
 		color = ST77XX_YELLOW;
 	}
 	// 図形表示（BLACKの場合は削除）
-	tft.fillTriangle(coord.x1, coord.y1,
+	tft->fillTriangle(coord.x1, coord.y1,
 					 coord.x2, coord.y2,
 					 coord.x3, coord.y3,
 					 color);
@@ -341,7 +360,7 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx &tf
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void realTimeDisplay(Adafruit_ST77xx &tft){
+void realTimeDisplay(Adafruit_ST77xx *tft){
     // 時刻用変数
     int newTimeItems[3] = {0,0,0};
     // 現在時刻取得
@@ -350,27 +369,27 @@ void realTimeDisplay(Adafruit_ST77xx &tft){
     newTimeItems[HOUR] = now.hour();
     newTimeItems[MINUTE] = now.minute();
 
-    tft.setFont();
-	tft.setTextSize(FONT_SIZE_TIME);
+    tft->setFont();
+	tft->setTextSize(FONT_SIZE_TIME);
     // 時刻データでループ
-    for(int i=0; i<(sizeof(timeItems)/sizeof(uint16_t)); i++){
+    for(int i=0; i<3; i++){
         if(timeItems[i] != newTimeItems[i]){
             // ----------削除処理----------
             // 背景色・カーソル設定・値表示
-            tft.setTextColor(ST77XX_BLACK);
-            tft.setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
+            tft->setTextColor(ST77XX_BLACK);
+            tft->setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
             if(timeItems[i] < 10){
-                tft.print('0');
+                tft->print('0');
             }
-            tft.print(timeItems[i]);
+            tft->print(timeItems[i]);
             // ----------表示処理----------
             // 背景色・カーソル設定・値表示
-            tft.setTextColor(ST77XX_WHITE);
-            tft.setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
+            tft->setTextColor(ST77XX_WHITE);
+            tft->setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
             if(newTimeItems[i] < 10){
-                tft.print('0');
+                tft->print('0');
             }
-            tft.print(newTimeItems[i]);
+            tft->print(newTimeItems[i]);
 
             // 保持値更新
             timeItems[i] = newTimeItems[i];

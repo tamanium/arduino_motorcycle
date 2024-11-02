@@ -10,10 +10,14 @@ Winkers::Winkers(int pinLeft, int pinRight){
 	this->pinRight = pinRight;
 	this->statusLR[0] = false;
 	this->statusLR[1] = false;
-	pinMode(this->pinLeft, INPUT_PULLUP);
-	pinMode(this->pinRight, INPUT_PULLUP);
+	//pinMode(this->pinLeft, INPUT_PULLUP);
+	//pinMode(this->pinRight, INPUT_PULLUP);
 }
 
+void Winkers::begin(Adafruit_PCF8574 *pcf){
+	pcf->pinMode(this->pinLeft, INPUT_PULLUP);
+	pcf->pinMode(this->pinRight, INPUT_PULLUP);
+}
 /**
  * 【Getter】ウインカー状態を取得
  * @param i int型 インデックス
@@ -43,7 +47,7 @@ bool Winkers::getStatusRight(){
 	return this->statusLR[0];
 }
 
-void Winkers::monitor(){
+void Winkers::monitor(Adafruit_PCF8574 *pcf){
 	// カウンタ(1は左ウインカー、0は右ウインカー)
 	static int counter[] = {0, 0};
 	// 直前ギア状態(1は左ウインカー、0は右ウインカー)
@@ -55,7 +59,7 @@ void Winkers::monitor(){
 	int pins[] = {this->pinRight, this->pinLeft};
     // 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
-		if(digitalRead(pins[i]) == HIGH){
+		if(pcf->digitalRead(pins[i]) == HIGH){
 			newStatusLR[i] = true;
 		}
 	
