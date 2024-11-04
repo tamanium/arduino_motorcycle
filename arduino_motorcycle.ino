@@ -84,7 +84,6 @@ uint16_t timeItems[3] = {0,0,0};
 //String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
 
-
 struct Triangle_coordinate {
 	int x1;
 	int y1;
@@ -105,9 +104,6 @@ Triangle_coordinate triCoords[2] = {
     {30, 0, 30, 160, 0, 80},
     {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80}
 };
-
-//Triangle_coordinate leftCoord = {30, 0, 30, 160, 0, 80};
-//Triangle_coordinate rightCoord = {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80};
 
 Coordinate gearCoord = {200,0};
 RTC_DS1307 rtc;
@@ -139,8 +135,10 @@ void setup(void) {
     */
     // ギアポジ読み取り設定
     gearPositions.begin(&pcf);
+    //gearPositions.begin(PCF_ADDRESS, &Wire1);
     // ウインカー読み取り設定
     winkers.begin(&pcf);
+    //winkers.begin(PCF_ADDRESS, &Wire1);
 	//RTC起動
     rtc.begin(&Wire1);
 	// 時計合わせ
@@ -209,7 +207,9 @@ void loop() {
     // 各種モニタリング・更新
 	if(monitorTime <= time){
 		gearPositions.monitor(&pcf);
+		//gearPositions.monitor();
 		winkers.monitor(&pcf);
+		//winkers.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
 	// 時計表示処理
@@ -226,7 +226,6 @@ void loop() {
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(BZZ_PIN, HIGH);
-			//tone(BZZ_PIN,880);
             // 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
@@ -235,7 +234,6 @@ void loop() {
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		digitalWrite(BZZ_PIN, LOW);
-		//noTone(BZZ_PIN);
         bzzTime = 0;
 	}
 }
