@@ -80,6 +80,8 @@ unsigned long debugWinkerTime  = 0; //疑似ウインカー
 // 保持用char配列
 //uint16_t dateItems[3] = {0,0,0};
 uint16_t timeItems[3] = {0,0,0};
+// シフトポジション配列
+int gears[] = {POSN, POS1, POS2, POS3, POS4};
 
 //String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
@@ -104,18 +106,21 @@ Triangle_coordinate triCoords[2] = {
     {30, 0, 30, 160, 0, 80},
     {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80}
 };
-
+// シフトポジション表示座標
 Coordinate gearCoord = {200,0};
+// RTC
 RTC_DS1307 rtc;
-Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);// ディスプレイ設定
-int gears[] = {POSN, POS1, POS2, POS3, POS4};
-GearPositions gearPositions(gears, sizeof(gears)/sizeof(int));// ギアポジション設定
-Winkers winkers(WNK_LEFT, WNK_RIGHT);// ウインカー設定
-Adafruit_PCF8574 pcf;// IOエキスパンダ
+// IOエキスパンダ
+Adafruit_PCF8574 pcf;
+// ディスプレイ
+Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
+// ギアポジション
+GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
+// ウインカー
+Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
-    
     // デバッグ用シリアル設定
 	Serial.begin(9600);
 	// I2C設定
@@ -123,23 +128,7 @@ void setup(void) {
     Wire1.setSCL(I2C_SCL);
     // IOエキスパンダ
     pcf.begin(PCF_ADDRESS, &Wire1);
-    /*
-    // IOエキスパンダ初期設定
-    for (uint8_t p=0; p<8; p++) {
-        // 回路改造まで3は不使用
-        if(p==3){
-            continue;
-        }
-        pcf.pinMode(p, INPUT_PULLUP);
-    }
-    */
-    // ギアポジ読み取り設定
-    gearPositions.begin(&pcf);
-    //gearPositions.begin(PCF_ADDRESS, &Wire1);
-    // ウインカー読み取り設定
-    winkers.begin(&pcf);
-    //winkers.begin(PCF_ADDRESS, &Wire1);
-	//RTC起動
+	// RTC
     rtc.begin(&Wire1);
 	// 時計合わせ
     rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
@@ -206,10 +195,10 @@ void loop() {
 
     // 各種モニタリング・更新
 	if(monitorTime <= time){
-		gearPositions.monitor(&pcf);
-		//gearPositions.monitor();
-		winkers.monitor(&pcf);
-		//winkers.monitor();
+		//gearPositions.monitor(&pcf);
+		gearPositions.monitor();
+		//winkers.monitor(&pcf);
+		winkers.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
 	// 時計表示処理

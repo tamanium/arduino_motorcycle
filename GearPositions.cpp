@@ -23,24 +23,24 @@ GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
 /**
  * 通信開始
  * @param *pcf Adafruit_PCF8574クラス IOエキスパンダ
- */
 void GearPositions::begin(Adafruit_PCF8574 *pcf){
     for(int i=0;i<5;i++){
         this->gears[i].begin(pcf);
     }
 }
+ */
 
 /**
  * 通信開始
  * @param i2c_addr uint8_t型  IOエキスパンダ
  * @param *wire TwoWireクラス IOエキスパンダ
- */
 void GearPositions::begin(uint8_t i2c_addr, TwoWire *wire){
     this->pcf.begin(i2c_addr, wire);
     for(int i=0;i<5;i++){
         this->gears[i].begin(&(this->pcf));
     }
 }
+ */
 
 /**
  * 【Getter】表示値
@@ -53,7 +53,6 @@ char GearPositions::getGear(){
 /**
  * 現在のギア表示値を更新
  * @param *pcf Adafruit_PCF8574型  IOエキスパンダ
- */
 void GearPositions::monitor(Adafruit_PCF8574 *pcf){
 	// カウンタ・直前ギア
 	static int counter = 0;
@@ -86,6 +85,7 @@ void GearPositions::monitor(Adafruit_PCF8574 *pcf){
 		counter = 0;
 	}
 }
+ */
 /**
  * 現在のギア表示値を更新
  */
@@ -97,7 +97,7 @@ void GearPositions::monitor(){
 	char newGear = '-';
 	// ギア配列でループし、現在のギア表示値を取得
 	for(int i=0; i<this->numOfGear; i++){
-		if(this->gears[i].isActive(&this->pcf) == true){
+		if(this->gears[i].isActive(this->pcf) == true){
 			newGear = this->gears[i].getChar();
 			break;
 		}

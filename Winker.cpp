@@ -5,29 +5,30 @@
  * @param pinLeft int 左ウインカーピン
  * @param pinRight int 右ウインカーピン
  */
-Winkers::Winkers(int pinLeft, int pinRight){
+Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
 	this->pinLeft = pinLeft;
 	this->pinRight = pinRight;
 	this->statusLR[0] = false;
 	this->statusLR[1] = false;
+    this->pcf = pcf;
 }
 /**
  *
-*/
 void Winkers::begin(Adafruit_PCF8574 *pcf){
 	pcf->pinMode(this->pinLeft, INPUT_PULLUP);
 	pcf->pinMode(this->pinRight, INPUT_PULLUP);
 }
+*/
 /**
  * 通信開始
  * @param i2c_addr uint8_t型  IOエキスパンダ
  * @param *wire TwoWireクラス IOエキスパンダ
- */
 void Winkers::begin(uint8_t i2c_addr, TwoWire *wire){
     this->pcf.begin(i2c_addr, wire);
 	this->pcf.pinMode(this->pinLeft, INPUT_PULLUP);
 	this->pcf.pinMode(this->pinRight, INPUT_PULLUP);
 }
+ */
 /**
  * 【Getter】ウインカー状態を取得
  * @param i int型 インデックス
@@ -35,31 +36,30 @@ void Winkers::begin(uint8_t i2c_addr, TwoWire *wire){
  */
 bool Winkers::getStatus(int i){
     // 配列数以上の数値の場合false
-    if(sizeof(this->statusLR)/sizeof(bool) <= i){
-        return false;
+    if(i < 2){
+	    return this->statusLR[i];
     }
-	return this->statusLR[i];
+    return false;
 }
 
 /**
  * 【Getter】左ウインカー状態を取得
  * @return bool型 ウインカーが点灯している場合true
- */
 bool Winkers::getStatusLeft(){
 	return this->statusLR[1];
 }
+ */
 
 /**
  * 【Getter】右ウインカー状態を取得
  * @return bool型 ウインカーが点灯している場合true
- */
 bool Winkers::getStatusRight(){
 	return this->statusLR[0];
 }
+ */
 /**
  *  ウインカー状態を更新
  * @param *pcf Adafruit_PCF8574型 IOエキスパンダ
- */
 void Winkers::monitor(Adafruit_PCF8574 *pcf){
 	// カウンタ(1は左ウインカー、0は右ウインカー)
 	static int counter[] = {0, 0};
@@ -94,6 +94,7 @@ void Winkers::monitor(Adafruit_PCF8574 *pcf){
 		}
 	}
 }
+ */
 /**
  *  ウインカー状態を更新
  */
@@ -109,7 +110,7 @@ void Winkers::monitor(){
 	int pins[] = {this->pinRight, this->pinLeft};
     // 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
-		if(this->pcf.digitalRead(pins[i]) == HIGH){
+		if(this->pcf->digitalRead(pins[i]) == HIGH){
 			newStatusLR[i] = true;
 		}
 	
