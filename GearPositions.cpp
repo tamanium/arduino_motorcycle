@@ -4,7 +4,7 @@
  * コンストラクタ
  * @param nowGear char型 表示値
  */
-GearPositions::GearPositions(int *pins, int len){
+GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
   for(int i=0; i<len; i++){
     char _char = '0';
     if(i==0){
@@ -17,6 +17,8 @@ GearPositions::GearPositions(int *pins, int len){
   }
   this->numOfGear = len;
   this->nowGear = '-';
+  this->pcf = pcf;
+	
 }
 /**
  * 通信開始
