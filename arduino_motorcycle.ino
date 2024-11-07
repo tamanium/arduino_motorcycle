@@ -131,7 +131,7 @@ void setup(void) {
 	// RTC
     rtc.begin(&Wire1);
 	// 時計合わせ
-    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 
 	//SPI1設定
