@@ -86,7 +86,6 @@ unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long clockTime = 0;	// 時計表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 unsigned long bzzTime = 0;
-unsigned long thermoTime = 0;
 
 unsigned long debugWinkerTime  = 0; //疑似ウインカー
 
@@ -221,10 +220,10 @@ void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 
-	if(thermoTime <= time){
+	if(tempTime <= time){
 		Serial.print("Temp = ");
-		Serial.println(lm75.reatDemperatureC());
-		thmTime += THERMO_DURATION 
+		Serial.println(lm75.readTemperatureC());
+		tempTime += THERMO_DURATION;
 	}
 	/*
     // 疑似ウインカーリレー
