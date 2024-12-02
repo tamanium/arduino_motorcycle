@@ -58,6 +58,7 @@ const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
 const int BUZZER_DURATION = 100;//ms
 const int WINKER_DURATION = 380;//ms
+const int THERMO_DURATION = 2000;//ms
 // 時刻表示の時・分表示位置
 const uint8_t TIME_INDEXES[2] = {0,3};
 // フォントの寸法
@@ -85,6 +86,7 @@ unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long clockTime = 0;	// 時計表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 unsigned long bzzTime = 0;
+unsigned long thermoTime = 0;
 
 unsigned long debugWinkerTime  = 0; //疑似ウインカー
 
@@ -125,7 +127,7 @@ RTC_DS1307 rtc;
 Adafruit_PCF8574 pcf;
 // 温度計
 //M2M_LM75A lm75a;
-//Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
+Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
 //Generic_LM75 lm75(&Wire1);
 // ディスプレイ
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
@@ -140,44 +142,44 @@ void setup(void) {
 	Serial.begin(9600);
 
 	//SPI1設定
-	SPI.setTX(TFT_MOSI);
-	SPI.setSCK(TFT_SCLK);
+	//SPI.setTX(TFT_MOSI);
+	//SPI.setSCK(TFT_SCLK);
     // ディスプレイ明るさ設定(0-255)
-    analogWrite(TFT_BL,30);
+    //analogWrite(TFT_BL,30);
 
 	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(DISP_HEIGHT,DISP_WIDTH);
-	tft.setRotation(3);
-	tft.fillScreen(ST77XX_BLACK);
+	//tft.init(DISP_HEIGHT,DISP_WIDTH);
+	//tft.setRotation(3);
+	//tft.fillScreen(ST77XX_BLACK);
   
 	// 初期表示
-    tft.setTextSize(3);
-	tft.setTextColor(ST77XX_GREEN);
-	tft.setCursor(0, 0);
-	tft.setTextWrap(true);
-	tft.print("hello");
-	delay(2000);
+    //tft.setTextSize(3);
+	//tft.setTextColor(ST77XX_GREEN);
+	//tft.setCursor(0, 0);
+	//tft.setTextWrap(true);
+	//tft.print("hello");
+	//delay(2000);
 
 	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
     Wire1.begin();// いらないけど明示しておく
     // IOエキスパンダ
-    pcf.begin(PCF_ADDRESS, &Wire1);
+    //pcf.begin(PCF_ADDRESS, &Wire1);
     // 何かしらIOエキスパンダの動きを確認
     // ディスプレイにOKの旨表示
 	//tft.print("IO Expander : OK");
-	delay(500);
+	//delay(500);
 
 	// RTC
-    rtc.begin(&Wire1);
+    //rtc.begin(&Wire1);
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
     // 何かしら時計の動きを確認
     // ディスプレイにOKの旨表示
 	//tft.setCursor(?, ?);
 	//tft.print("Clock : OK");
-	delay(500);
+	//delay(500);
 
 	// 温度計
     //lm75a.begin();
@@ -189,28 +191,28 @@ void setup(void) {
 
 
     // 疑似ウインカーリレー
-    pinMode(DMY_RELAY, OUTPUT);
+    //pinMode(DMY_RELAY, OUTPUT);
     // ウインカー音
-    pinMode(BZZ_PIN, OUTPUT);
+    //pinMode(BZZ_PIN, OUTPUT);
   
     // 画面リセット
-	tft.fillScreen(ST77XX_BLACK);
+	//tft.fillScreen(ST77XX_BLACK);
 
 	// ギアポジション表示開始その1
-	tft.setCursor(184, 8*8);
-	tft.setTextSize(3);
-	tft.print("gear");
+	//tft.setCursor(184, 8*8);
+	//tft.setTextSize(3);
+	//tft.print("gear");
 	
 	// ギアポジション表示開始その2
-	tft.setTextColor(ST77XX_WHITE);
-	tft.setTextSize(8);
-	tft.setCursor(200, 0);
-	tft.print('-');
+	//tft.setTextColor(ST77XX_WHITE);
+	//tft.setTextSize(8);
+	//tft.setCursor(200, 0);
+	//tft.print('-');
     
-    tft.setFont();
-	tft.setTextSize(FONT_SIZE_TIME);
-    tft.setCursor(0, DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
-    tft.print("  :  ");
+    //tft.setFont();
+	//tft.setTextSize(FONT_SIZE_TIME);
+    //tft.setCursor(0, DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
+    //tft.print("  :  ");
 
 }
 
@@ -218,7 +220,13 @@ void setup(void) {
 void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-   
+
+	if(thermoTime <= time){
+		Serial.print("Temp = ");
+		Serial.println(lm75.reatDemperatureC());
+		thmTime += THERMO_DURATION 
+	}
+	/*
     // 疑似ウインカーリレー
     if(debugWinkerTime <= time){
         if(digitalRead(DMY_RELAY) == HIGH){
@@ -262,6 +270,7 @@ void loop() {
 		digitalWrite(BZZ_PIN, LOW);
         bzzTime = 0;
 	}
+ */
 }
 
 // ------------------------------メソッド------------------------------
