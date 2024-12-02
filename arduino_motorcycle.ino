@@ -125,7 +125,7 @@ RTC_DS1307 rtc;
 Adafruit_PCF8574 pcf;
 // 温度計
 //M2M_LM75A lm75a;
-//Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
+Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
 //Generic_LM75 lm75(&Wire1);
 // ディスプレイ
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
@@ -138,7 +138,6 @@ Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
 void setup(void) {
     // デバッグ用シリアル設定
 	Serial.begin(9600);
-<<<<<<< HEAD
 	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
@@ -148,9 +147,6 @@ void setup(void) {
     rtc.begin(&Wire1);
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
-
-=======
->>>>>>> 919272c36af1324a6eea7af7929a4cea8ebeb127
 
 	//SPI1設定
 	SPI.setTX(TFT_MOSI);
@@ -193,8 +189,6 @@ void setup(void) {
 	delay(500);
 
 	// 温度計
-    //lm75a.begin();
-    //lm75.begin();
     // 何かしら温度計の動きを確認
     // ディスプレイにOKの旨表示
 	//tft.setCursor(?, ?);
@@ -254,6 +248,7 @@ void loop() {
 	// 時計表示処理
 	if(clockTime <= time){
         realTimeDisplay(&tft);
+        Serial.println(lm75.readTemperatureC());
 		clockTime += CLOCK_INTERVAL;
 	}
 	// 各種表示処理
