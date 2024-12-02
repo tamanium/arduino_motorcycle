@@ -2,11 +2,20 @@
 // 課題解決2. SPI1を利用して接続
 
 // --------------------ライブラリ--------------------
+// 画面出力
 #include <Adafruit_GFX.h>
+// ディスプレイ
 #include <Adafruit_ST7789.h>
+//SPI通信
 #include <SPI.h>
+//時計機能
 #include <RTClib.h>
+//IOエキスパンダ
 #include <Adafruit_PCF8574.h>
+//温度計
+#include <Temperature_LM75_Derived.h>
+//温度計
+//#include <M2M_LM75A.h>          
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -39,6 +48,8 @@
 #define DMY_RELAY 0
 // IOエキスパンダのアドレス
 #define PCF_ADDRESS 0x27
+// 温度計のアドレス
+#define LM75_ADDRESS 0x48
 
 
 // --------------------定数--------------------
@@ -85,7 +96,7 @@ int gears[] = {POSN, POS1, POS2, POS3, POS4};
 
 //String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
-
+// 三角形描画用座標
 struct Triangle_coordinate {
 	int x1;
 	int y1;
@@ -94,7 +105,7 @@ struct Triangle_coordinate {
 	int x3;
 	int y3;
 };
-
+// 座標
 struct Coordinate {
 	int x;
 	int y;
@@ -112,6 +123,10 @@ Coordinate gearCoord = {200,0};
 RTC_DS1307 rtc;
 // IOエキスパンダ
 Adafruit_PCF8574 pcf;
+// 温度計
+//M2M_LM75A lm75a;
+//Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
+//Generic_LM75 lm75(&Wire1);
 // ディスプレイ
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 // ギアポジション
@@ -123,27 +138,13 @@ Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
 void setup(void) {
     // デバッグ用シリアル設定
 	Serial.begin(9600);
-	// I2C設定
-    Wire1.setSDA(I2C_SDA);
-    Wire1.setSCL(I2C_SCL);
-    // IOエキスパンダ
-    pcf.begin(PCF_ADDRESS, &Wire1);
-	// RTC
-    rtc.begin(&Wire1);
-	// 時計合わせ
-    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
-
 
 	//SPI1設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
     // ディスプレイ明るさ設定(0-255)
     analogWrite(TFT_BL,30);
-    // 疑似ウインカーリレー
-    pinMode(DMY_RELAY, OUTPUT);
-    // ウインカー音
-    pinMode(BZZ_PIN, OUTPUT);
-	
+
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
 	tft.setRotation(3);
@@ -155,11 +156,47 @@ void setup(void) {
 	tft.setCursor(0, 0);
 	tft.setTextWrap(true);
 	tft.print("hello");
-	
 	delay(2000);
+
+	// I2C設定
+    Wire1.setSDA(I2C_SDA);
+    Wire1.setSCL(I2C_SCL);
+    Wire1.begin();// いらないけど明示しておく
+    // IOエキスパンダ
+    pcf.begin(PCF_ADDRESS, &Wire1);
+    // 何かしらIOエキスパンダの動きを確認
+    // ディスプレイにOKの旨表示
+	//tft.print("IO Expander : OK");
+	delay(500);
+
+	// RTC
+    rtc.begin(&Wire1);
+	// 時計合わせ
+    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+    // 何かしら時計の動きを確認
+    // ディスプレイにOKの旨表示
+	//tft.setCursor(?, ?);
+	//tft.print("Clock : OK");
+	delay(500);
+
+	// 温度計
+    //lm75a.begin();
+    //lm75.begin();
+    // 何かしら温度計の動きを確認
+    // ディスプレイにOKの旨表示
+	//tft.setCursor(?, ?);
+	//tft.print("Thermo : OK");
+
+
+    // 疑似ウインカーリレー
+    pinMode(DMY_RELAY, OUTPUT);
+    // ウインカー音
+    pinMode(BZZ_PIN, OUTPUT);
   
-	// ギアポジション表示開始その1
+    // 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
+
+	// ギアポジション表示開始その1
 	tft.setCursor(184, 8*8);
 	tft.setTextSize(3);
 	tft.print("gear");
