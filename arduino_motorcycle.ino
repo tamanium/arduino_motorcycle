@@ -209,36 +209,36 @@ void setup(void) {
 
     // IOエキスパンダ
     pcf.begin(PCF_ADDRESS, &Wire1);
-    tft.print("IO Exp = ");
-	delay(500);
-    if(checkI2CDevice(PCF_ADDRESS) != I2C_SUCCESS){
-        tft.print("NG! abort starting this device");
-        while(true){};
-    }
-    tft.println("OK!");
+    //tft.print("IO Exp = ");
+	//delay(500);
+    //if(checkI2CDevice(PCF_ADDRESS) != I2C_SUCCESS){
+    //    tft.print("NG! abort starting this device");
+    //    while(true){};
+    //}
+    //tft.println("OK!");
 
 	// RTC
     rtc.begin(&Wire1);
-    tft.print("clock = ");
-	delay(500);
-    if(checkI2CDevice(0x68) != I2C_SUCCESS){
-        tft.print("NG! abort starting this device");
-        while(true){};
-    }
-    tft.println("OK!");
+    //tft.print("clock = ");
+	//delay(500);
+    //if(checkI2CDevice(0x68) != I2C_SUCCESS){
+    //    tft.print("NG! abort starting this device");
+    //    while(true){};
+    //}
+    //tft.println("OK!");
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 
 	// 温度計
-    rtc.begin(&Wire1);
-    tft.print("thermo = ");
-	delay(500);
-    if(checkI2CDevice(LM75_ADDRESS) != I2C_SUCCESS){
-        tft.print("NG! abort starting this device");
-        while(true){};
-    }
-    tft.println("OK!");
+    //rtc.begin(&Wire1);
+    //tft.print("thermo = ");
+	//delay(500);
+    //if(checkI2CDevice(LM75_ADDRESS) != I2C_SUCCESS){
+    //    tft.print("NG! abort starting this device");
+    //    while(true){};
+    //}
+    //tft.println("OK!");
 
 
     // 疑似ウインカーリレー
