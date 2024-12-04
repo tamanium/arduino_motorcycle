@@ -109,16 +109,50 @@ struct Triangle_coordinate {
 struct Coordinate {
 	int x;
 	int y;
+	Coordinate(int x, int y){
+		this->x = x;
+		this->y = y;
 };
+struct TriangleCoords{
+	Coordinate c1;
+	Coordinate c2;
+	Coordinate c3;
+	TriangleCoords(int x1, int y1, int x2, int y2, int x3, int y3){
+		this->c1 = new Coordinate(x1, y1);
+		this->c2 = new Coordinate(x2, y2);
+		this->c3 = new Coordinate(x3, y3);
+	}
+}
+// 座標と倍率
+struct DispInfo{
+	Coordinate coord;
+	int times;
+	DispInfo(int x, int y, int t){
+		this->coord = new Coordinate(x, y);
+		this->times = times;
+	}
+}
 
 // --------------------インスタンス--------------------
 // 表示座標
 Triangle_coordinate triCoords[2] = {
     {30, 0, 30, 160, 0, 80},
     {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80}
+	/*new TriangleCoords(30, 0, 30, 160, 0, 80);
+	new TriangleCoords(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 8)*/
 };
 // シフトポジション表示座標
 Coordinate gearCoord = {200,0};
+// シフトポジション：座標と文字倍率
+DispInfo gearDispInfo = new DispInfo(200, 0, 1);
+// 時刻表示：座標と文字倍率
+DispInfo timeDispInfo = new DispInfo(DISP_HEIGHT-24-1, 0,3 );
+// 日付表示：座標と文字倍率
+DispInfo dateDispInfo = new DispInfo(0, DISP_WIDTH-90-1, 3);
+// 温度表示：座標と文字倍率
+DispInfo dateDispInfo = new DispInfo(DISP_HEIGHT-24-1, DISP_WIDTH-90-1, 3);
+// 電圧表示：座標と文字倍率
+DispInfo voltDispInfo = new DispInfo(0, 0, 3);
 // RTC
 RTC_DS1307 rtc;
 // IOエキスパンダ
