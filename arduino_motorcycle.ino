@@ -46,24 +46,27 @@
 #define BZZ_PIN 27
 // 疑似ウインカーリレー
 #define DMY_RELAY 0
+
 // IOエキスパンダのアドレス
 #define PCF_ADDRESS 0x27
 // 温度計のアドレス
 #define LM75_ADDRESS 0x48
-
+#define I2C_ERROR 4
+#define I2C_SUCCESS 0
 
 // --------------------定数--------------------
-const int CLOCK_INTERVAL = 250;//ms
+const int CLOCK_INTERVAL   = 250;//ms
 const int MONITOR_INTERVAL = 5;//ms
 const int DISPLAY_INTERVAL = 30;//ms
-const int BUZZER_DURATION = 100;//ms
-const int WINKER_DURATION = 380;//ms
+const int BUZZER_DURATION  = 100;//ms
+const int WINKER_DURATION  = 380;//ms
 // 時刻表示の時・分表示位置
-const uint8_t TIME_INDEXES[2] = {0,3};
+//const uint8_t TIME_INDEXES[2] = {0,3};
 // フォントの寸法
 const int FONT_HEIGHT = 8;
-const int FONT_WIDTH = 6;
-const int FONT_SIZE_TIME = 3;
+const int FONT_WIDTH  = 6;
+const int TIME_SIZE   = 3;
+const int GEAR_SIZE   = 24;
 // ディスプレイの解像度
 const int DISP_WIDTH = 320;
 const int DISP_HEIGHT = 240;
@@ -74,9 +77,10 @@ enum LR{
 };
 
 enum TimeItem{
+    MONTH,
+    DAY,
     HOUR,
-    MINUTE,
-    SECOND
+    MINUTE
 };
 
 // --------------------変数--------------------
@@ -90,7 +94,7 @@ unsigned long debugWinkerTime  = 0; //疑似ウインカー
 
 // 保持用char配列
 //uint16_t dateItems[3] = {0,0,0};
-uint16_t timeItems[3] = {0,0,0};
+uint16_t timeItems[4] = {0,0,0,0};
 // シフトポジション配列
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 
@@ -107,12 +111,10 @@ struct Triangle_coordinate {
 };
 // 座標
 struct Coordinate {
-	int x;
-	int y;
-	Coordinate(int x, int y){
-		this->x = x;
-		this->y = y;
+	int x = 0;
+	int y = 0;
 };
+/*
 struct TriangleCoords{
 	Coordinate c1;
 	Coordinate c2;
@@ -122,37 +124,42 @@ struct TriangleCoords{
 		this->c2 = new Coordinate(x2, y2);
 		this->c3 = new Coordinate(x3, y3);
 	}
-}
+};
+*/
 // 座標と倍率
 struct DispInfo{
-	Coordinate coord;
-	int times;
-	DispInfo(int x, int y, int t){
-		this->coord = new Coordinate(x, y);
-		this->times = times;
-	}
-}
+    int x;
+    int y;
+    int size;
+};
 
 // --------------------インスタンス--------------------
 // 表示座標
 Triangle_coordinate triCoords[2] = {
-    {30, 0, 30, 160, 0, 80},
-    {DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 80}
+    {30, 0+24, 30, 160+24, 0, 80+24},
+    {DISP_WIDTH-30-1, 0+24, DISP_WIDTH-30-1, 160+24, DISP_WIDTH-1, 80+24}
 	/*new TriangleCoords(30, 0, 30, 160, 0, 80);
 	new TriangleCoords(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 8)*/
 };
+
+Coordinate timeCoords[4] = {
+    // 月
+    {DISP_WIDTH - FONT_WIDTH * TIME_SIZE * 5 - 1, 0},
+    // 日
+    {DISP_WIDTH - FONT_WIDTH * TIME_SIZE * 2 - 1, 0},
+    // 時間
+    {0, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1},
+    // 分
+    {FONT_WIDTH * TIME_SIZE * 3, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1}
+};
 // シフトポジション表示座標
-Coordinate gearCoord = {200,0};
+Coordinate gearCoord = {98,24};
 // シフトポジション：座標と文字倍率
-DispInfo gearDispInfo = new DispInfo(200, 0, 1);
-// 時刻表示：座標と文字倍率
-DispInfo timeDispInfo = new DispInfo(DISP_HEIGHT-24-1, 0,3 );
-// 日付表示：座標と文字倍率
-DispInfo dateDispInfo = new DispInfo(0, DISP_WIDTH-90-1, 3);
+DispInfo gearDispInfo = {200, 0, 1};
 // 温度表示：座標と文字倍率
-DispInfo dateDispInfo = new DispInfo(DISP_HEIGHT-24-1, DISP_WIDTH-90-1, 3);
+DispInfo tempDispInfo = {DISP_HEIGHT-24-1, DISP_WIDTH-90-1, 3};
 // 電圧表示：座標と文字倍率
-DispInfo voltDispInfo = new DispInfo(0, 0, 3);
+DispInfo voltDispInfo = {0, 0, 3};
 // RTC
 RTC_DS1307 rtc;
 // IOエキスパンダ
@@ -175,12 +182,6 @@ void setup(void) {
 	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
-    // IOエキスパンダ
-    pcf.begin(PCF_ADDRESS, &Wire1);
-	// RTC
-    rtc.begin(&Wire1);
-	// 時計合わせ
-    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 	//SPI1設定
 	SPI.setTX(TFT_MOSI);
@@ -205,28 +206,39 @@ void setup(void) {
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
     Wire1.begin();// いらないけど明示しておく
+
     // IOエキスパンダ
     pcf.begin(PCF_ADDRESS, &Wire1);
-    // 何かしらIOエキスパンダの動きを確認
-    // ディスプレイにOKの旨表示
-	//tft.print("IO Expander : OK");
+    tft.print("IO Exp = ");
 	delay(500);
+    if(checkI2CDevice(PCF_ADDRESS) != I2C_SUCCESS){
+        tft.print("NG! abort starting this device");
+        while(true){};
+    }
+    tft.println("OK!");
 
 	// RTC
     rtc.begin(&Wire1);
+    tft.print("clock = ");
+	delay(500);
+    if(checkI2CDevice(0x68) != I2C_SUCCESS){
+        tft.print("NG! abort starting this device");
+        while(true){};
+    }
+    tft.println("OK!");
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
-    // 何かしら時計の動きを確認
-    // ディスプレイにOKの旨表示
-	//tft.setCursor(?, ?);
-	//tft.print("Clock : OK");
-	delay(500);
+
 
 	// 温度計
-    // 何かしら温度計の動きを確認
-    // ディスプレイにOKの旨表示
-	//tft.setCursor(?, ?);
-	//tft.print("Thermo : OK");
+    rtc.begin(&Wire1);
+    tft.print("thermo = ");
+	delay(500);
+    if(checkI2CDevice(LM75_ADDRESS) != I2C_SUCCESS){
+        tft.print("NG! abort starting this device");
+        while(true){};
+    }
+    tft.println("OK!");
 
 
     // 疑似ウインカーリレー
@@ -238,20 +250,22 @@ void setup(void) {
 	tft.fillScreen(ST77XX_BLACK);
 
 	// ギアポジション表示開始その1
-	tft.setCursor(184, 8*8);
-	tft.setTextSize(3);
-	tft.print("gear");
+	//tft.setCursor(184, 8*8);
+	//tft.setTextSize(3);
+	//tft.print("gear");
 	
 	// ギアポジション表示開始その2
-	tft.setTextColor(ST77XX_WHITE);
-	tft.setTextSize(8);
-	tft.setCursor(200, 0);
-	tft.print('-');
+	//tft.setTextColor(ST77XX_WHITE);
+	//tft.setTextSize(8);
+	//tft.setCursor(200, 0);
+	//tft.print('-');
     
     tft.setFont();
-	tft.setTextSize(FONT_SIZE_TIME);
-    tft.setCursor(0, DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
+	tft.setTextSize(TIME_SIZE);
+    tft.setCursor(timeCoords[HOUR].x, timeCoords[HOUR].y);
     tft.print("  :  ");
+    tft.setCursor(timeCoords[MONTH].x, timeCoords[MONTH].y);
+    tft.print("  /  ");
 
 }
 
@@ -273,21 +287,28 @@ void loop() {
 
     // 各種モニタリング・更新
 	if(monitorTime <= time){
-		//gearPositions.monitor(&pcf);
+        // 現在のギアポジを取得
 		gearPositions.monitor();
-		//winkers.monitor(&pcf);
+        // 現在のウインカー状態を取得
 		winkers.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
+    /*
+    // 温度モニタリング・表示
+    if(tempTime <= time){
+        tempTime += TEMP_INTERVAL;
+    }
+    */
 	// 時計表示処理
 	if(clockTime <= time){
-        realTimeDisplay(&tft);
+        // 時刻表示
+        realTimeDisplay(&tft, &rtc);
         Serial.println(lm75.readTemperatureC());
 		clockTime += CLOCK_INTERVAL;
 	}
 	// 各種表示処理
 	if(displayTime <= time){
-		timeDisplay(time/1000, tft);
+		timeDisplay(time/1000, &tft);
 		gearDisplay(gearPositions.getGear(), &tft);
 		bool isSwitchStatus = winkersDisplay(winkers, &tft);
 		// ウインカー点灯状態が切り替わった場合
@@ -425,25 +446,27 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tf
  * 経過時間表示処理
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
-void realTimeDisplay(Adafruit_ST77xx *tft){
+void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     // 時刻用変数
-    int newTimeItems[3] = {0,0,0};
+    int newTimeItems[4] = {0,0,0,0};
     // 現在時刻取得
-    DateTime now = rtc.now();
-    // 時間・分取得
-    newTimeItems[HOUR] = now.hour();
+    DateTime now = rtc_ds1307->now();
+    // 月・日・時間・分取得
+    newTimeItems[MONTH]  = now.month();
+    newTimeItems[DAY]    = now.day();
+    newTimeItems[HOUR]   = now.hour();
     newTimeItems[MINUTE] = now.minute();
 
-    tft->setFont();
-	tft->setTextSize(FONT_SIZE_TIME);
+    tft->setTextSize(TIME_SIZE);
     // 時刻データでループ
-    for(int i=0; i<3; i++){
+    for(int i=0; i<sizeof(newTimeItems)/sizeof(int); i++){
         if(timeItems[i] != newTimeItems[i]){
             // ----------削除処理----------
             // 背景色・カーソル設定・値表示
             tft->setTextColor(ST77XX_BLACK);
-            tft->setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
+            tft->setCursor(timeCoords[i].x, timeCoords[i].y);
             if(timeItems[i] < 10){
                 tft->print('0');
             }
@@ -451,7 +474,7 @@ void realTimeDisplay(Adafruit_ST77xx *tft){
             // ----------表示処理----------
             // 背景色・カーソル設定・値表示
             tft->setTextColor(ST77XX_WHITE);
-            tft->setCursor(FONT_WIDTH*FONT_SIZE_TIME*TIME_INDEXES[i], DISP_HEIGHT-FONT_HEIGHT*FONT_SIZE_TIME);
+            tft->setCursor(timeCoords[i].x, timeCoords[i].y);
             if(newTimeItems[i] < 10){
                 tft->print('0');
             }
@@ -461,6 +484,31 @@ void realTimeDisplay(Adafruit_ST77xx *tft){
             timeItems[i] = newTimeItems[i];
         }
     }
+    /*
+    for(int i=HOUR; i<=MINUTE; i++){
+        if(timeItems[i] != newTimeItems[i]){
+            // ----------削除処理----------
+            // 背景色・カーソル設定・値表示
+            tft->setTextColor(ST77XX_BLACK);
+            tft->setCursor(timeDispInfo->x + FONT_WIDTH * timeDispInfo->size * TIME_INDEXES[i], timeDispInfo->y);
+            if(timeItems[i] < 10){
+                tft->print('0');
+            }
+            tft->print(timeItems[i]);
+            // ----------表示処理----------
+            // 背景色・カーソル設定・値表示
+            tft->setTextColor(ST77XX_WHITE);
+            tft->setCursor(timeDispInfo->x + FONT_WIDTH * timeDispInfo->size * TIME_INDEXES[i], timeDispInfo->y);
+            if(newTimeItems[i] < 10){
+                tft->print('0');
+            }
+            tft->print(newTimeItems[i]);
+
+            // 保持値更新
+            timeItems[i] = newTimeItems[i];
+        }
+    }
+    */
 }
 
 /**
@@ -468,7 +516,7 @@ void realTimeDisplay(Adafruit_ST77xx *tft){
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void timeDisplay(long totalSec, Adafruit_ST77xx &tft){
+void timeDisplay(long totalSec, Adafruit_ST77xx *tft){
 	// 保持用char配列
 	static char nowTime[6] = " 0:00";
 	static int len = sizeof(nowTime)/sizeof(char);
@@ -482,8 +530,8 @@ void timeDisplay(long totalSec, Adafruit_ST77xx &tft){
 	newTime[0] = '0' + (totalSec/60)/10;
   
 	// フォント設定
-    tft.setFont();
-	tft.setTextSize(FONT_SIZE_TIME);
+    tft->setFont();
+	tft->setTextSize(TIME_SIZE);
 
 	for(int i=len-2; i>=0; i--){
 		// 値が同じ場合処理スキップ
@@ -491,15 +539,20 @@ void timeDisplay(long totalSec, Adafruit_ST77xx &tft){
 			continue;
 		}
         // ----------文字削除処理----------
-        tft.setTextColor(ST77XX_BLACK);
-        tft.setCursor(6*FONT_SIZE_TIME*i, 200-8*FONT_SIZE_TIME);
-		tft.print(nowTime[i]);
+        tft->setTextColor(ST77XX_BLACK);
+        tft->setCursor(6*TIME_SIZE*i, 200-8*TIME_SIZE);
+		tft->print(nowTime[i]);
         // ----------文字表示処理----------
-        tft.setTextColor(ST77XX_WHITE);
-        tft.setCursor(6*FONT_SIZE_TIME*i, 200-8*FONT_SIZE_TIME);
+        tft->setTextColor(ST77XX_WHITE);
+        tft->setCursor(6*TIME_SIZE*i, 200-8*TIME_SIZE);
 		// 数値を表示
-		tft.print(newTime[i]);
+		tft->print(newTime[i]);
 		// 表示データを格納
 		nowTime[i] = newTime[i];
 	}
+}
+
+int checkI2CDevice(int address){
+    Wire.beginTransmission(address);
+    return Wire.endTransmission();
 }
