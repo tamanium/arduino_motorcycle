@@ -15,7 +15,7 @@
 //温度計
 #include <Temperature_LM75_Derived.h>
 //温度計
-//#include <M2M_LM75A.h>          
+//#include <M2M_LM75A.h>
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -65,7 +65,7 @@ const int WINKER_DURATION  = 380;//ms
 // フォントの寸法
 const int FONT_HEIGHT = 8;
 const int FONT_WIDTH  = 6;
-const int TIME_SIZE   = 3;
+const int TIME_SIZE   = 2;
 const int GEAR_SIZE   = 24;
 // ディスプレイの解像度
 const int DISP_WIDTH = 320;
@@ -114,18 +114,6 @@ struct Coordinate {
 	int x = 0;
 	int y = 0;
 };
-/*
-struct TriangleCoords{
-	Coordinate c1;
-	Coordinate c2;
-	Coordinate c3;
-	TriangleCoords(int x1, int y1, int x2, int y2, int x3, int y3){
-		this->c1 = new Coordinate(x1, y1);
-		this->c2 = new Coordinate(x2, y2);
-		this->c3 = new Coordinate(x3, y3);
-	}
-};
-*/
 // 座標と倍率
 struct DispInfo{
     int x;
@@ -209,36 +197,10 @@ void setup(void) {
 
     // IOエキスパンダ
     pcf.begin(PCF_ADDRESS, &Wire1);
-    //tft.print("IO Exp = ");
-	//delay(500);
-    //if(checkI2CDevice(PCF_ADDRESS) != I2C_SUCCESS){
-    //    tft.print("NG! abort starting this device");
-    //    while(true){};
-    //}
-    //tft.println("OK!");
-
 	// RTC
     rtc.begin(&Wire1);
-    //tft.print("clock = ");
-	//delay(500);
-    //if(checkI2CDevice(0x68) != I2C_SUCCESS){
-    //    tft.print("NG! abort starting this device");
-    //    while(true){};
-    //}
-    //tft.println("OK!");
 	// 時計合わせ
-    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
-
-
-	// 温度計
-    //rtc.begin(&Wire1);
-    //tft.print("thermo = ");
-	//delay(500);
-    //if(checkI2CDevice(LM75_ADDRESS) != I2C_SUCCESS){
-    //    tft.print("NG! abort starting this device");
-    //    while(true){};
-    //}
-    //tft.println("OK!");
+    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 
     // 疑似ウインカーリレー
@@ -377,52 +339,6 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
     }
 	return isSwitched;
 }
-
-/**
- * 左ウインカーのディスプレイ表示処理
- * @param status bool型 true...点灯, false...消灯
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
- 
-void displayLeft(bool status, Adafruit_ST77xx &tft){
-	// 文字色宣言（初期値は黒）
-	uint16_t color = ST77XX_BLACK;
-	// 条件trueの場合は文字色変更
-	if(status == true){
-		color = ST77XX_YELLOW;
-	}
-	// 図形表示（BLACKの場合は削除）
-	tft.fillTriangle(triCoords[LEFT].x1,
-					 triCoords[LEFT].y1,
-					 triCoords[LEFT].x2,
-					 triCoords[LEFT].y2,
-					 triCoords[LEFT].x3,
-					 triCoords[LEFT].y3,
-					 color);
-}
-*/
-/**
- * 右ウインカーのディスプレイ表示処理
- * @param status bool型 true...点灯, false...消灯
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
- 
-void displayRight(bool status, Adafruit_ST77xx &tft){
-	// 文字色宣言（初期値は黒）
-	uint16_t color = ST77XX_BLACK;
-
-	// 条件trueの場合は文字色変更
-	if(status == true){
-		color = ST77XX_YELLOW;
-	}
-	// 図形表示（BLACKの場合は削除）
-	tft.fillTriangle(triCoords[RIGHT].x1,
-					 triCoords[RIGHT].y1,
-					 triCoords[RIGHT].x2,
-					 triCoords[RIGHT].y2,
-					 triCoords[RIGHT].x3,
-					 triCoords[RIGHT].y3,
-					 color);
-}
-*/
 /**
  * 三角形表示処理
  * @param coord Triangle_coordinate型 
@@ -484,31 +400,6 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
             timeItems[i] = newTimeItems[i];
         }
     }
-    /*
-    for(int i=HOUR; i<=MINUTE; i++){
-        if(timeItems[i] != newTimeItems[i]){
-            // ----------削除処理----------
-            // 背景色・カーソル設定・値表示
-            tft->setTextColor(ST77XX_BLACK);
-            tft->setCursor(timeDispInfo->x + FONT_WIDTH * timeDispInfo->size * TIME_INDEXES[i], timeDispInfo->y);
-            if(timeItems[i] < 10){
-                tft->print('0');
-            }
-            tft->print(timeItems[i]);
-            // ----------表示処理----------
-            // 背景色・カーソル設定・値表示
-            tft->setTextColor(ST77XX_WHITE);
-            tft->setCursor(timeDispInfo->x + FONT_WIDTH * timeDispInfo->size * TIME_INDEXES[i], timeDispInfo->y);
-            if(newTimeItems[i] < 10){
-                tft->print('0');
-            }
-            tft->print(newTimeItems[i]);
-
-            // 保持値更新
-            timeItems[i] = newTimeItems[i];
-        }
-    }
-    */
 }
 
 /**
@@ -550,9 +441,4 @@ void timeDisplay(long totalSec, Adafruit_ST77xx *tft){
 		// 表示データを格納
 		nowTime[i] = newTime[i];
 	}
-}
-
-int checkI2CDevice(int address){
-    Wire.beginTransmission(address);
-    return Wire.endTransmission();
 }
