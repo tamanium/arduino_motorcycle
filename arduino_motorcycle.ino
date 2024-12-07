@@ -1,21 +1,11 @@
-// 課題解決1. TFTへデータ送信前後でcsピンのHIGH-LOWを変更
-// 課題解決2. SPI1を利用して接続
-
 // --------------------ライブラリ--------------------
-// 画面出力
-#include <Adafruit_GFX.h>
-// ディスプレイ
-#include <Adafruit_ST7789.h>
-//SPI通信
-#include <SPI.h>
-//時計機能
-#include <RTClib.h>
-//IOエキスパンダ
-#include <Adafruit_PCF8574.h>
-//温度計
-#include <Temperature_LM75_Derived.h>
-//温度計
-//#include <M2M_LM75A.h>
+#include <Adafruit_GFX.h>               // 画面出力
+#include <Adafruit_ST7789.h>            // ディスプレイ
+#include <SPI.h>                        // SPI通信
+#include <RTClib.h>                     // 時計機能
+#include <Adafruit_PCF8574.h>           // IOエキスパンダ
+#include <Temperature_LM75_Derived.h>   // 温度計
+
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -55,17 +45,20 @@
 #define I2C_SUCCESS 0
 
 // --------------------定数--------------------
-const int CLOCK_INTERVAL   = 250;//ms
-const int MONITOR_INTERVAL = 5;//ms
-const int DISPLAY_INTERVAL = 30;//ms
-const int BUZZER_DURATION  = 100;//ms
-const int WINKER_DURATION  = 380;//ms
+const int CLOCK_INTERVAL   = 250;   //ms
+const int MONITOR_INTERVAL = 5;     //ms
+const int DISPLAY_INTERVAL = 30;    //ms
+const int TEMP_INTERVAL    = 1000;    //ms
+const int BUZZER_DURATION  = 100;   //ms
+const int WINKER_DURATION  = 380;   //ms
 // 時刻表示の時・分表示位置
 //const uint8_t TIME_INDEXES[2] = {0,3};
 // フォントの寸法
 const int FONT_HEIGHT = 8;
 const int FONT_WIDTH  = 6;
-const int TIME_SIZE   = 2;
+const int DATE_SIZE   = 2;
+const int TIME_SIZE   = 3;
+const int TEMP_SIZE   = 3;
 const int GEAR_SIZE   = 24;
 // ディスプレイの解像度
 const int DISP_WIDTH = 320;
@@ -114,11 +107,12 @@ struct Coordinate {
 	int x = 0;
 	int y = 0;
 };
-// 座標と倍率
+
+// 表示情報
 struct DispInfo{
-    int x;
-    int y;
-    int size;
+    int x = 0;
+    int y = 0;
+    int size = 0;
 };
 
 // --------------------インスタンス--------------------
@@ -130,22 +124,22 @@ Triangle_coordinate triCoords[2] = {
 	new TriangleCoords(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 8)*/
 };
 
-Coordinate timeCoords[4] = {
+DispInfo timeDispInfo[4] = {
     // 月
-    {DISP_WIDTH - FONT_WIDTH * TIME_SIZE * 5 - 1, 0},
+    {DISP_WIDTH - FONT_WIDTH * DATE_SIZE * 5 - 1, 0, DATE_SIZE},
     // 日
-    {DISP_WIDTH - FONT_WIDTH * TIME_SIZE * 2 - 1, 0},
-    // 時間
-    {0, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1},
+    {DISP_WIDTH - FONT_WIDTH * DATE_SIZE * 2 - 1, 0, DATE_SIZE},
+    // 時間   
+    {0, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE},
     // 分
-    {FONT_WIDTH * TIME_SIZE * 3, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1}
+    {FONT_WIDTH * TIME_SIZE * 3, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE}
 };
 // シフトポジション表示座標
 Coordinate gearCoord = {98,24};
 // シフトポジション：座標と文字倍率
 DispInfo gearDispInfo = {200, 0, 1};
 // 温度表示：座標と文字倍率
-DispInfo tempDispInfo = {DISP_HEIGHT-24-1, DISP_WIDTH-90-1, 3};
+DispInfo tempDispInfo = {DISP_WIDTH - FONT_WIDTH * TEMP_SIZE * 5 - 1, DISP_HEIGHT - FONT_HEIGHT * TEMP_SIZE - 1, TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
 // RTC
@@ -200,7 +194,7 @@ void setup(void) {
 	// RTC
     rtc.begin(&Wire1);
 	// 時計合わせ
-    rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 
     // 疑似ウインカーリレー
@@ -221,13 +215,20 @@ void setup(void) {
 	//tft.setTextSize(8);
 	//tft.setCursor(200, 0);
 	//tft.print('-');
-    
+    // 時間
+	tft.setTextColor(ST77XX_WHITE);
     tft.setFont();
-	tft.setTextSize(TIME_SIZE);
-    tft.setCursor(timeCoords[HOUR].x, timeCoords[HOUR].y);
+	tft.setTextSize(timeDispInfo[HOUR].size);
+    tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
     tft.print("  :  ");
-    tft.setCursor(timeCoords[MONTH].x, timeCoords[MONTH].y);
+    // 日付
+	tft.setTextSize(timeDispInfo[MONTH].size);
+    tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
     tft.print("  /  ");
+    // 温度
+    tft.setTextSize(tempDispInfo.size);
+    tft.setCursor(tempDispInfo.x, tempDispInfo.y);
+    tft.print("  . C");
 
 }
 
@@ -255,17 +256,16 @@ void loop() {
 		winkers.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
-    /*
     // 温度モニタリング・表示
     if(tempTime <= time){
+        tempDisplay(&tft, &lm75);
+        Serial.println(lm75.readTemperatureC());
         tempTime += TEMP_INTERVAL;
     }
-    */
 	// 時計表示処理
 	if(clockTime <= time){
         // 時刻表示
         realTimeDisplay(&tft, &rtc);
-        Serial.println(lm75.readTemperatureC());
 		clockTime += CLOCK_INTERVAL;
 	}
 	// 各種表示処理
@@ -358,6 +358,34 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tf
 					 coord.x3, coord.y3,
 					 color);
 }
+
+
+void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
+    //
+    static int nowTempx10 = 0;
+    int newTempx10 = lm75->readTemperatureC() * 10;
+    if(nowTempx10 != newTempx10){
+        tft->setTextColor(ST77XX_BLACK);
+        tft->setTextSize(tempDispInfo.size);
+        tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+        if(0 <= nowTempx10 && nowTempx10 < 100){
+            tft->print(' ');
+        }
+        tft->print(int(nowTempx10/10));
+        tft->print('.');
+        tft->print(int(nowTempx10)%10);
+        
+        tft->setTextColor(ST77XX_WHITE);
+        tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+        if(0 <= newTempx10 && newTempx10 < 10){
+            tft->print(' ');
+        }
+        tft->print(int(newTempx10/10));
+        tft->print('.');
+        tft->print(int(newTempx10)%10);
+        nowTempx10 = newTempx10;
+    }
+}
 /**
  * 経過時間表示処理
  * @param totalSec long型 経過時間(秒)
@@ -366,7 +394,7 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tf
  */
 void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     // 時刻用変数
-    int newTimeItems[4] = {0,0,0,0};
+    int newTimeItems[4] = {99,99,99,99};
     // 現在時刻取得
     DateTime now = rtc_ds1307->now();
     // 月・日・時間・分取得
@@ -375,14 +403,15 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     newTimeItems[HOUR]   = now.hour();
     newTimeItems[MINUTE] = now.minute();
 
-    tft->setTextSize(TIME_SIZE);
     // 時刻データでループ
     for(int i=0; i<sizeof(newTimeItems)/sizeof(int); i++){
         if(timeItems[i] != newTimeItems[i]){
+    
+            tft->setTextSize(timeDispInfo[i].size);
             // ----------削除処理----------
             // 背景色・カーソル設定・値表示
             tft->setTextColor(ST77XX_BLACK);
-            tft->setCursor(timeCoords[i].x, timeCoords[i].y);
+            tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
             if(timeItems[i] < 10){
                 tft->print('0');
             }
@@ -390,7 +419,7 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
             // ----------表示処理----------
             // 背景色・カーソル設定・値表示
             tft->setTextColor(ST77XX_WHITE);
-            tft->setCursor(timeCoords[i].x, timeCoords[i].y);
+            tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
             if(newTimeItems[i] < 10){
                 tft->print('0');
             }
