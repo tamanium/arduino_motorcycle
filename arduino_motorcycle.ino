@@ -126,9 +126,9 @@ Triangle_coordinate triCoords[2] = {
 
 DispInfo timeDispInfo[4] = {
     // 月
-    {DISP_WIDTH - FONT_WIDTH * DATE_SIZE * 5 - 1, 0, DATE_SIZE},
+    {int(FONT_WIDTH * DATE_SIZE * 2.5), DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2 - 1, DATE_SIZE},
     // 日
-    {DISP_WIDTH - FONT_WIDTH * DATE_SIZE * 2 - 1, 0, DATE_SIZE},
+    {int(FONT_WIDTH * DATE_SIZE * 5.5), DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2 - 1, DATE_SIZE},
     // 時間   
     {0, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE},
     // 分
@@ -147,9 +147,7 @@ RTC_DS1307 rtc;
 // IOエキスパンダ
 Adafruit_PCF8574 pcf;
 // 温度計
-//M2M_LM75A lm75a;
 Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
-//Generic_LM75 lm75(&Wire1);
 // ディスプレイ
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 // ギアポジション
@@ -225,11 +223,17 @@ void setup(void) {
 	tft.setTextSize(timeDispInfo[MONTH].size);
     tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
     tft.print("  /  ");
-    // 温度
+    // 温度の値
     tft.setTextSize(tempDispInfo.size);
     tft.setCursor(tempDispInfo.x, tempDispInfo.y);
-    tft.print("  . C");
-
+    tft.print("  . ");
+    // 温度の単位
+    tft.setTextSize(2);
+    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2- 1, DISP_HEIGHT - FONT_HEIGHT * 2 - 1);
+    tft.print('C');
+    tft.setTextSize(1);
+    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2- 4, DISP_HEIGHT - FONT_HEIGHT * 2 - 1 - 8);
+    tft.print('o');
 }
 
 // ------------------------------ループ------------------------------
@@ -270,7 +274,7 @@ void loop() {
 	}
 	// 各種表示処理
 	if(displayTime <= time){
-		timeDisplay(time/1000, &tft);
+		//timeDisplay(time/1000, &tft);
 		gearDisplay(gearPositions.getGear(), &tft);
 		bool isSwitchStatus = winkersDisplay(winkers, &tft);
 		// ウインカー点灯状態が切り替わった場合
@@ -404,7 +408,7 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     newTimeItems[MINUTE] = now.minute();
 
     // 時刻データでループ
-    for(int i=0; i<sizeof(newTimeItems)/sizeof(int); i++){
+    for(int i=0; i<4; i++){
         if(timeItems[i] != newTimeItems[i]){
     
             tft->setTextSize(timeDispInfo[i].size);
