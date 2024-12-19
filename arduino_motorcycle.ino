@@ -5,7 +5,7 @@
 #include <RTClib.h>                     // 時計機能
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
 #include <Temperature_LM75_Derived.h>   // 温度計
-
+#include <Adafruit_ADS1X15.h>
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -41,11 +41,11 @@
 #define PCF_ADDRESS 0x27
 // 温度計のアドレス
 #define LM75_ADDRESS 0x48
-#define I2C_ERROR 4
-#define I2C_SUCCESS 0
+// ADコンバータのアドレス(ADDRピンをVDDに接続)
+#define ADS_ADDRESS 0x49
 
 // --------------------定数--------------------
-const int CLOCK_INTERVAL   = 250;   //ms
+const int CLOCK_INTERVAL   = 200;   //ms
 const int MONITOR_INTERVAL = 5;     //ms
 const int DISPLAY_INTERVAL = 30;    //ms
 const int TEMP_INTERVAL    = 1000;    //ms
@@ -73,7 +73,8 @@ enum TimeItem{
     MONTH,
     DAY,
     HOUR,
-    MINUTE
+    MINUTE,
+    SECOND
 };
 
 // --------------------変数--------------------
@@ -124,7 +125,7 @@ Triangle_coordinate triCoords[2] = {
 	new TriangleCoords(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 8)*/
 };
 
-DispInfo timeDispInfo[4] = {
+DispInfo timeDispInfo[5] = {
     // 月
     {int(FONT_WIDTH * DATE_SIZE * 2.5), DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2 - 1, DATE_SIZE},
     // 日
@@ -132,7 +133,9 @@ DispInfo timeDispInfo[4] = {
     // 時間   
     {0, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE},
     // 分
-    {FONT_WIDTH * TIME_SIZE * 3, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE}
+    {FONT_WIDTH * TIME_SIZE * 3, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE},
+    // 秒
+    {FONT_WIDTH * TIME_SIZE * 6, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE}
 };
 // シフトポジション表示座標
 Coordinate gearCoord = {98,24};
@@ -146,6 +149,8 @@ DispInfo voltDispInfo = {0, 0, 3};
 RTC_DS1307 rtc;
 // IOエキスパンダ
 Adafruit_PCF8574 pcf;
+// ADコンバータ
+Adafruit_ADS1X15 ads;
 // 温度計
 Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
 // ディスプレイ
@@ -194,6 +199,10 @@ void setup(void) {
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
+    // ADコンバータ
+    ads.setGain(GAIN_TWOTHIRDS);
+    ads.begin(ADS_ADDRESS, &Wire1);
+    
 
     // 疑似ウインカーリレー
     pinMode(DMY_RELAY, OUTPUT);
@@ -218,7 +227,7 @@ void setup(void) {
     tft.setFont();
 	tft.setTextSize(timeDispInfo[HOUR].size);
     tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
-    tft.print("  :  ");
+    tft.print("  :  :");
     // 日付
 	tft.setTextSize(timeDispInfo[MONTH].size);
     tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
@@ -263,8 +272,9 @@ void loop() {
     // 温度モニタリング・表示
     if(tempTime <= time){
         tempDisplay(&tft, &lm75);
-        Serial.println(lm75.readTemperatureC());
         tempTime += TEMP_INTERVAL;
+        Serial.print("Voltage:");
+        //Serial.println(ads.readADC_SingleEnded(0));
     }
 	// 時計表示処理
 	if(clockTime <= time){
@@ -363,7 +373,6 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tf
 					 color);
 }
 
-
 void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
     //
     static int nowTempx10 = 0;
@@ -390,6 +399,7 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
         nowTempx10 = newTempx10;
     }
 }
+
 /**
  * 経過時間表示処理
  * @param totalSec long型 経過時間(秒)
@@ -398,7 +408,9 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
  */
 void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     // 時刻用変数
-    int newTimeItems[4] = {99,99,99,99};
+    int newTimeItems[5] = {99,99,99,99,99};
+    static boolean firstFlag = true;
+    //static int sec = 0;
     // 現在時刻取得
     DateTime now = rtc_ds1307->now();
     // 月・日・時間・分取得
@@ -406,11 +418,27 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     newTimeItems[DAY]    = now.day();
     newTimeItems[HOUR]   = now.hour();
     newTimeItems[MINUTE] = now.minute();
-
+    newTimeItems[SECOND] = now.second();
+    /*
+    if(sec != newTimeItems[SECOND]){
+        Serial.print(now.year());
+        Serial.print("/");
+        Serial.print(newTimeItems[MONTH]);
+        Serial.print("/");
+        Serial.print(newTimeItems[DAY]);
+        Serial.print(" ");
+        Serial.print(newTimeItems[HOUR]);
+        Serial.print(":");
+        Serial.println(newTimeItems[MINUTE]);
+        Serial.print(":");
+        Serial.println(newTimeItems[SECOND]);
+        sec = newTimeItems[SECOND];
+    }
+    */
     // 時刻データでループ
-    for(int i=0; i<4; i++){
-        if(timeItems[i] != newTimeItems[i]){
-    
+    for(int i=0; i<5; i++){
+        if(firstFlag == true || timeItems[i] != newTimeItems[i]){
+
             tft->setTextSize(timeDispInfo[i].size);
             // ----------削除処理----------
             // 背景色・カーソル設定・値表示
@@ -433,6 +461,7 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
             timeItems[i] = newTimeItems[i];
         }
     }
+    firstFlag = false;
 }
 
 /**
