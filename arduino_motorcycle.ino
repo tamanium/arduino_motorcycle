@@ -200,10 +200,8 @@ void setup(void) {
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
     // ADコンバータ
-    ads.setGain(GAIN_TWOTHIRDS);
     ads.begin(ADS_ADDRESS, &Wire1);
     
-
     // 疑似ウインカーリレー
     pinMode(DMY_RELAY, OUTPUT);
     // ウインカー音
@@ -273,8 +271,10 @@ void loop() {
     if(tempTime <= time){
         tempDisplay(&tft, &lm75);
         tempTime += TEMP_INTERVAL;
+        uint16_t raw = ads.readADC_SingleEnded(3);
+        String voltage = String((raw * 0.0001875f), 2);
         Serial.print("Voltage:");
-        //Serial.println(ads.readADC_SingleEnded(0));
+        Serial.println(voltage);
     }
 	// 時計表示処理
 	if(clockTime <= time){
