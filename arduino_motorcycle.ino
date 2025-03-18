@@ -195,7 +195,7 @@ void setup(void) {
     // IOエキスパンダ
     pcf.begin(PCF_ADDRESS, &Wire1);
 	// RTC
-    rtc.begin(&Wire1);
+    //rtc.begin(&Wire1);
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
@@ -221,6 +221,7 @@ void setup(void) {
 	//tft.setCursor(200, 0);
 	//tft.print('-');
     // 時間
+/*
 	tft.setTextColor(ST77XX_WHITE);
     tft.setFont();
 	tft.setTextSize(timeDispInfo[HOUR].size);
@@ -241,6 +242,7 @@ void setup(void) {
     tft.setTextSize(1);
     tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2- 4, DISP_HEIGHT - FONT_HEIGHT * 2 - 1 - 8);
     tft.print('o');
+*/
 }
 
 // ------------------------------ループ------------------------------
@@ -277,11 +279,13 @@ void loop() {
         Serial.println(voltage);
     }
 	// 時計表示処理
+/*
 	if(clockTime <= time){
         // 時刻表示
         realTimeDisplay(&tft, &rtc);
 		clockTime += CLOCK_INTERVAL;
 	}
+*/
 	// 各種表示処理
 	if(displayTime <= time){
 		//timeDisplay(time/1000, &tft);
