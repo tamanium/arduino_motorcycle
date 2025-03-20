@@ -37,13 +37,6 @@
 // 疑似ウインカーリレー
 #define DMY_RELAY 0
 
-// IOエキスパンダのアドレス
-#define PCF_ADDRESS 0x27
-// 温度計のアドレス
-#define LM75_ADDRESS 0x48
-// ADコンバータのアドレス(ADDRピンをVDDに接続)
-#define ADS_ADDRESS 0x49
-
 // --------------------定数--------------------
 const int CLOCK_INTERVAL   = 200;   //ms
 const int MONITOR_INTERVAL = 5;     //ms
@@ -116,6 +109,39 @@ struct DispInfo{
     int size = 0;
 };
 
+//
+struct Module{
+    String name;
+    byte address;
+};
+Module moduleArr[] = {
+    {"therm",0x48}, // LM75 温度計
+    {"ioExp",0x27}, // PCF8574 エキスパンダ
+    {"adCnv",0x49}  // ADS1115 ADコンバータ
+};
+enum ModuleNum{
+    THERM,
+    IOEXP,
+    ADCNV
+};
+
+/**
+ * i2cモジュールのアドレスから名前を取得 
+ *
+ * @param adrs i2cモジュールのアドレス
+ * @return i2cモジュールの名前
+ */
+String getModuleName(byte adrs){
+    String retStr = "unknown";
+    for(Module m : moduleArr){
+        if(m.address == adrs){
+            retStr = m.name;
+            break;
+        }
+    }
+    return retStr;
+}
+
 // --------------------インスタンス--------------------
 // 表示座標
 Triangle_coordinate triCoords[2] = {
@@ -145,6 +171,10 @@ DispInfo gearDispInfo = {200, 0, 1};
 DispInfo tempDispInfo = {DISP_WIDTH - FONT_WIDTH * TEMP_SIZE * 5 - 1, DISP_HEIGHT - FONT_HEIGHT * TEMP_SIZE - 1, TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
+
+
+
+
 // RTC
 RTC_DS1307 rtc;
 // IOエキスパンダ
@@ -152,7 +182,7 @@ Adafruit_PCF8574 pcf;
 // ADコンバータ
 Adafruit_ADS1X15 ads;
 // 温度計
-Generic_LM75 lm75(&Wire1, LM75_ADDRESS);
+Generic_LM75 lm75(&Wire1, moduleArr[THERM].address);
 // ディスプレイ
 Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 // ギアポジション
@@ -191,30 +221,38 @@ void setup(void) {
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
     Wire1.begin();// いらないけど明示しておく
+    byte dummy;
 
-
-    for(adrs=1;adrs<127;adrs++){
+    for(byte adrs=1;adrs<127;adrs++){
+        tft.setTextColor(ST77XX_WHITE);
         Wire1.beginTransmission(adrs);
-        error = Wire.endTransmission();
-
+        byte error = Wire1.endTransmission();
+        String name = getModuleName(adrs);
+        
         if(error == 0){
-            tft.println(adrs);
+            tft.print(name + " : ");
+            tft.setTextColor(ST77XX_GREEN);
+            tft.println("OK");
+        }
+        else if(name != "unknown"){
+            tft.print(name + " : ");
+            tft.println("NG");
         }
     }
+    tft.setTextColor(ST77XX_GREEN);
     tft.print("done");
-    while(true){
-        ;
-    }
+    delay(5000);
+
 
     // IOエキスパンダ
-    pcf.begin(PCF_ADDRESS, &Wire1);
+    pcf.begin(moduleArr[IOEXP].address, &Wire1);
 	// RTC
     //rtc.begin(&Wire1);
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
     // ADコンバータ
-    ads.begin(ADS_ADDRESS, &Wire1);
+    ads.begin(moduleArr[ADCNV].address, &Wire1);
     
     // 疑似ウインカーリレー
     pinMode(DMY_RELAY, OUTPUT);
