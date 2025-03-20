@@ -184,13 +184,27 @@ void setup(void) {
 	tft.setTextColor(ST77XX_GREEN);
 	tft.setCursor(0, 0);
 	tft.setTextWrap(true);
-	tft.print("hello");
+	tft.println("hello");
 	delay(2000);
 
 	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
     Wire1.begin();// いらないけど明示しておく
+
+
+    for(adrs=1;adrs<127;adrs++){
+        Wire1.beginTransmission(adrs);
+        error = Wire.endTransmission();
+
+        if(error == 0){
+            tft.println(adrs);
+        }
+    }
+    tft.print("done");
+    while(true){
+        ;
+    }
 
     // IOエキスパンダ
     pcf.begin(PCF_ADDRESS, &Wire1);
