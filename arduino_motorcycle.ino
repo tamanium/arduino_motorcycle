@@ -115,31 +115,43 @@ struct Module{
     byte address;
 };
 Module moduleArr[] = {
-    {"therm",0x48}, // LM75 温度計
     {"ioExp",0x27}, // PCF8574 エキスパンダ
-    {"adCnv",0x49}  // ADS1115 ADコンバータ
+    {"therm",0x48},
+    {"adCnv",0x4A},  // ADS1115 ADコンバータ
+    {"rtc_a",0x50},
+    {"rtc_d",0x68}
 };
 enum ModuleNum{
-    THERM,
     IOEXP,
-    ADCNV
+    THERM,
+    ADCNV,
+    RTC_A,
+    RTC_D
 };
 
 /**
  * i2cモジュールのアドレスから名前を取得 
  *
  * @param adrs i2cモジュールのアドレス
- * @return i2cモジュールの名前
+ * @return i2cモジュールの名前 hitしなければアドレス
  */
 String getModuleName(byte adrs){
-    String retStr = "unknown";
+    String retStr = "";
     for(Module m : moduleArr){
         if(m.address == adrs){
-            retStr = m.name;
-            break;
+            return m.name;
         }
     }
-    return retStr;
+    return String(adrs, HEX)+"   ";
+}
+
+bool existsModule(byte adrs){
+    for(Module m : moduleArr){
+        if(m.address == adrs){
+            return true;
+        }
+    }
+    return false;
 }
 
 // --------------------インスタンス--------------------
@@ -171,9 +183,6 @@ DispInfo gearDispInfo = {200, 0, 1};
 DispInfo tempDispInfo = {DISP_WIDTH - FONT_WIDTH * TEMP_SIZE * 5 - 1, DISP_HEIGHT - FONT_HEIGHT * TEMP_SIZE - 1, TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
-
-
-
 
 // RTC
 RTC_DS1307 rtc;
@@ -221,20 +230,19 @@ void setup(void) {
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
     Wire1.begin();// いらないけど明示しておく
-    byte dummy;
 
+    // i2cモジュールの検索
     for(byte adrs=1;adrs<127;adrs++){
         tft.setTextColor(ST77XX_WHITE);
         Wire1.beginTransmission(adrs);
         byte error = Wire1.endTransmission();
         String name = getModuleName(adrs);
-        
         if(error == 0){
             tft.print(name + " : ");
             tft.setTextColor(ST77XX_GREEN);
             tft.println("OK");
         }
-        else if(name != "unknown"){
+        else if(existsModule(adrs)){
             tft.print(name + " : ");
             tft.println("NG");
         }
@@ -247,7 +255,7 @@ void setup(void) {
     // IOエキスパンダ
     pcf.begin(moduleArr[IOEXP].address, &Wire1);
 	// RTC
-    //rtc.begin(&Wire1);
+    rtc.begin(&Wire1);
 	// 時計合わせ
     //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
@@ -273,7 +281,6 @@ void setup(void) {
 	//tft.setCursor(200, 0);
 	//tft.print('-');
     // 時間
-/*
 	tft.setTextColor(ST77XX_WHITE);
     tft.setFont();
 	tft.setTextSize(timeDispInfo[HOUR].size);
@@ -294,7 +301,6 @@ void setup(void) {
     tft.setTextSize(1);
     tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2- 4, DISP_HEIGHT - FONT_HEIGHT * 2 - 1 - 8);
     tft.print('o');
-*/
 }
 
 // ------------------------------ループ------------------------------
@@ -330,14 +336,14 @@ void loop() {
         Serial.print("Voltage:");
         Serial.println(voltage);
     }
+
 	// 時計表示処理
-/*
 	if(clockTime <= time){
         // 時刻表示
         realTimeDisplay(&tft, &rtc);
 		clockTime += CLOCK_INTERVAL;
 	}
-*/
+
 	// 各種表示処理
 	if(displayTime <= time){
 		//timeDisplay(time/1000, &tft);
