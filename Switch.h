@@ -8,10 +8,14 @@ class Switch{
 	private:
 		int pinSwitch;		// スイッチ読み取りピン
 		bool status;	// スイッチ状態
-        Adafruit_PCF8574 *pcf;// IOエキスパンダ
+		bool pushFlag; // プッシュしたか
+		bool longPressFlag; // 長押ししているか
+		Adafruit_PCF8574 *pcf;// IOエキスパンダ
 	public:
         Switch(int pinSwitch, Adafruit_PCF8574 *pcf);// コンストラクタ
         bool getStatus();  //【Getter】ウインカー状態
+								bool isPush(); //プッシュしたか
+								bool isLongPress(); // 長押ししているか
 		void monitor();// ウインカー状態更新
 };
 
