@@ -23,19 +23,21 @@
 #define TFT_CS    6
 #define TFT_DC    7
 #define TFT_RST   8
+// ウインカー音
+#define BZZ_PIN 27
+// 疑似ウインカーリレー
+#define DMY_RELAY 0
+// ウインカー(IOエキスパンダ)
+#define WNK_LEFT  0
+#define WNK_RIGHT 1
+// スイッチ(IOエキスパンダ)
+#define SW 3
 // ギアポジション(IOエキスパンダ)
 #define POSN  2
 #define POS1  7
 #define POS2  6
 #define POS3  5
 #define POS4  4
-// ウインカー(IOエキスパンダ)
-#define WNK_LEFT  0
-#define WNK_RIGHT 1
-// ウインカー音
-#define BZZ_PIN 27
-// 疑似ウインカーリレー
-#define DMY_RELAY 0
 
 // --------------------定数--------------------
 const int CLOCK_INTERVAL   = 200;   //ms
