@@ -11,6 +11,7 @@
 #include "Define.h"			// 値定義
 #include "GearPositions.h"	// ギアポジションクラス
 #include "Winker.h"			// ウインカークラス
+#include "Switch.h"//スイッチクラス
 
 // --------------------ピン定義--------------------
 // I2C
