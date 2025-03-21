@@ -8,6 +8,8 @@
 Switch::Switch(int pinSwitch, Adafruit_PCF8574 *pcf){
 	this->pinSwitch = pinSwitch;
 	this->status = false;
+　this->pushFlag = false;
+ this->longPressFlag = false;
     this->pcf = pcf;
 }
 
@@ -18,6 +20,31 @@ Switch::Switch(int pinSwitch, Adafruit_PCF8574 *pcf){
 bool Switch::getStatus(){
     return this->status;
 }
+
+/**
+ * 【Getter】プッシュされたか取得
+ * @return プッシュされた場合true返却(フラグをfalseに戻す)
+ */
+bool Switch::isPush(){
+    bool returnBool = this->pushFlag;
+if(returnBool){
+ this->pushFlag = false;
+}
+    return returnBool;
+}
+
+/**
+ * 【Getter】長押しされたか取得
+ * @return 長押しされた場合true(フラグをfalseに戻す)
+ */
+bool Switch::isLongPress(){
+    bool returnBool = this->longPressFlag;
+if(returnBool){
+ this->longPreasFlag = false;
+}
+    return returnBool;
+}
+
 
 /**
  *  ウインカー状態を更新
@@ -40,14 +67,23 @@ void Winkers::monitor(){
 		bufferStatus = newStatus;
 		counter = 0;
 	}
-	// 現在状態と直前状態が異なる場合
-	else if(this->status != bufferStatus){
+	// 現在状態と直前状態が異なる場合、またはキーダウンが持続している場合
+	else if(this->status != bufferStatus || newStatus == true){
 		counter++;
 	}
+
 	// 5カウント以上の場合
-	if(5 <= counter){
-		// 現在状態に直前状態を代入し、カウンタをリセット
-		this->status = bufferStatus;
-		counter = 0;
-	}
+  if(5 <= counter){
+		  // 現在状態に直前状態を代入
+		  this->status = bufferStatus;
+    // キーアップの場合
+    if(this->status == false){
+      counter = 0;
+    }
+    // キーダウンで200カウント以上の場合
+    else if(200 <= counter && this->longPressFlag == false){
+      this->longPressFlag = true;
+      counter = 0;
+    }
+  }
 }
