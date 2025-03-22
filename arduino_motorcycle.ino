@@ -61,16 +61,16 @@ const int DISP_WIDTH = 320;
 const int DISP_HEIGHT = 240;
 
 enum LR{
-    LEFT,
-    RIGHT
+	LEFT,
+	RIGHT
 };
 
 enum TimeItem{
-    MONTH,
-    DAY,
-    HOUR,
-    MINUTE,
-    SECOND
+	MONTH,
+	DAY,
+	HOUR,
+	MINUTE,
+	SECOND
 };
 
 // --------------------変数--------------------
@@ -106,9 +106,9 @@ struct Coordinate {
 
 // 表示情報
 struct DispInfo{
-    int x = 0;
-    int y = 0;
-    int size = 0;
+	int x = 0;
+	int y = 0;
+	int size = 0;
 };
 
 //
@@ -312,14 +312,16 @@ void loop() {
    
     // 疑似ウインカーリレー
     if(debugWinkerTime <= time){
-        if(digitalRead(DMY_RELAY) == HIGH){
-            digitalWrite(DMY_RELAY, LOW);
-        }
-        else{
-            digitalWrite(DMY_RELAY, HIGH);
-        }
-        debugWinkerTime += WINKER_DURATION;
-    }
+		//if(digitalRead(DMY_RELAY) == HIGH){
+		// 	digitalWrite(DMY_RELAY, LOW);
+		//}
+		//else{
+		//	digitalWrite(DMY_RELAY, HIGH);
+		//}
+		// 出力反転
+		digitalWrite(DMY_RELAY, !digitalRead(DMY_RELAY));
+		debugWinkerTime += WINKER_DURATION;
+	}
 
     // 各種モニタリング・更新
 	if(monitorTime <= time){
@@ -501,8 +503,6 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 			beforePush = nowPush;
 		}
 	}
-
-	
 }
 
 /**
