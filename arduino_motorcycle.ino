@@ -5,13 +5,13 @@
 #include <RTClib.h>                     // 時計機能
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
 #include <Temperature_LM75_Derived.h>   // 温度計
-#include <Adafruit_ADS1X15.h>
+#include <Adafruit_ADS1X15.h>           // ADコンバータ
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
 #include "GearPositions.h"	// ギアポジションクラス
 #include "Winker.h"			// ウインカークラス
-#include "Switch.h"//スイッチクラス
+#include "Switch.h"         //スイッチクラス
 
 // --------------------ピン定義--------------------
 // I2C
@@ -44,7 +44,7 @@
 const int CLOCK_INTERVAL   = 200;   //ms
 const int MONITOR_INTERVAL = 5;     //ms
 const int DISPLAY_INTERVAL = 30;    //ms
-const int TEMP_INTERVAL    = 1000;    //ms
+const int TEMP_INTERVAL    = 1000;  //ms
 const int BUZZER_DURATION  = 100;   //ms
 const int WINKER_DURATION  = 380;   //ms
 // 時刻表示の時・分表示位置
@@ -186,7 +186,6 @@ DispInfo gearDispInfo = {200, 0, 1};
 DispInfo tempDispInfo = {DISP_WIDTH - FONT_WIDTH * TEMP_SIZE * 5 - 1, DISP_HEIGHT - FONT_HEIGHT * TEMP_SIZE - 1, TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
-
 // RTC
 RTC_DS1307 rtc;
 // IOエキスパンダ
@@ -201,6 +200,8 @@ Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
 Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
+// スイッチ
+Switch pushSw(SW, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -253,7 +254,6 @@ void setup(void) {
     tft.setTextColor(ST77XX_GREEN);
     tft.print("done");
     delay(5000);
-
 
     // IOエキスパンダ
     pcf.begin(moduleArr[IOEXP].address, &Wire1);
@@ -328,6 +328,8 @@ void loop() {
 		gearPositions.monitor();
         // 現在のウインカー状態を取得
 		winkers.monitor();
+        // スイッチ状態取得
+        pushSw.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
     // 温度モニタリング・表示
@@ -349,7 +351,9 @@ void loop() {
 
 	// 各種表示処理
 	if(displayTime <= time){
-		//timeDisplay(time/1000, &tft);
+        // デバッグ用スイッチ表示
+        displaySwitch(&pushSw, &tft);
+        // ギア表示
 		gearDisplay(gearPositions.getGear(), &tft);
 		bool isSwitchStatus = winkersDisplay(winkers, &tft);
 		// ウインカー点灯状態が切り替わった場合
@@ -438,35 +442,85 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tf
 					 color);
 }
 
-void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
-    //
-    static int nowTempx10 = 0;
-    int newTempx10 = lm75->readTemperatureC() * 10;
-    if(nowTempx10 != newTempx10){
+void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
+    static bool beforeSw = false;
+    bool nowSw = sw->getStatus();
+    tft->setTextSize(tempDispInfo.size);
+    tft->setCursor(0, 0);
+
+    // 前回と状態が異なる場合
+    if(beforeSw != nowSw){
+        // 表示リセット
         tft->setTextColor(ST77XX_BLACK);
-        tft->setTextSize(tempDispInfo.size);
-        tft->setCursor(tempDispInfo.x, tempDispInfo.y);
-        if(0 <= nowTempx10 && nowTempx10 < 100){
-            tft->print(' ');
+        if(beforeSw){
+            tft->print("ON");
         }
-        tft->print(int(nowTempx10/10));
-        tft->print('.');
-        tft->print(int(nowTempx10)%10);
-        
-        tft->setTextColor(ST77XX_WHITE);
-        tft->setCursor(tempDispInfo.x, tempDispInfo.y);
-        if(0 <= newTempx10 && newTempx10 < 10){
-            tft->print(' ');
+        else{
+            tft->print("OFF");
         }
-        tft->print(int(newTempx10/10));
-        tft->print('.');
-        tft->print(int(newTempx10)%10);
-        nowTempx10 = newTempx10;
+        //　前回状態を更新
+        beforeSw = nowSw;
+        tft->setCursor(0, 0);
+    }
+
+    if(nowSw){
+        tft->setTextColor(ST77XX_RED);
+        tft->print("ON");
+    }
+    else{
+        tft->setTextColor(ST77XX_BLUE);
+        tft->print("OFF");
     }
 }
 
 /**
+ * 温度表示
+ * 
+ * @param *tft IOエキスパンダ
+ * @param *lm75 温度計モジュール
+ */
+void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
+    static int nowTempx10 = 0;
+    // 温度取得(10倍)
+    int newTempx10 = lm75->readTemperatureC() * 10;
+    // 100度以上の場合は99.9度(変数では999)に修正
+    if(1000 <= newTempx10){
+        newTempx10 = 999;
+    }
+    else if(newTempx10 <= 0){
+        newTempx10 = 0;
+    }
+    // 前回温度と同じ場合、スキップ
+    if(nowTempx10 == newTempx10){
+        return;
+    }
+    //
+    tft->setTextColor(ST77XX_BLACK);
+    tft->setTextSize(tempDispInfo.size);
+    tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+    // 温度が一桁の場合、10の位にスペース
+    if(0 <= nowTempx10 && nowTempx10 < 100){
+        tft->print(' ');
+    }
+    tft->print(int(nowTempx10/10));
+    tft->print('.');
+    tft->print(int(nowTempx10)%10);
+
+    tft->setTextColor(ST77XX_WHITE);
+    tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+    // 温度が一桁の場合、10の位にスペース
+    if(0 <= newTempx10 && newTempx10 < 100){
+        tft->print(' ');
+    }
+    tft->print(int(newTempx10/10));
+    tft->print('.');
+    tft->print(int(newTempx10)%10);
+    nowTempx10 = newTempx10;
+}
+
+/**
  * 経過時間表示処理
+ *
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
@@ -475,7 +529,6 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     // 時刻用変数
     int newTimeItems[5] = {99,99,99,99,99};
     static boolean firstFlag = true;
-    //static int sec = 0;
     // 現在時刻取得
     DateTime now = rtc_ds1307->now();
     // 月・日・時間・分取得
@@ -484,22 +537,6 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
     newTimeItems[HOUR]   = now.hour();
     newTimeItems[MINUTE] = now.minute();
     newTimeItems[SECOND] = now.second();
-    /*
-    if(sec != newTimeItems[SECOND]){
-        Serial.print(now.year());
-        Serial.print("/");
-        Serial.print(newTimeItems[MONTH]);
-        Serial.print("/");
-        Serial.print(newTimeItems[DAY]);
-        Serial.print(" ");
-        Serial.print(newTimeItems[HOUR]);
-        Serial.print(":");
-        Serial.println(newTimeItems[MINUTE]);
-        Serial.print(":");
-        Serial.println(newTimeItems[SECOND]);
-        sec = newTimeItems[SECOND];
-    }
-    */
     // 時刻データでループ
     for(int i=0; i<5; i++){
         if(firstFlag == true || timeItems[i] != newTimeItems[i]){

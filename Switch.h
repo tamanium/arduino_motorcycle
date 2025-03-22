@@ -6,17 +6,18 @@
 // スイッチクラス
 class Switch{
 	private:
-		int pinSwitch;		// スイッチ読み取りピン
-		bool status;	// スイッチ状態
-		bool pushFlag; // プッシュしたか
-		bool longPressFlag; // 長押ししているか
-		Adafruit_PCF8574 *pcf;// IOエキスパンダ
+		int pinSwitch;          // スイッチ読み取りピン
+		bool status;            // スイッチ状態
+		bool pushFlag;          // プッシュしたか
+		bool longPressFlag;     // 長押ししているか
+		Adafruit_PCF8574 *pcf;  // IOエキスパンダ
 	public:
-        Switch(int pinSwitch, Adafruit_PCF8574 *pcf);// コンストラクタ
-        bool getStatus();  //【Getter】ウインカー状態
-								bool isPush(); //プッシュしたか
-								bool isLongPress(); // 長押ししているか
-		void monitor();// ウインカー状態更新
+        // コンストラクタ
+        Switch(int pinSwitch, Adafruit_PCF8574 *pcf);
+        bool getStatus();       //【Getter】ウインカー状態
+		bool isPush();          // プッシュしたか
+		bool isLongPress();     // 長押ししているか
+		void monitor();         // ウインカー状態更新
 };
 
 #endif
