@@ -88,7 +88,6 @@ uint16_t timeItems[4] = {0,0,0,0};
 // シフトポジション配列
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 
-//String defaultRealTime ="2024/10/25 00:00:00";
 char nowTime[] = " 0:00";
 // 三角形描画用座標
 struct Triangle_coordinate {
@@ -279,10 +278,10 @@ void setup(void) {
 	//tft.print("gear");
 	
 	// ギアポジション表示開始その2
-	//tft.setTextColor(ST77XX_WHITE);
-	//tft.setTextSize(8);
-	//tft.setCursor(200, 0);
-	//tft.print('-');
+	tft.setTextColor(ST77XX_WHITE);
+	tft.setTextSize(8);
+	tft.setCursor(gearCoord.x, gearCoord.y);
+	tft.print('-');
     // 時間
 	tft.setTextColor(ST77XX_WHITE);
     tft.setFont();
@@ -299,10 +298,10 @@ void setup(void) {
     tft.print("  . ");
     // 温度の単位
     tft.setTextSize(2);
-    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2- 1, DISP_HEIGHT - FONT_HEIGHT * 2 - 1);
+    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2 - 1, DISP_HEIGHT - FONT_HEIGHT * 2 - 1);
     tft.print('C');
     tft.setTextSize(1);
-    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2- 4, DISP_HEIGHT - FONT_HEIGHT * 2 - 1 - 8);
+    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2 - 4, DISP_HEIGHT - FONT_HEIGHT * 2 - 1 - 8);
     tft.print('o');
 }
 
@@ -332,7 +331,7 @@ void loop() {
         pushSw.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
-    // 温度モニタリング・表示
+    // 温度電圧モニタリング・表示
     if(tempTime <= time){
         tempDisplay(&tft, &lm75);
         tempTime += TEMP_INTERVAL;
@@ -381,20 +380,21 @@ void loop() {
 void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 	// バッファ文字列
 	static char nowGear = '-';
-	// 文字列比較
+	// バッファと引数が同じ場合スキップ
 	if(nowGear != newGear){
-		tft->setTextSize(8);
-		// ----------表示文字削除----------
-		tft->setCursor(gearCoord.x, gearCoord.y);
-        tft->setTextColor(ST77XX_BLACK);
-        tft->print(nowGear);
-		// ----------新規文字表示----------
-		tft->setCursor(gearCoord.x, gearCoord.y);
-        tft->setTextColor(ST77XX_WHITE);
-		tft->print(newGear);
-		// バッファ文字列を上書き
-		nowGear = newGear;
+		return;
 	}
+	tft->setTextSize(8);
+	// ----------表示文字削除----------
+	tft->setCursor(gearCoord.x, gearCoord.y);
+	tft->setTextColor(ST77XX_BLACK);
+	tft->print(nowGear);
+	// ----------新規文字表示----------
+	tft->setCursor(gearCoord.x, gearCoord.y);
+	tft->setTextColor(ST77XX_WHITE);
+	tft->print(newGear);
+	// バッファ文字列を上書き
+	nowGear = newGear;
 }
 
 /**
@@ -411,15 +411,16 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
 
 	for(int side=LEFT; side<=RIGHT; side++){
         // 左ウインカー状態を判定
-        if(buffer[side] != winkers.getStatus(side)){
-            // バッファ上書き
-            buffer[side] = winkers.getStatus(side);
-            // ディスプレイ表示処理
-            displayTriangle(triCoords[side], buffer[side], tft);
-            // フラグ立てる
-            isSwitched = true;
-        }
-    }
+		if(buffer[side] == winkers.getStatus(side)){
+			continue;
+		}
+		// バッファ上書き
+		buffer[side] = winkers.getStatus(side);
+		// ディスプレイ表示処理
+		displayTriangle(triCoords[side], buffer[side], tft);
+		// フラグ立てる
+		isSwitched = true;
+	}
 	return isSwitched;
 }
 /**
@@ -443,7 +444,9 @@ void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tf
 }
 
 void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
-    static bool beforeSw = false;
+	static bool beforeSw = false;
+	static bool beforePush = false;
+	static bool beforeLong = false;
     bool nowSw = sw->getStatus();
     tft->setTextSize(tempDispInfo.size);
     tft->setCursor(0, 0);
@@ -462,15 +465,44 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
         beforeSw = nowSw;
         tft->setCursor(0, 0);
     }
+    // キーダウンの場合
+	if(nowSw){
+		tft->setTextColor(ST77XX_RED);
+		tft->print("ON  ");
+		// 長押し
+		if(sw->isLongPress(){
+			tft->setCursor(200,0);
+			tft->print("long");
+			beforeLong = true;
+		}
+		// プッシュ
+		if(sw->isPush()){
+			tft->setTextColor(ST77XX_BLACK);
+			tft->setCursor(100,0);
+			tft->print("push");
+		}
+	}
+	// キーアップの場合
+	else{
+		tft->setTextColor(ST77XX_BLUE);
+		tft->print("OFF ");
+		// 長押し
+		if(beforeLong){
+			tft->setTextColor(ST77XX_BLACK);
+			tft->setCursor(200,0);
+			tft->print("long");
+			beforeLong = false;
+		}
+		// プッシュ
+		bool nowPush = sw->isPush();
+		if(nowPush){
+			tft->setCursor(100,0);
+			tft->print("push");
+			beforePush = nowPush;
+		}
+	}
 
-    if(nowSw){
-        tft->setTextColor(ST77XX_RED);
-        tft->print("ON");
-    }
-    else{
-        tft->setTextColor(ST77XX_BLUE);
-        tft->print("OFF");
-    }
+	
 }
 
 /**
