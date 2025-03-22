@@ -36,34 +36,30 @@ bool Switch::isPush(){
 }
 
 /**
- * 長押しされたか取得
+ * 長押しされているか取得
  *
- * @return 長押しされた場合true(フラグをfalseに戻す)
+ * @return 長押しされている場合true
  */
 bool Switch::isLongPress(){
-    bool returnBool = this->longPressFlag;
-    if(returnBool){
-        this->longPressFlag = false;
-    }
-    return returnBool;
+    return this->longPressFlag;
 }
 
 /**
  *  ウインカー状態を更新
  */
- void Switch::monitor(){
-    // カウンタ
-    static int counter = 0;
-    // 直前状態
-    static bool bufferStatus = false;
-    // 現在状態
-    bool newStatus = false;
-    // 各ピンを読み取りウインカー状態へセット
-    if(this->pcf->digitalRead(pinSwitch) == LOW){
+void Switch::monitor(){
+	// カウンタ
+	static int counter = 0;
+	// 直前状態
+	static bool bufferStatus = false;
+	// 現在状態
+	bool newStatus = false;
+	// 各ピンを読み取りウインカー状態へセット
+	if(this->pcf->digitalRead(pinSwitch) == LOW){
 		newStatus = true;
 	}
 
-    // 直前状態と取得状態が異なる場合
+	// 直前状態と取得状態が異なる場合
 	if(bufferStatus != newStatus) {
 		// 直前状態を更新・カウンタをリセット
 		bufferStatus = newStatus;
@@ -74,18 +70,30 @@ bool Switch::isLongPress(){
 		counter++;
 	}
 
+	// キーダウンで200カウント以上の場合
+	if(200 <= counter && this->longPressFlag == false){
+		// 長押しフラグ
+		this->longPressFlag = true;
+		counter = 0;
+		return;
+	}
 	// 5カウント以上の場合
-    if(5 <= counter){
+	if(5 <= counter){
 		// 現在状態に直前状態を代入
 		this->status = bufferStatus;
-        // キーアップの場合
-        if(this->status == false){
-        counter = 0;
-    }
-    // キーダウンで200カウント以上の場合
-    else if(200 <= counter && this->longPressFlag == false){
-        this->longPressFlag = true;
-        counter = 0;
-    }
-  }
+		// キーアップの場合
+		if(this->status == false){
+			counter = 0;
+			// 長押しフラグリセット
+			this->longPressFlag = false;
+			// プッシュフラグオン
+			this->pushFlag = true;
+		}
+		// キーダウンの場合
+		else{
+			// プッシュフラグリセット
+			this->pushFlag = false;
+		}
+	}
+
 }
