@@ -109,7 +109,7 @@ struct Locations {
 	Location location = {0, 0};
 	uint16_t color = ST77XX_WHITE;
 	int size = 1;
-}
+};
 struct DisplayInfo {
     Location location;
     int fontSize;
@@ -513,7 +513,7 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 			tft->setCursor(100,0);
 			nowBrightLv++;
 			if(brightLvMax < nowBrightLv){
-				nowBrightLv = 0
+				nowBrightLv = 0;
 			}
 			analogWrite(TFT_BL,brightLevel[nowBrightLv]);
 			tft->print(nowBrightLv);
