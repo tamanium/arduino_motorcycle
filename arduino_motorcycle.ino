@@ -90,7 +90,7 @@ int gears[] = {POSN, POS1, POS2, POS3, POS4};
 
 char nowTime[] = " 0:00";
 // 三角形描画用座標
-struct Triangle_coordinate {
+struct TriangleLocation {
 	int x1;
 	int y1;
 	int x2;
@@ -99,9 +99,17 @@ struct Triangle_coordinate {
 	int y3;
 };
 // 座標
-struct Coordinate {
+struct Location {
 	int x = 0;
 	int y = 0;
+};
+
+//struct Locations {
+//    Location  
+//}
+struct DisplayInfo {
+    Location location;
+    int fontSize;
 };
 
 // 表示情報
@@ -158,7 +166,7 @@ bool existsModule(byte adrs){
 
 // --------------------インスタンス--------------------
 // 表示座標
-Triangle_coordinate triCoords[2] = {
+TriangleLocation triCoords[2] = {
     {30, 0+24, 30, 160+24, 0, 80+24},
     {DISP_WIDTH-30-1, 0+24, DISP_WIDTH-30-1, 160+24, DISP_WIDTH-1, 80+24}
 	/*new TriangleCoords(30, 0, 30, 160, 0, 80);
@@ -178,7 +186,7 @@ DispInfo timeDispInfo[5] = {
     {FONT_WIDTH * TIME_SIZE * 6, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE}
 };
 // シフトポジション表示座標
-Coordinate gearCoord = {98,24};
+Location gearCoord = {98,24};
 // シフトポジション：座標と文字倍率
 DispInfo gearDispInfo = {200, 0, 1};
 // 温度表示：座標と文字倍率
@@ -383,7 +391,7 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 	// バッファ文字列
 	static char nowGear = '-';
 	// バッファと引数が同じ場合スキップ
-	if(nowGear != newGear){
+	if(nowGear == newGear){
 		return;
 	}
 	tft->setTextSize(8);
@@ -427,11 +435,11 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
 }
 /**
  * 三角形表示処理
- * @param coord Triangle_coordinate型 
+ * @param coord TriangleLocation型 
  * @param status bool型 true...点灯, false...消灯
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void displayTriangle(Triangle_coordinate coord, bool status, Adafruit_ST77xx *tft){
+void displayTriangle(TriangleLocation coord, bool status, Adafruit_ST77xx *tft){
 	// 文字色宣言（初期値は黒）
 	uint16_t color = ST77XX_BLACK;
 	// 条件trueの場合は文字色変更
@@ -472,13 +480,13 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 		tft->setTextColor(ST77XX_RED);
 		tft->print("ON  ");
 		// 長押し
-		if(sw->isLongPress(){
+		if(sw->isLongPress()){
 			tft->setCursor(200,0);
 			tft->print("long");
 			beforeLong = true;
 		}
 		// プッシュ
-		if(sw->isPush()){
+		if(beforePush){
 			tft->setTextColor(ST77XX_BLACK);
 			tft->setCursor(100,0);
 			tft->print("push");

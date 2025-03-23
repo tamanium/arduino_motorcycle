@@ -5,19 +5,19 @@
  * @param nowGear char型 表示値
  */
 GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
-  for(int i=0; i<len; i++){
-    char _char = '0';
-    if(i==0){
-      _char = 'N';
+    for(int i=0; i<len; i++){
+        char _char = '0';
+        if(i==0){
+            _char = 'N';
+        }
+        else{
+            _char += i;
+        }
+        this->gears[i] = Gear(pins[i], _char);
     }
-    else{
-      _char += i;
-    }
-    this->gears[i] = Gear(pins[i], _char);
-  }
-  this->numOfGear = len;
-  this->nowGear = '-';
-  this->pcf = pcf;
+    this->numOfGear = len;
+    this->nowGear = '-';
+    this->pcf = pcf;
 }
 
 /**
