@@ -105,9 +105,11 @@ struct Location {
 	int y = 0;
 };
 
-//struct Locations {
-//    Location  
-//}
+struct Locations {
+	Location location = {0, 0};
+	uint16_t color = ST77XX_WHITE;
+	int size = 1;
+}
 struct DisplayInfo {
     Location location;
     int fontSize;
