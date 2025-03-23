@@ -87,7 +87,8 @@ unsigned long debugWinkerTime  = 0; //疑似ウインカー
 uint16_t timeItems[4] = {0,0,0,0};
 // シフトポジション配列
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
-
+// 明るさレベル
+byte brightLevel[] = {50, 100, 150, 200, 250};
 char nowTime[] = " 0:00";
 // 三角形描画用座標
 struct TriangleLocation {
@@ -222,7 +223,7 @@ void setup(void) {
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
     // ディスプレイ明るさ設定(0-255)
-    analogWrite(TFT_BL,30);
+    analogWrite(TFT_BL,brightLevel[0]);
 
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
@@ -457,6 +458,8 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	static bool beforeSw = false;
 	static bool beforePush = false;
 	static bool beforeLong = false;
+	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
+	static int nowBrightLv = 0;
     bool nowSw = sw->getStatus();
     tft->setTextSize(tempDispInfo.size);
     tft->setCursor(0, 0);
@@ -485,12 +488,6 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 			tft->print("long");
 			beforeLong = true;
 		}
-		// プッシュ
-		if(beforePush){
-			tft->setTextColor(ST77XX_BLACK);
-			tft->setCursor(100,0);
-			tft->print("push");
-		}
 	}
 	// キーアップの場合
 	else{
@@ -506,8 +503,18 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 		// プッシュ
 		bool nowPush = sw->isPush();
 		if(nowPush){
+			tft->setTextColor(ST77XX_BLACK);
 			tft->setCursor(100,0);
-			tft->print("push");
+			tft->print(nowBrightLv);
+
+			tft->setTextColor(ST77XX_BLUE);
+			tft->setCursor(100,0);
+			nowBrightLv++;
+			if(brightLvMax < nowBrightLv){
+				nowBrightLv = 0
+			}
+			analogWrite(TFT_BL,brightLevel[nowBrightLv]);
+			tft->print(nowBrightLv);
 			beforePush = nowPush;
 		}
 	}
