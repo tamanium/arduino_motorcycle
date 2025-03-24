@@ -12,9 +12,9 @@ class Switch{
 		bool longPressFlag;     // 長押ししているか
 		Adafruit_PCF8574 *pcf;  // IOエキスパンダ
 	public:
-        // コンストラクタ
-        Switch(int pinSwitch, Adafruit_PCF8574 *pcf);
-        bool getStatus();       //【Getter】ウインカー状態
+		// コンストラクタ
+		Switch(int pinSwitch, Adafruit_PCF8574 *pcf);
+		bool getStatus();       //【Getter】ウインカー状態
 		bool isPush();          // プッシュしたか
 		bool isLongPress();     // 長押ししているか
 		void monitor();         // ウインカー状態更新
