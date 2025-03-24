@@ -232,8 +232,22 @@ void setup(void) {
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
   
+	tft.setTextSize(1);
+	tft.setTextColor(ST77XX_GREEN);
+	tft.setCursor(0,0);
+	tft.setTextWrap(true);
+	for(char i=0; i<=0x7f; i++){
+		tft.print(i);
+		tft.print(' ');
+		delay(500);
+	}
+	tft.println();
+	tft.print("done");
+	delay(5000);
+	tft.fillScreen(ST77XX_BLACK);
+
 	// 初期表示
-    tft.setTextSize(3);
+	tft.setTextSize(3);
 	tft.setTextColor(ST77XX_GREEN);
 	tft.setCursor(0, 0);
 	tft.setTextWrap(true);
@@ -241,9 +255,9 @@ void setup(void) {
 	delay(2000);
 
 	// I2C設定
-    Wire1.setSDA(I2C_SDA);
-    Wire1.setSCL(I2C_SCL);
-    Wire1.begin();// いらないけど明示しておく
+	Wire1.setSDA(I2C_SDA);
+	Wire1.setSCL(I2C_SCL);
+	Wire1.begin();// いらないけど明示しておく
 
     // i2cモジュールの検索
     for(byte adrs=1;adrs<127;adrs++){
