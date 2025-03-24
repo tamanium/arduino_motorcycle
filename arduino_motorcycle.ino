@@ -231,7 +231,7 @@ void setup(void) {
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
-  
+  /*
 	tft.setTextSize(1);
 	tft.setTextColor(ST77XX_GREEN);
 	tft.setCursor(0,0);
@@ -245,7 +245,7 @@ void setup(void) {
 	tft.print("done");
 	delay(5000);
 	tft.fillScreen(ST77XX_BLACK);
-
+*/
 	// 初期表示
 	tft.setTextSize(3);
 	tft.setTextColor(ST77XX_GREEN);
@@ -472,7 +472,6 @@ void displayTriangle(TriangleLocation coord, bool status, Adafruit_ST77xx *tft){
 
 void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	static bool beforeSw = false;
-	static bool beforePush = false;
 	static bool beforeLong = false;
 	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
 	static int nowBrightLv = 0;
@@ -511,19 +510,14 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 		tft->print("OFF ");
 		// 長押し
 		if(beforeLong){
-			tft->setTextColor(ST77XX_BLACK);
+			tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
 			tft->setCursor(200,0);
-			tft->print("long");
+			tft->print("    ");
 			beforeLong = false;
 		}
 		// プッシュ
-		bool nowPush = sw->isPush();
-		if(nowPush){
-			tft->setTextColor(ST77XX_BLACK);
-			tft->setCursor(100,0);
-			tft->print(nowBrightLv);
-
-			tft->setTextColor(ST77XX_BLUE);
+		else if(sw->isPush()){
+			tft->setTextColor(ST77XX_BLUE, ST77XX_BLACK);
 			tft->setCursor(100,0);
 			nowBrightLv++;
 			if(brightLvMax < nowBrightLv){
@@ -531,7 +525,6 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 			}
 			analogWrite(TFT_BL,brightLevel[nowBrightLv]);
 			tft->print(nowBrightLv);
-			beforePush = nowPush;
 		}
 	}
 }
@@ -558,18 +551,18 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
         return;
     }
     //
-    tft->setTextColor(ST77XX_BLACK);
-    tft->setTextSize(tempDispInfo.size);
-    tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+    //tft->setTextColor(ST77XX_BLACK);
+    //tft->setTextSize(tempDispInfo.size);
+    //tft->setCursor(tempDispInfo.x, tempDispInfo.y);
     // 温度が一桁の場合、10の位にスペース
-    if(0 <= nowTempx10 && nowTempx10 < 100){
-        tft->print(' ');
-    }
-    tft->print(int(nowTempx10/10));
-    tft->print('.');
-    tft->print(int(nowTempx10)%10);
+    //if(0 <= nowTempx10 && nowTempx10 < 100){
+    //    tft->print(' ');
+    //}
+    //tft->print(int(nowTempx10/10));
+    //tft->print('.');
+    //tft->print(int(nowTempx10)%10);
 
-    tft->setTextColor(ST77XX_WHITE);
+    tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
     tft->setCursor(tempDispInfo.x, tempDispInfo.y);
     // 温度が一桁の場合、10の位にスペース
     if(0 <= newTempx10 && newTempx10 < 100){
@@ -607,15 +600,15 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
             tft->setTextSize(timeDispInfo[i].size);
             // ----------削除処理----------
             // 背景色・カーソル設定・値表示
-            tft->setTextColor(ST77XX_BLACK);
-            tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
-            if(timeItems[i] < 10){
-                tft->print('0');
-            }
-            tft->print(timeItems[i]);
+            //tft->setTextColor(ST77XX_BLACK);
+            //tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
+            //if(timeItems[i] < 10){
+            //    tft->print('0');
+            //}
+            //tft->print(timeItems[i]);
             // ----------表示処理----------
             // 背景色・カーソル設定・値表示
-            tft->setTextColor(ST77XX_WHITE);
+            tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
             tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
             if(newTimeItems[i] < 10){
                 tft->print('0');
