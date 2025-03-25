@@ -90,14 +90,10 @@ int gears[] = {POSN, POS1, POS2, POS3, POS4};
 // 明るさレベル
 byte brightLevel[] = {50, 100, 150, 200, 250};
 char nowTime[] = " 0:00";
+
 // 三角形描画用座標
 struct TriangleLocation {
-	int x1;
-	int y1;
-	int x2;
-	int y2;
-	int x3;
-	int y3;
+	int x1, y1, x2, y2, x3, y3;
 };
 // 座標
 struct Location {
@@ -149,7 +145,6 @@ enum ModuleNum{
  * @return i2cモジュールの名前 hitしなければアドレス
  */
 String getModuleName(byte adrs){
-    String retStr = "";
     for(Module m : moduleArr){
         if(m.address == adrs){
             return m.name;
@@ -172,8 +167,6 @@ bool existsModule(byte adrs){
 TriangleLocation triCoords[2] = {
     {30, 0+24, 30, 160+24, 0, 80+24},
     {DISP_WIDTH-30-1, 0+24, DISP_WIDTH-30-1, 160+24, DISP_WIDTH-1, 80+24}
-	/*new TriangleCoords(30, 0, 30, 160, 0, 80);
-	new TriangleCoords(DISP_WIDTH-30-1, 0, DISP_WIDTH-30-1, 160, DISP_WIDTH-1, 8)*/
 };
 
 DispInfo timeDispInfo[5] = {
@@ -196,12 +189,10 @@ DispInfo gearDispInfo = {200, 0, 1};
 DispInfo tempDispInfo = {DISP_WIDTH - FONT_WIDTH * TEMP_SIZE * 5 - 1, DISP_HEIGHT - FONT_HEIGHT * TEMP_SIZE - 1, TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
-// RTC
-RTC_DS1307 rtc;
-// IOエキスパンダ
-Adafruit_PCF8574 pcf;
-// ADコンバータ
-Adafruit_ADS1X15 ads;
+
+RTC_DS1307 rtc;         // RTC
+Adafruit_PCF8574 pcf;   // IOエキスパンダ
+Adafruit_ADS1X15 ads;   // ADコンバータ
 // 温度計
 Generic_LM75 lm75(&Wire1, moduleArr[THERM].address);
 // ディスプレイ
@@ -220,32 +211,19 @@ void setup(void) {
 	// I2C設定
     Wire1.setSDA(I2C_SDA);
     Wire1.setSCL(I2C_SCL);
+	Wire1.begin();// いらないけど明示しておく
 
 	//SPI1設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
     // ディスプレイ明るさ設定(0-255)
-    analogWrite(TFT_BL,brightLevel[0]);
+    analogWrite(TFT_BL, brightLevel[0]);
 
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
-  /*
-	tft.setTextSize(1);
-	tft.setTextColor(ST77XX_GREEN);
-	tft.setCursor(0,0);
-	tft.setTextWrap(true);
-	for(char i=0; i<=0x7f; i++){
-		tft.print(i);
-		tft.print(' ');
-		delay(500);
-	}
-	tft.println();
-	tft.print("done");
-	delay(5000);
-	tft.fillScreen(ST77XX_BLACK);
-*/
+
 	// 初期表示
 	tft.setTextSize(3);
 	tft.setTextColor(ST77XX_GREEN);
@@ -254,27 +232,24 @@ void setup(void) {
 	tft.println("hello");
 	delay(2000);
 
-	// I2C設定
-	Wire1.setSDA(I2C_SDA);
-	Wire1.setSCL(I2C_SCL);
-	Wire1.begin();// いらないけど明示しておく
-
-    // i2cモジュールの検索
-    for(byte adrs=1;adrs<127;adrs++){
-        tft.setTextColor(ST77XX_WHITE);
-        Wire1.beginTransmission(adrs);
-        byte error = Wire1.endTransmission();
-        String name = getModuleName(adrs);
-        if(error == 0){
-            tft.print(name + " : ");
-            tft.setTextColor(ST77XX_GREEN);
-            tft.println("OK");
-        }
-        else if(existsModule(adrs)){
-            tft.print(name + " : ");
-            tft.println("NG");
-        }
-    }
+    
+	// i2cモジュールの検索
+	tft.setTextSize(2);
+	for(byte adrs=1;adrs<127;adrs++){
+		tft.setTextColor(ST77XX_WHITE);
+		Wire1.beginTransmission(adrs);
+		byte error = Wire1.endTransmission();
+		String name = getModuleName(adrs);
+		if(error == 0){
+			tft.print(name + " : ");
+			tft.setTextColor(ST77XX_GREEN);
+			tft.println("OK");
+		}
+		else if(existsModule(adrs)){
+			tft.print(name + " : ");
+			tft.println("NG");
+		}
+	}
     tft.setTextColor(ST77XX_GREEN);
     tft.print("done");
     delay(5000);
@@ -536,7 +511,7 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
  * @param *lm75 温度計モジュール
  */
 void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
-    static int nowTempx10 = 0;
+    static int beforeTempx10 = 0;
     // 温度取得(10倍)
     int newTempx10 = lm75->readTemperatureC() * 10;
     // 100度以上の場合は99.9度(変数では999)に修正
@@ -547,31 +522,22 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
         newTempx10 = 0;
     }
     // 前回温度と同じ場合、スキップ
-    if(nowTempx10 == newTempx10){
+    if(beforeTempx10 == newTempx10){
         return;
     }
-    //
-    //tft->setTextColor(ST77XX_BLACK);
-    //tft->setTextSize(tempDispInfo.size);
-    //tft->setCursor(tempDispInfo.x, tempDispInfo.y);
-    // 温度が一桁の場合、10の位にスペース
-    //if(0 <= nowTempx10 && nowTempx10 < 100){
-    //    tft->print(' ');
-    //}
-    //tft->print(int(nowTempx10/10));
-    //tft->print('.');
-    //tft->print(int(nowTempx10)%10);
 
+	tft->setTextSize(TEMP_SIZE);
     tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
     tft->setCursor(tempDispInfo.x, tempDispInfo.y);
-    // 温度が一桁の場合、10の位にスペース
-    if(0 <= newTempx10 && newTempx10 < 100){
+    // 温度が一桁以下の場合、十の位にスペース
+    if(10 <= newTempx10 && newTempx10 < 100){
         tft->print(' ');
     }
     tft->print(int(newTempx10/10));
     tft->print('.');
     tft->print(int(newTempx10)%10);
-    nowTempx10 = newTempx10;
+    // 保持変数を更新
+    beforeTempx10 = newTempx10;
 }
 
 /**
@@ -598,14 +564,6 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
         if(firstFlag == true || timeItems[i] != newTimeItems[i]){
 
             tft->setTextSize(timeDispInfo[i].size);
-            // ----------削除処理----------
-            // 背景色・カーソル設定・値表示
-            //tft->setTextColor(ST77XX_BLACK);
-            //tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
-            //if(timeItems[i] < 10){
-            //    tft->print('0');
-            //}
-            //tft->print(timeItems[i]);
             // ----------表示処理----------
             // 背景色・カーソル設定・値表示
             tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
@@ -641,7 +599,6 @@ void timeDisplay(long totalSec, Adafruit_ST77xx *tft){
 	newTime[0] = '0' + (totalSec/60)/10;
   
 	// フォント設定
-    tft->setFont();
 	tft->setTextSize(TIME_SIZE);
 
 	for(int i=len-2; i>=0; i--){
