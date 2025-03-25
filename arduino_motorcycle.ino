@@ -83,12 +83,11 @@ unsigned long bzzTime = 0;
 unsigned long debugWinkerTime  = 0; //疑似ウインカー
 
 // 保持用char配列
-//uint16_t dateItems[3] = {0,0,0};
 uint16_t timeItems[4] = {0,0,0,0};
 // シフトポジション配列
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 // 明るさレベル
-byte brightLevel[] = {50, 100, 150, 200, 250};
+byte brightLevel[] = {50, 150, 250};
 char nowTime[] = " 0:00";
 
 // 三角形描画用座標
@@ -106,6 +105,7 @@ struct Locations {
 	uint16_t color = ST77XX_WHITE;
 	int size = 1;
 };
+
 struct DisplayInfo {
     Location location;
     int fontSize;
@@ -124,16 +124,16 @@ struct Module{
     byte address;
 };
 Module moduleArr[] = {
-    {"ioExp",0x27}, // PCF8574 エキスパンダ
-    {"therm",0x48},
-    {"adCnv",0x4A},  // ADS1115 ADコンバータ
-    {"rtc_a",0x50},
-    {"rtc_d",0x68}
+    {"IO Expander",0x27}, // PCF8574 エキスパンダ
+    {"Thermometer",0x48},
+    {"AD Converter",0x4A},  // ADS1115 ADコンバータ
+    {"RTC memory",0x50},
+    {"RTC IC",0x68}
 };
 enum ModuleNum{
     IOEXP,
     THERM,
-    ADCNV,
+    ADC,
     RTC_A,
     RTC_D
 };
@@ -165,28 +165,28 @@ bool existsModule(byte adrs){
 // --------------------インスタンス--------------------
 // 表示座標
 TriangleLocation triCoords[2] = {
-    {30, 0+24, 30, 160+24, 0, 80+24},
-    {DISP_WIDTH-30-1, 0+24, DISP_WIDTH-30-1, 160+24, DISP_WIDTH-1, 80+24}
+    {30, 24, 30, 160+24, 0, 80+24},
+    {fromRight(30), 24, fromRight(30), 160+24, fromRight(0), 80+24}
 };
 
 DispInfo timeDispInfo[5] = {
     // 月
-    {int(FONT_WIDTH * DATE_SIZE * 2.5), DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2 - 1, DATE_SIZE},
+    {int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
     // 日
-    {int(FONT_WIDTH * DATE_SIZE * 5.5), DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2 - 1, DATE_SIZE},
+    {int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
     // 時間   
-    {0, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE},
+    {0, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
     // 分
-    {FONT_WIDTH * TIME_SIZE * 3, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE},
+    {FONT_WIDTH * TIME_SIZE * 3, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
     // 秒
-    {FONT_WIDTH * TIME_SIZE * 6, DISP_HEIGHT - FONT_HEIGHT * TIME_SIZE - 1, TIME_SIZE}
+    {FONT_WIDTH * TIME_SIZE * 6, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE}
 };
 // シフトポジション表示座標
 Location gearCoord = {98,24};
 // シフトポジション：座標と文字倍率
 DispInfo gearDispInfo = {200, 0, 1};
 // 温度表示：座標と文字倍率
-DispInfo tempDispInfo = {DISP_WIDTH - FONT_WIDTH * TEMP_SIZE * 5 - 1, DISP_HEIGHT - FONT_HEIGHT * TEMP_SIZE - 1, TEMP_SIZE};
+DispInfo tempDispInfo = {fromRight(FONT_WIDTH * TEMP_SIZE * 5), fromBottom(FONT_HEIGHT * TEMP_SIZE), TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
 
@@ -216,8 +216,8 @@ void setup(void) {
 	//SPI1設定
 	SPI.setTX(TFT_MOSI);
 	SPI.setSCK(TFT_SCLK);
-    // ディスプレイ明るさ設定(0-255)
-    analogWrite(TFT_BL, brightLevel[0]);
+	// ディスプレイ明るさ設定(0-255)
+	analogWrite(TFT_BL, brightLevel[0]);
 
 	// ディスプレイ初期化・画面向き・画面リセット
 	tft.init(DISP_HEIGHT,DISP_WIDTH);
@@ -232,7 +232,6 @@ void setup(void) {
 	tft.println("hello");
 	delay(2000);
 
-    
 	// i2cモジュールの検索
 	tft.setTextSize(2);
 	for(byte adrs=1;adrs<127;adrs++){
@@ -247,71 +246,69 @@ void setup(void) {
 		}
 		else if(existsModule(adrs)){
 			tft.print(name + " : ");
+			tft.setTextColor(ST77XX_RED);
 			tft.println("NG");
 		}
 	}
-    tft.setTextColor(ST77XX_GREEN);
-    tft.print("done");
-    delay(5000);
+	tft.setTextColor(ST77XX_GREEN);
+	tft.print("done");
+	delay(5000);
 
-    // IOエキスパンダ
-    pcf.begin(moduleArr[IOEXP].address, &Wire1);
+	// IOエキスパンダ
+	pcf.begin(moduleArr[IOEXP].address, &Wire1);
 	// RTC
-    rtc.begin(&Wire1);
+	rtc.begin(&Wire1);
 	// 時計合わせ
-    //rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
-    // ADコンバータ
-    ads.begin(moduleArr[ADCNV].address, &Wire1);
-    
-    // 疑似ウインカーリレー
-    pinMode(DMY_RELAY, OUTPUT);
-    // ウインカー音
-    pinMode(BZZ_PIN, OUTPUT);
-  
-    // 画面リセット
+	// ADコンバータ
+	ads.begin(moduleArr[ADC].address, &Wire1);
+	// 疑似ウインカーリレー
+	pinMode(DMY_RELAY, OUTPUT);
+	// ウインカー音
+	pinMode(BZZ_PIN, OUTPUT);
+	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
 
 	// ギアポジション表示開始その1
-	//tft.setCursor(184, 8*8);
-	//tft.setTextSize(3);
-	//tft.print("gear");
+	tft.setCursor(184, 8*8);
+	tft.setTextSize(3);
+	tft.print("gear");
 	
 	// ギアポジション表示開始その2
-	tft.setTextColor(ST77XX_WHITE);
+	tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
 	tft.setTextSize(8);
 	tft.setCursor(gearCoord.x, gearCoord.y);
 	tft.print('-');
-    // 時間
-	tft.setTextColor(ST77XX_WHITE);
-    tft.setFont();
+	// 時間
 	tft.setTextSize(timeDispInfo[HOUR].size);
-    tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
-    tft.print("  :  :");
-    // 日付
+	tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
+	tft.print("  :  :");
+	// 日付
 	tft.setTextSize(timeDispInfo[MONTH].size);
-    tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
-    tft.print("  /  ");
-    // 温度の値
-    tft.setTextSize(tempDispInfo.size);
-    tft.setCursor(tempDispInfo.x, tempDispInfo.y);
-    tft.print("  . ");
-    // 温度の単位
-    tft.setTextSize(2);
-    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2 - 1, DISP_HEIGHT - FONT_HEIGHT * 2 - 1);
-    tft.print('C');
-    tft.setTextSize(1);
-    tft.setCursor(DISP_WIDTH - FONT_WIDTH * 2 - 4, DISP_HEIGHT - FONT_HEIGHT * 2 - 1 - 8);
-    tft.print('o');
+	tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
+	tft.print("  /");
+	// 温度の値
+	tft.setTextSize(tempDispInfo.size);
+	tft.setCursor(tempDispInfo.x, tempDispInfo.y);
+	tft.print("  .");
+	// 温度の単位
+	tft.setTextSize(2);
+	tft.setCursor(fromRight(FONT_WIDTH * 2), fromBottom(FONT_HEIGHT * 2));
+	tft.print('C');
+	tft.setTextColor(ST77XX_WHITE);
+	tft.setTextSize(1);
+	tft.setCursor(fromRight(FONT_WIDTH * 2) - 3, fromBottom(FONT_HEIGHT * 2) - 8);
+	tft.print('o');
 }
 
 // ------------------------------ループ------------------------------
 void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-   
-    // 疑似ウインカーリレー
-    if(debugWinkerTime <= time){
+	
+	// 疑似ウインカーリレー
+	if(debugWinkerTime <= time){
 		//if(digitalRead(DMY_RELAY) == HIGH){
 		// 	digitalWrite(DMY_RELAY, LOW);
 		//}
@@ -323,14 +320,14 @@ void loop() {
 		debugWinkerTime += WINKER_DURATION;
 	}
 
-    // 各種モニタリング・更新
+	// 各種モニタリング・更新
 	if(monitorTime <= time){
-        // 現在のギアポジを取得
+		// 現在のギアポジを取得
 		gearPositions.monitor();
-        // 現在のウインカー状態を取得
+		// 現在のウインカー状態を取得
 		winkers.monitor();
-        // スイッチ状態取得
-        pushSw.monitor();
+		// スイッチ状態取得
+		pushSw.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
     // 温度電圧モニタリング・表示
@@ -345,23 +342,23 @@ void loop() {
 
 	// 時計表示処理
 	if(clockTime <= time){
-        // 時刻表示
-        realTimeDisplay(&tft, &rtc);
+		// 時刻表示
+		realTimeDisplay(&tft, &rtc);
 		clockTime += CLOCK_INTERVAL;
 	}
 
 	// 各種表示処理
 	if(displayTime <= time){
-        // デバッグ用スイッチ表示
-        displaySwitch(&pushSw, &tft);
-        // ギア表示
+		// デバッグ用スイッチ表示
+		displaySwitch(&pushSw, &tft);
+		 // ギア表示
 		gearDisplay(gearPositions.getGear(), &tft);
 		bool isSwitchStatus = winkersDisplay(winkers, &tft);
 		// ウインカー点灯状態が切り替わった場合
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(BZZ_PIN, HIGH);
-            // 時間設定
+			// 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
 		displayTime += DISPLAY_INTERVAL;
@@ -369,7 +366,7 @@ void loop() {
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		digitalWrite(BZZ_PIN, LOW);
-        bzzTime = 0;
+		bzzTime = 0;
 	}
 }
 
@@ -387,13 +384,9 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 		return;
 	}
 	tft->setTextSize(8);
-	// ----------表示文字削除----------
-	tft->setCursor(gearCoord.x, gearCoord.y);
-	tft->setTextColor(ST77XX_BLACK);
-	tft->print(nowGear);
 	// ----------新規文字表示----------
 	tft->setCursor(gearCoord.x, gearCoord.y);
-	tft->setTextColor(ST77XX_WHITE);
+	tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
 	tft->print(newGear);
 	// バッファ文字列を上書き
 	nowGear = newGear;
@@ -407,12 +400,12 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
  */
 bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
 	// バッファ状態
-    static bool buffer[2] = {false, false}; 
-    // 返却用フラグ
+	static bool buffer[2] = {false, false}; 
+	// 返却用フラグ
 	bool isSwitched = false;
 
 	for(int side=LEFT; side<=RIGHT; side++){
-        // 左ウインカー状態を判定
+		// 左ウインカー状態を判定
 		if(buffer[side] == winkers.getStatus(side)){
 			continue;
 		}
@@ -470,13 +463,17 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
     }
     // キーダウンの場合
 	if(nowSw){
-		tft->setTextColor(ST77XX_RED);
-		tft->print("ON  ");
+		if(beforeSw != nowSw){
+			tft->setTextColor(ST77XX_RED, ST77XX_BLACK);
+			tft->print("ON ");
+			beforeSw = nowSw;
+		}
 		// 長押し
-		if(sw->isLongPress()){
+		else if(beforeLong != sw->isLongPress()){
+			tft->setTextColor(ST77XX_RED, ST77XX_BLACK);
 			tft->setCursor(200,0);
 			tft->print("long");
-			beforeLong = true;
+			beforeLong = sw->isLongPress();
 		}
 	}
 	// キーアップの場合
@@ -606,16 +603,20 @@ void timeDisplay(long totalSec, Adafruit_ST77xx *tft){
 		if(nowTime[i] == newTime[i]){
 			continue;
 		}
-        // ----------文字削除処理----------
-        tft->setTextColor(ST77XX_BLACK);
-        tft->setCursor(6*TIME_SIZE*i, 200-8*TIME_SIZE);
-		tft->print(nowTime[i]);
-        // ----------文字表示処理----------
-        tft->setTextColor(ST77XX_WHITE);
-        tft->setCursor(6*TIME_SIZE*i, 200-8*TIME_SIZE);
+		// ----------文字表示処理----------
+		tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+		tft->setCursor(6*TIME_SIZE*i, 200-8*TIME_SIZE);
 		// 数値を表示
 		tft->print(newTime[i]);
 		// 表示データを格納
 		nowTime[i] = newTime[i];
 	}
+}
+
+int fromRight(int x){
+	return DISP_WIDTH-1-x;
+}
+
+int fromBottom(int y){
+	return DISP_HEIGHT-1-Y;
 }
