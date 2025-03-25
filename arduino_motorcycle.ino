@@ -171,9 +171,9 @@ TriangleLocation triCoords[2] = {
 
 DispInfo timeDispInfo[5] = {
     // 月
-    {int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
+    {int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
     // 日
-    {int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE - FONT_HEIGHT * DATE_SIZE - FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
+    {int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
     // 時間   
     {0, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
     // 分
@@ -271,9 +271,9 @@ void setup(void) {
 	tft.fillScreen(ST77XX_BLACK);
 
 	// ギアポジション表示開始その1
-	tft.setCursor(184, 8*8);
-	tft.setTextSize(3);
-	tft.print("gear");
+	//tft.setCursor(184, 8*8);
+	//tft.setTextSize(3);
+	//tft.print("gear");
 	
 	// ギアポジション表示開始その2
 	tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
@@ -618,5 +618,5 @@ int fromRight(int x){
 }
 
 int fromBottom(int y){
-	return DISP_HEIGHT-1-Y;
+	return DISP_HEIGHT-1-y;
 }
