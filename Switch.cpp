@@ -6,12 +6,12 @@
  * @param pinLeft スイッチピン
  * @param *pcf IOエキスパンダクラス
  */
-Switch::Switch(int pinSwitch, Adafruit_PCF8574 *pcf){
-    this->pinSwitch = pinSwitch;    //スイッチピン定義
-    this->status = false;           //初期ステータス：キーアップ
-    this->pushFlag = false;         //プッシュフラグ
-    this->longPressFlag = false;    //長押しフラグ
-    this->pcf = pcf;                //IOエキスパンダ
+Switch::Switch(int pin, Adafruit_PCF8574 *pcf){
+    this->pin = pin;			//スイッチピン定義
+    this->status = false;			//初期ステータス：キーアップ
+    this->pushFlag = false;			//プッシュフラグ
+    this->longPressFlag = false;	//長押しフラグ
+    this->pcf = pcf;				//IOエキスパンダ
 }
 
 /**
@@ -19,7 +19,7 @@ Switch::Switch(int pinSwitch, Adafruit_PCF8574 *pcf){
  * @return スイッチがonの場合true
  */
 bool Switch::getStatus(){
-    return this->status;
+	return this->status;
 }
 
 /**
@@ -28,11 +28,11 @@ bool Switch::getStatus(){
  * @return プッシュされた場合true返却(フラグをfalseに戻す)
  */
 bool Switch::isPush(){
-    bool returnBool = this->pushFlag;
-    if(returnBool){
-        this->pushFlag = false;
-    }
-    return returnBool;
+	bool returnBool = this->pushFlag;
+	if(returnBool){
+		this->pushFlag = false;
+	}
+	return returnBool;
 }
 
 /**
@@ -55,7 +55,7 @@ void Switch::monitor(){
 	// 現在状態
 	bool newStatus = false;
 	// 各ピンを読み取りウインカー状態へセット
-	if(this->pcf->digitalRead(pinSwitch) == LOW){
+	if(this->pcf->digitalRead(this->pin) == LOW){
 		newStatus = true;
 	}
 

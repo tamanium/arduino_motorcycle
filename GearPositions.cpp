@@ -1,27 +1,29 @@
-
 #include "GearPositions.h"
+
 /**
  * コンストラクタ
+ *
  * @param nowGear char型 表示値
  */
 GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
-    for(int i=0; i<len; i++){
-        char _char = '0';
-        if(i==0){
-            _char = 'N';
-        }
-        else{
-            _char += i;
-        }
-        this->gears[i] = Gear(pins[i], _char);
-    }
-    this->numOfGear = len;
-    this->nowGear = '-';
-    this->pcf = pcf;
+	for(int i=0; i<len; i++){
+		char _char = '0';
+		if(i==0){
+			_char = 'N';
+		}
+		else{
+			_char += i;
+		}
+		this->gears[i] = Gear(pins[i], _char);
+	}
+	this->numOfGear = len;
+	this->nowGear = '-';
+	this->pcf = pcf;
 }
 
 /**
- * 【Getter】表示値
+ * 表示値を取得
+ *
  * @return nowGear char型 表示値
  */
 char GearPositions::getGear(){

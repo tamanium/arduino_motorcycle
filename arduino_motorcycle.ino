@@ -41,12 +41,12 @@
 #define POS4  4
 
 // --------------------定数--------------------
-const int CLOCK_INTERVAL   = 200;   //ms
-const int MONITOR_INTERVAL = 5;     //ms
-const int DISPLAY_INTERVAL = 30;    //ms
-const int TEMP_INTERVAL    = 1000;  //ms
-const int BUZZER_DURATION  = 100;   //ms
-const int WINKER_DURATION  = 380;   //ms
+const int CLOCK_INTERVAL   = 200;	//ms
+const int MONITOR_INTERVAL = 5;		//ms
+const int DISPLAY_INTERVAL = 30;	//ms
+const int TEMP_INTERVAL    = 1000;	//ms
+const int BUZZER_DURATION  = 100;	//ms
+const int WINKER_DURATION  = 380;	//ms
 // 時刻表示の時・分表示位置
 //const uint8_t TIME_INDEXES[2] = {0,3};
 // フォントの寸法
@@ -80,10 +80,10 @@ unsigned long clockTime = 0;	// 時計表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 unsigned long bzzTime = 0;
 
-unsigned long debugWinkerTime  = 0; //疑似ウインカー
+unsigned long debugWinkerTime  = 0;	//疑似ウインカー
 
 // 保持用char配列
-uint16_t timeItems[4] = {0,0,0,0};
+uint16_t timeItems[4] = {0, 0, 0, 0};
 // シフトポジション配列
 int gears[] = {POSN, POS1, POS2, POS3, POS4};
 // 明るさレベル
@@ -120,22 +120,22 @@ struct DispInfo{
 
 //
 struct Module{
-    String name;
-    byte address;
+	String name;
+	byte address;
 };
 Module moduleArr[] = {
-    {"IO Expander",0x27}, // PCF8574 エキスパンダ
-    {"Thermometer",0x48},
-    {"AD Converter",0x4A},  // ADS1115 ADコンバータ
-    {"RTC memory",0x50},
-    {"RTC IC",0x68}
+	{"IO Expander ",0x27},	// PCF8574 エキスパンダ
+	{"Thermometer ",0x48},	// LM75 温度センサ
+	{"AD Converter",0x4A},	// ADS1115 ADコンバータ
+	{"RTC memory  ",0x50},	// 時間モジュール 記憶
+	{"RTC IC      ",0x68}	// 時間モジュール カウント
 };
 enum ModuleNum{
-    IOEXP,
-    THERM,
-    ADC,
-    RTC_A,
-    RTC_D
+	IOEXP,
+	THERM,
+	ADC,
+	RTC_A,
+	RTC_D
 };
 
 /**
@@ -145,41 +145,41 @@ enum ModuleNum{
  * @return i2cモジュールの名前 hitしなければアドレス
  */
 String getModuleName(byte adrs){
-    for(Module m : moduleArr){
-        if(m.address == adrs){
-            return m.name;
-        }
-    }
-    return String(adrs, HEX)+"   ";
+	for(Module m : moduleArr){
+		if(m.address == adrs){
+			return m.name;
+		}
+	}
+	return String(adrs, HEX)+"   ";
 }
 
 bool existsModule(byte adrs){
-    for(Module m : moduleArr){
-        if(m.address == adrs){
-            return true;
-        }
-    }
-    return false;
+	for(Module m : moduleArr){
+		if(m.address == adrs){
+			return true;
+		}
+	}
+	return false;
 }
 
 // --------------------インスタンス--------------------
 // 表示座標
 TriangleLocation triCoords[2] = {
-    {30, 24, 30, 160+24, 0, 80+24},
-    {fromRight(30), 24, fromRight(30), 160+24, fromRight(0), 80+24}
+	{30, 24, 30, 160+24, 0, 80+24},
+	{fromRight(30), 24, fromRight(30), 160+24, fromRight(0), 80+24}
 };
 
 DispInfo timeDispInfo[5] = {
-    // 月
-    {int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
-    // 日
-    {int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
-    // 時間   
-    {0, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
-    // 分
-    {FONT_WIDTH * TIME_SIZE * 3, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
-    // 秒
-    {FONT_WIDTH * TIME_SIZE * 6, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE}
+	// 月
+	{int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
+	// 日
+	{int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
+	// 時間   
+	{0, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
+	// 分
+	{FONT_WIDTH * TIME_SIZE * 3, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
+	// 秒
+	{FONT_WIDTH * TIME_SIZE * 6, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE}
 };
 // シフトポジション表示座標
 Location gearCoord = {98,24};
@@ -190,9 +190,9 @@ DispInfo tempDispInfo = {fromRight(FONT_WIDTH * TEMP_SIZE * 5), fromBottom(FONT_
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
 
-RTC_DS1307 rtc;         // RTC
-Adafruit_PCF8574 pcf;   // IOエキスパンダ
-Adafruit_ADS1X15 ads;   // ADコンバータ
+RTC_DS1307 rtc;			// RTC
+Adafruit_PCF8574 pcf;	// IOエキスパンダ
+Adafruit_ADS1X15 ads;	// ADコンバータ
 // 温度計
 Generic_LM75 lm75(&Wire1, moduleArr[THERM].address);
 // ディスプレイ
@@ -206,11 +206,11 @@ Switch pushSw(SW, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
-    // デバッグ用シリアル設定
+	// デバッグ用シリアル設定
 	Serial.begin(9600);
 	// I2C設定
-    Wire1.setSDA(I2C_SDA);
-    Wire1.setSCL(I2C_SCL);
+	Wire1.setSDA(I2C_SDA);
+	Wire1.setSCL(I2C_SCL);
 	Wire1.begin();// いらないけど明示しておく
 
 	//SPI1設定
@@ -330,15 +330,15 @@ void loop() {
 		pushSw.monitor();
 		monitorTime += MONITOR_INTERVAL;
 	}
-    // 温度電圧モニタリング・表示
-    if(tempTime <= time){
-        tempDisplay(&tft, &lm75);
-        tempTime += TEMP_INTERVAL;
-        uint16_t raw = ads.readADC_SingleEnded(3);
-        String voltage = String((raw * 0.0001875f), 2);
-        Serial.print("Voltage:");
-        Serial.println(voltage);
-    }
+	// 温度電圧モニタリング・表示
+	if(tempTime <= time){
+		tempDisplay(&tft, &lm75);
+		tempTime += TEMP_INTERVAL;
+		uint16_t raw = ads.readADC_SingleEnded(3);
+		String voltage = String((raw * 0.0001875f), 2);
+		Serial.print("Voltage:");
+		Serial.println(voltage);
+	}
 
 	// 時計表示処理
 	if(clockTime <= time){
@@ -443,25 +443,25 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	static bool beforeLong = false;
 	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
 	static int nowBrightLv = 0;
-    bool nowSw = sw->getStatus();
-    tft->setTextSize(tempDispInfo.size);
-    tft->setCursor(0, 0);
+	bool nowSw = sw->getStatus();
+	tft->setTextSize(tempDispInfo.size);
+	tft->setCursor(0, 0);
 
-    // 前回と状態が異なる場合
-    if(beforeSw != nowSw){
-        // 表示リセット
-        tft->setTextColor(ST77XX_BLACK);
-        if(beforeSw){
-            tft->print("ON");
-        }
-        else{
-            tft->print("OFF");
-        }
-        //　前回状態を更新
-        beforeSw = nowSw;
-        tft->setCursor(0, 0);
-    }
-    // キーダウンの場合
+	// 前回と状態が異なる場合
+	if(beforeSw != nowSw){
+		// 表示リセット
+		tft->setTextColor(ST77XX_BLACK);
+		if(beforeSw){
+			tft->print("ON");
+			}
+		else{
+			tft->print("OFF");
+		}
+		//　前回状態を更新
+		beforeSw = nowSw;
+		tft->setCursor(0, 0);
+	}
+	// キーダウンの場合
 	if(nowSw){
 		if(beforeSw != nowSw){
 			tft->setTextColor(ST77XX_RED, ST77XX_BLACK);
@@ -508,33 +508,33 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
  * @param *lm75 温度計モジュール
  */
 void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
-    static int beforeTempx10 = 0;
-    // 温度取得(10倍)
-    int newTempx10 = lm75->readTemperatureC() * 10;
-    // 100度以上の場合は99.9度(変数では999)に修正
-    if(1000 <= newTempx10){
-        newTempx10 = 999;
-    }
-    else if(newTempx10 <= 0){
-        newTempx10 = 0;
-    }
-    // 前回温度と同じ場合、スキップ
-    if(beforeTempx10 == newTempx10){
-        return;
-    }
+	static int beforeTempx10 = 0;
+	// 温度取得(10倍)
+	int newTempx10 = lm75->readTemperatureC() * 10;
+	// 100度以上の場合は99.9度(変数では999)に修正
+	if(1000 <= newTempx10){
+		newTempx10 = 999;
+	}
+	else if(newTempx10 <= 0){
+		newTempx10 = 0;
+	}
+	// 前回温度と同じ場合、スキップ
+	if(beforeTempx10 == newTempx10){
+		return;
+}
 
 	tft->setTextSize(TEMP_SIZE);
-    tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-    tft->setCursor(tempDispInfo.x, tempDispInfo.y);
-    // 温度が一桁以下の場合、十の位にスペース
-    if(10 <= newTempx10 && newTempx10 < 100){
-        tft->print(' ');
-    }
-    tft->print(int(newTempx10/10));
-    tft->print('.');
-    tft->print(int(newTempx10)%10);
-    // 保持変数を更新
-    beforeTempx10 = newTempx10;
+	tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+	tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+	// 温度が一桁以下の場合、十の位にスペース
+	if(10 <= newTempx10 && newTempx10 < 100){
+		tft->print(' ');
+	}
+	tft->print(int(newTempx10/10));
+	tft->print('.');
+	tft->print(int(newTempx10)%10);
+	// 保持変数を更新
+	beforeTempx10 = newTempx10;
 }
 
 /**
@@ -545,37 +545,37 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
 void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
-    // 時刻用変数
-    int newTimeItems[5] = {99,99,99,99,99};
-    static boolean firstFlag = true;
-    // 現在時刻取得
-    DateTime now = rtc_ds1307->now();
-    // 月・日・時間・分取得
-    newTimeItems[MONTH]  = now.month();
-    newTimeItems[DAY]    = now.day();
-    newTimeItems[HOUR]   = now.hour();
-    newTimeItems[MINUTE] = now.minute();
-    newTimeItems[SECOND] = now.second();
-    // 時刻データでループ
-    for(int i=0; i<5; i++){
-        if(firstFlag == true || timeItems[i] != newTimeItems[i]){
+	// 時刻用変数
+	int newTimeItems[5] = {99,99,99,99,99};
+	static boolean firstFlag = true;
+	// 現在時刻取得
+	DateTime now = rtc_ds1307->now();
+	// 月・日・時間・分取得
+	newTimeItems[MONTH]  = now.month();
+	newTimeItems[DAY]    = now.day();
+	newTimeItems[HOUR]   = now.hour();
+	newTimeItems[MINUTE] = now.minute();
+	newTimeItems[SECOND] = now.second();
+	// 時刻データでループ
+	for(int i=0; i<5; i++){
+		if(firstFlag == true || timeItems[i] != newTimeItems[i]){
 
-            tft->setTextSize(timeDispInfo[i].size);
-            // ----------表示処理----------
-            // 背景色・カーソル設定・値表示
-            tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-            tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
-            if(newTimeItems[i] < 10){
-                tft->print('0');
-            }
-            tft->print(newTimeItems[i]);
+			tft->setTextSize(timeDispInfo[i].size);
+			// ----------表示処理----------
+			// 背景色・カーソル設定・値表示
+			tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+			tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
+			if(newTimeItems[i] < 10){
+				tft->print('0');
+			}
+			tft->print(newTimeItems[i]);
 
-            // 保持値更新
-            timeItems[i] = newTimeItems[i];
-        }
-    }
-    firstFlag = false;
-}
+			// 保持値更新
+			timeItems[i] = newTimeItems[i];
+		}
+	}
+	firstFlag = false;
+	}
 
 /**
  * 経過時間表示処理
@@ -613,10 +613,16 @@ void timeDisplay(long totalSec, Adafruit_ST77xx *tft){
 	}
 }
 
+/**
+ * x座標出力（画面右端原点、左向き）
+ */
 int fromRight(int x){
 	return DISP_WIDTH-1-x;
 }
 
+/**
+ * y座標出力（画面下底原点、上向き）
+ */
 int fromBottom(int y){
 	return DISP_HEIGHT-1-y;
 }

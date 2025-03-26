@@ -4,29 +4,30 @@
  * デフォルトコンストラクタ
  */
 Gear::Gear(){
-  
+
 }
 
 /**
  * コンストラクタ
+ *
  * @param pin int型 表示値
  * @param dispChar char型 表示値
  */
 Gear::Gear(int pin, char dispChar){
-  this->pin = pin;
-  this->dispChar = dispChar;
-  //pinMode(this->pin, INPUT_PULLUP);
+	this->pin = pin;
+	this->dispChar = dispChar;
 }
 
 /**
  * //ピン読み取り設定
  */
 void Gear::begin(Adafruit_PCF8574 *pcf){
-    pcf->pinMode(this->pin, INPUT_PULLUP);
+	pcf->pinMode(this->pin, INPUT_PULLUP);
 }
 
 /**
- * 【Getter】表示値
+ * 表示値を取得
+ *
  * @return dispChar char型 表示値
  */
 char Gear::getChar(){
@@ -38,8 +39,5 @@ char Gear::getChar(){
  * @return 自分自身がポジションとなっている場合true
  */
 bool Gear::isActive(Adafruit_PCF8574 *pcf){
-	if(pcf->digitalRead(pin) == LOW){
-		return true;
-	}
-	return false;
+	return pcf->digitalRead(this->pin) == LOW;
 }

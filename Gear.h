@@ -9,11 +9,15 @@ class Gear{
 		int pin;		// 読み取りピン番号
 		char dispChar;	// 表示値
 	public:
-		Gear();// コンストラクタ
-		Gear(int p, char c);// コンストラクタ
-        void begin(Adafruit_PCF8574 *pcf);//ピン読み取り設定
-		char getChar();// 【Getter】表示値
-		bool isActive(Adafruit_PCF8574 *pcf);// ポジションが自身か判定（表示値を参照渡し）
+		// コンストラクタ
+		Gear();
+		Gear(int p, char c);
+		// ピン読み取り設定
+		void begin(Adafruit_PCF8574 *pcf);
+		// 表示値取得
+		char getChar();
+		// ポジションが自身か判定（表示値を参照渡し）
+		bool isActive(Adafruit_PCF8574 *pcf);
 };
 
 #endif
