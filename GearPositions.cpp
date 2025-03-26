@@ -7,14 +7,11 @@
  */
 GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
 	for(int i=0; i<len; i++){
-		char _char = '0';
-		if(i==0){
-			_char = 'N';
+		char c = 'N';
+		if(0<i){
+			c = '0'+i;
 		}
-		else{
-			_char += i;
-		}
-		this->gears[i] = Gear(pins[i], _char);
+		this->gears[i] = Gear(pins[i], c);
 	}
 	this->numOfGear = len;
 	this->nowGear = '-';
