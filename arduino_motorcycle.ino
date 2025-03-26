@@ -60,19 +60,6 @@ const int GEAR_SIZE   = 24;
 const int DISP_WIDTH = 320;
 const int DISP_HEIGHT = 240;
 
-enum LR{
-	LEFT,
-	RIGHT
-};
-
-enum TimeItem{
-	MONTH,
-	DAY,
-	HOUR,
-	MINUTE,
-	SECOND
-};
-
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
