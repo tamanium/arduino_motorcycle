@@ -4,6 +4,9 @@
 #define ON true
 #define OFF false
 
+#define DOWN true
+#define UP false
+
 #define LEFT 0
 #define RIGHT 1
 
@@ -70,7 +73,5 @@ struct Pin{
 		} WNK;
 	} IOEXP;
 } PIN;
-
-
 
 #endif
