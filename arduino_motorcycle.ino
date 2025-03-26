@@ -77,24 +77,6 @@ struct DispInfo{
 	int size = 0;
 };
 
-/*
-Module moduleArr[] = {
-	{"IO Expander ",0x27},	// PCF8574 エキスパンダ
-	{"Thermometer ",0x48},	// LM75 温度センサ
-	{"AD Converter",0x4A},	// ADS1115 ADコンバータ
-	{"RTC memory  ",0x50},	// 時間モジュール 記憶
-	{"RTC IC      ",0x68}	// 時間モジュール カウント
-};
-
-enum ModuleNum{
-	IOEXP,
-	THERM,
-	ADC,
-	RTC_A,
-	RTC_D
-};
-*/
-
 /**
  * i2cモジュールのアドレスから名前を取得 
  *
@@ -440,7 +422,7 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 		if(beforeSw != nowSw){
 			tft->setTextColor(ST77XX_RED, ST77XX_BLACK);
 			tft->print("ON ");
-			beforeSw = nowSw;
+			beforeSw = ON;
 		}
 		// 長押し
 		else if(beforeLong != sw->isLongPress()){
@@ -472,6 +454,7 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 			//analogWrite(TFT_BL,brightLevel[nowBrightLv]);
 			analogWrite(PIN.SPI.bl, brightLevel[nowBrightLv]);
 			tft->print(nowBrightLv);
+			beforeSw = OFF;
 		}
 	}
 }
