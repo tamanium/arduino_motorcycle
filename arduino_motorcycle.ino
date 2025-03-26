@@ -13,33 +13,6 @@
 #include "Winker.h"			// ウインカークラス
 #include "Switch.h"         //スイッチクラス
 
-// --------------------ピン定義--------------------
-// I2C
-#define I2C_SCL   15
-#define I2C_SDA   14
-// ディスプレイ・SPI
-#define TFT_MOSI  3
-#define TFT_SCLK  2
-#define TFT_BL    5
-#define TFT_CS    6
-#define TFT_DC    7
-#define TFT_RST   8
-// ウインカー音
-#define BZZ_PIN 27
-// 疑似ウインカーリレー
-#define DMY_RELAY 0
-// ウインカー(IOエキスパンダ)
-#define WNK_LEFT  0
-#define WNK_RIGHT 1
-// スイッチ(IOエキスパンダ)
-#define SW 3
-// ギアポジション(IOエキスパンダ)
-#define POSN  2
-#define POS1  7
-#define POS2  6
-#define POS3  5
-#define POS4  4
-
 // --------------------定数--------------------
 const int CLOCK_INTERVAL   = 200;	//ms
 const int MONITOR_INTERVAL = 5;		//ms
@@ -47,8 +20,6 @@ const int DISPLAY_INTERVAL = 30;	//ms
 const int TEMP_INTERVAL    = 1000;	//ms
 const int BUZZER_DURATION  = 100;	//ms
 const int WINKER_DURATION  = 380;	//ms
-// 時刻表示の時・分表示位置
-//const uint8_t TIME_INDEXES[2] = {0,3};
 // フォントの寸法
 const int FONT_HEIGHT = 8;
 const int FONT_WIDTH  = 6;
@@ -56,9 +27,6 @@ const int DATE_SIZE   = 2;
 const int TIME_SIZE   = 3;
 const int TEMP_SIZE   = 3;
 const int GEAR_SIZE   = 24;
-// ディスプレイの解像度
-const int DISP_WIDTH = 320;
-const int DISP_HEIGHT = 240;
 
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理
@@ -72,7 +40,11 @@ unsigned long debugWinkerTime  = 0;	//疑似ウインカー
 // 保持用char配列
 uint16_t timeItems[4] = {0, 0, 0, 0};
 // シフトポジション配列
-int gears[] = {POSN, POS1, POS2, POS3, POS4};
+int gears[] = {PIN.IOEXP.POS.nwt,
+				PIN.IOEXP.POS.low,
+				PIN.IOEXP.POS.sec,
+				PIN.IOEXP.POS.thi,
+				PIN.IOEXP.POS.top};
 // 明るさレベル
 byte brightLevel[] = {50, 150, 250};
 char nowTime[] = " 0:00";
@@ -105,11 +77,7 @@ struct DispInfo{
 	int size = 0;
 };
 
-//
-struct Module{
-	String name;
-	byte address;
-};
+/*
 Module moduleArr[] = {
 	{"IO Expander ",0x27},	// PCF8574 エキスパンダ
 	{"Thermometer ",0x48},	// LM75 温度センサ
@@ -117,6 +85,7 @@ Module moduleArr[] = {
 	{"RTC memory  ",0x50},	// 時間モジュール 記憶
 	{"RTC IC      ",0x68}	// 時間モジュール カウント
 };
+
 enum ModuleNum{
 	IOEXP,
 	THERM,
@@ -124,6 +93,7 @@ enum ModuleNum{
 	RTC_A,
 	RTC_D
 };
+*/
 
 /**
  * i2cモジュールのアドレスから名前を取得 
@@ -131,18 +101,20 @@ enum ModuleNum{
  * @param adrs i2cモジュールのアドレス
  * @return i2cモジュールの名前 hitしなければアドレス
  */
-String getModuleName(byte adrs){
-	for(Module m : moduleArr){
-		if(m.address == adrs){
-			return m.name;
+String getModuleName(byte adrs, Module* arr, int size){
+	//for(Module m : arr){
+	for(int i=0; i<size; i++){
+		if(arr[i].address == adrs){
+			return arr[i].name;
 		}
 	}
 	return String(adrs, HEX)+"   ";
 }
 
-bool existsModule(byte adrs){
-	for(Module m : moduleArr){
-		if(m.address == adrs){
+bool existsModule(byte adrs, Module* arr, int size){
+	//for(Module m : arr){
+	for(int i=0; i<size; i++){
+		if(arr[i].address == adrs){
 			return true;
 		}
 	}
@@ -181,33 +153,36 @@ RTC_DS1307 rtc;			// RTC
 Adafruit_PCF8574 pcf;	// IOエキスパンダ
 Adafruit_ADS1X15 ads;	// ADコンバータ
 // 温度計
-Generic_LM75 lm75(&Wire1, moduleArr[THERM].address);
+Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 // ディスプレイ
-Adafruit_ST7789 tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ST7789 tft(&SPI, PIN.SPI.cs, PIN.SPI.dc, PIN.SPI.rst);
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
-Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
+//Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
+Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
-Switch pushSw(SW, &pcf);
+Switch pushSw(PIN.IOEXP.sw, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
+
 	// I2C設定
-	Wire1.setSDA(I2C_SDA);
-	Wire1.setSCL(I2C_SCL);
+	Wire1.setSDA(PIN.I2C.sda);
+	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
 
 	//SPI1設定
-	SPI.setTX(TFT_MOSI);
-	SPI.setSCK(TFT_SCLK);
+	SPI.setTX(PIN.SPI.mosi);
+	SPI.setSCK(PIN.SPI.sclk);
+
 	// ディスプレイ明るさ設定(0-255)
-	analogWrite(TFT_BL, brightLevel[0]);
+	analogWrite(PIN.SPI.bl, brightLevel[0]);
 
 	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(DISP_HEIGHT,DISP_WIDTH);
+	tft.init(DISPLAY_INFO.height, DISPLAY_INFO.width);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -221,17 +196,25 @@ void setup(void) {
 
 	// i2cモジュールの検索
 	tft.setTextSize(2);
+	// モジュールの配列を作成
+	Module moduleArr[] = {
+		MODULES.ioExp,
+		MODULES.therm,
+		MODULES.adCnv,
+		MODULES.rtcMm,
+		MODULES.rtcIC
+	};
 	for(byte adrs=1;adrs<127;adrs++){
 		tft.setTextColor(ST77XX_WHITE);
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
-		String name = getModuleName(adrs);
+		String name = getModuleName(adrs, moduleArr, MODULES.size);
 		if(error == 0){
 			tft.print(name + " : ");
 			tft.setTextColor(ST77XX_GREEN);
 			tft.println("OK");
 		}
-		else if(existsModule(adrs)){
+		else if(existsModule(adrs, moduleArr, MODULES.size)){
 			tft.print(name + " : ");
 			tft.setTextColor(ST77XX_RED);
 			tft.println("NG");
@@ -242,18 +225,20 @@ void setup(void) {
 	delay(5000);
 
 	// IOエキスパンダ
-	pcf.begin(moduleArr[IOEXP].address, &Wire1);
+	pcf.begin(MODULES.ioExp.address, &Wire1);
 	// RTC
 	rtc.begin(&Wire1);
 	// 時計合わせ
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 	// ADコンバータ
-	ads.begin(moduleArr[ADC].address, &Wire1);
+	ads.begin(MODULES.adCnv.address, &Wire1);
 	// 疑似ウインカーリレー
-	pinMode(DMY_RELAY, OUTPUT);
+	//pinMode(DMY_RELAY, OUTPUT);
+	pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
-	pinMode(BZZ_PIN, OUTPUT);
+	//pinMode(BZZ_PIN, OUTPUT);
+	pinMode(PIN.buzzer, OUTPUT);
 	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -303,7 +288,9 @@ void loop() {
 		//	digitalWrite(DMY_RELAY, HIGH);
 		//}
 		// 出力反転
-		digitalWrite(DMY_RELAY, !digitalRead(DMY_RELAY));
+		//digitalWrite(DMY_RELAY, !digitalRead(DMY_RELAY));
+		digitalWrite(PIN.relay, !digitalRead(PIN.relay));
+		
 		debugWinkerTime += WINKER_DURATION;
 	}
 
@@ -344,7 +331,7 @@ void loop() {
 		// ウインカー点灯状態が切り替わった場合
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
-			digitalWrite(BZZ_PIN, HIGH);
+			digitalWrite(PIN.buzzer, HIGH);
 			// 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
@@ -352,7 +339,7 @@ void loop() {
 	}
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
-		digitalWrite(BZZ_PIN, LOW);
+		digitalWrite(PIN.buzzer, LOW);
 		bzzTime = 0;
 	}
 }
@@ -482,7 +469,8 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 			if(brightLvMax < nowBrightLv){
 				nowBrightLv = 0;
 			}
-			analogWrite(TFT_BL,brightLevel[nowBrightLv]);
+			//analogWrite(TFT_BL,brightLevel[nowBrightLv]);
+			analogWrite(PIN.SPI.bl, brightLevel[nowBrightLv]);
 			tft->print(nowBrightLv);
 		}
 	}
@@ -508,7 +496,7 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
 	// 前回温度と同じ場合、スキップ
 	if(beforeTempx10 == newTempx10){
 		return;
-}
+	}
 
 	tft->setTextSize(TEMP_SIZE);
 	tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
@@ -562,54 +550,18 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 		}
 	}
 	firstFlag = false;
-	}
-
-/**
- * 経過時間表示処理
- * @param totalSec long型 経過時間(秒)
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
- */
-void timeDisplay(long totalSec, Adafruit_ST77xx *tft){
-	// 保持用char配列
-	static char nowTime[6] = " 0:00";
-	static int len = sizeof(nowTime)/sizeof(char);
-	 // 表示char配列作成(arduinoでは array[n+1]で定義
-	char newTime[6] = "  :  ";
-
-	// 経過時間を各桁で文字列化
-	newTime[4] = '0' + (totalSec%60)%10;
-	newTime[3] = '0' + (totalSec%60)/10;
-	newTime[1] = '0' + (totalSec/60)%10;
-	newTime[0] = '0' + (totalSec/60)/10;
-  
-	// フォント設定
-	tft->setTextSize(TIME_SIZE);
-
-	for(int i=len-2; i>=0; i--){
-		// 値が同じ場合処理スキップ
-		if(nowTime[i] == newTime[i]){
-			continue;
-		}
-		// ----------文字表示処理----------
-		tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-		tft->setCursor(6*TIME_SIZE*i, 200-8*TIME_SIZE);
-		// 数値を表示
-		tft->print(newTime[i]);
-		// 表示データを格納
-		nowTime[i] = newTime[i];
-	}
 }
 
 /**
  * x座標出力（画面右端原点、左向き）
  */
 int fromRight(int x){
-	return DISP_WIDTH-1-x;
+	return DISPLAY_INFO.width-1-x;
 }
 
 /**
  * y座標出力（画面下底原点、上向き）
  */
 int fromBottom(int y){
-	return DISP_HEIGHT-1-y;
+	return DISPLAY_INFO.height-1-y;
 }
