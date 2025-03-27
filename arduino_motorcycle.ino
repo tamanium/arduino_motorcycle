@@ -377,6 +377,24 @@ void loop() {
 // -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
+
+/**
+ * ディスプレイ表示設定
+ * 
+ * @param p 表示情報
+ * @param isTrans 文字出力時に背景を透過させるか
+ */
+void setProp(PrintProperty* p, bool isTrans=false){
+	tft.setCursor(p->x, p->y);
+	tft.setTextSize(p->size);
+	if(isTrans){
+		tft.setTextColor(p->color);
+	}
+	else{
+		tft.setTextColor(p->color, ST77XX_BLACK);
+	}
+}
+
 /**
  * ギアポジションの表示処理
  * @param dispChar char型 表示文字列
@@ -564,25 +582,40 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 	newTimeItems[HOUR]   = now.hour();
 	newTimeItems[MINUTE] = now.minute();
 	newTimeItems[SECOND] = now.second();
-	// 時刻データでループ
-	for(int i=0; i<5; i++){
-		if(firstFlag == true || timeItems[i] != newTimeItems[i]){
-
-			tft->setTextSize(timeDispInfo[i].size);
-			// ----------表示処理----------
-			// 背景色・カーソル設定・値表示
-			tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-			tft->setCursor(timeDispInfo[i].x, timeDispInfo[i].y);
-			if(newTimeItems[i] < 10){
-				tft->print('0');
-			}
-			tft->print(newTimeItems[i]);
-
-			// 保持値更新
-			timeItems[i] = newTimeItems[i];
-		}
+	if(!firstFlag){
+		firstFlag=true;
+		return;
 	}
-	firstFlag = false;
+	// 月
+	setProp(&PRINT_PROP.Month);
+	if(newTimeItems[MONTH] < 10){
+		tft->print('0');
+	}
+	tft->print(newTimeItems[MONTH]);
+	// 日
+	setProp(&PRINT_PROP.Day);
+	if(newTimeItems[DAY] < 10){
+		tft->print('0');
+	}
+	tft->print(newTimeItems[DAY]);
+	// 時間
+	setProp(&PRINT_PROP.Hour);
+	if(newTimeItems[HOUR] < 10){
+		tft->print('0');
+	}
+	tft->print(newTimeItems[HOUR]);
+	// 分
+	setProp(&PRINT_PROP.Min);
+	if(newTimeItems[MINUTE] < 10){
+		tft->print('0');
+	}
+	tft->print(newTimeItems[MINUTE]);
+	// 秒
+	setProp(&PRINT_PROP.Sec);
+	if(newTimeItems[SECOND] < 10){
+		tft->print('0');
+	}
+	tft->print(newTimeItems[SECOND]);
 }
 
 /**
@@ -597,22 +630,4 @@ int fromRight(int x){
  */
 int fromBottom(int y){
 	return DISPLAY_INFO.height-1-y;
-}
-
-/**
- * ディスプレイ表示設定
- * 
- * @param p 表示情報
- * @param isTrans 文字出力時に背景を透過させるか
- */
-void setProp(PrintProperty* p, bool isTrans = true){
-	tft.setCursor(p->x, p->y);
-	tft.setTextSize(p->size);
-	if(isTrans){
-		tft.setTextColor(p->color);
-	}
-	else{
-		tft.setTextColor(p->color, ST77XX_BLACK);
-	}
-	
 }
