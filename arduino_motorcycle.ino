@@ -46,7 +46,7 @@ int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.thi,
 				PIN.IOEXP.POS.top};
 // 明るさレベル
-byte brightLevel[] = {50, 150, 250};
+byte brightLevel[] = {50, 100, 250};
 char nowTime[] = " 0:00";
 
 // 三角形描画用座標
@@ -57,17 +57,6 @@ struct TriangleLocation {
 struct Location {
 	int x = 0;
 	int y = 0;
-};
-
-struct Locations {
-	Location location = {0, 0};
-	uint16_t color = ST77XX_WHITE;
-	int size = 1;
-};
-
-struct DisplayInfo {
-    Location location;
-    int fontSize;
 };
 
 // 表示情報
@@ -81,10 +70,11 @@ struct DispInfo{
  * i2cモジュールのアドレスから名前を取得 
  *
  * @param adrs i2cモジュールのアドレス
+ * @param arr モジュール配列
+ * @param size i2cモジュール数
  * @return i2cモジュールの名前 hitしなければアドレス
  */
 String getModuleName(byte adrs, Module* arr, int size){
-	//for(Module m : arr){
 	for(int i=0; i<size; i++){
 		if(arr[i].address == adrs){
 			return arr[i].name;
@@ -93,8 +83,15 @@ String getModuleName(byte adrs, Module* arr, int size){
 	return String(adrs, HEX)+"   ";
 }
 
+/**
+ * i2cモジュールのアドレスから接続中モジュールの有無を取得
+ *
+ * @param adrs i2cモジュールのアドレス
+ * @param arr モジュール配列
+ * @param size i2cモジュール数
+ * @return モジュールが接続されていればtrue
+ */
 bool existsModule(byte adrs, Module* arr, int size){
-	//for(Module m : arr){
 	for(int i=0; i<size; i++){
 		if(arr[i].address == adrs){
 			return true;
@@ -110,12 +107,29 @@ TriangleLocation triCoords[2] = {
 	{fromRight(30), 24, fromRight(30), 160+24, fromRight(0), 80+24}
 };
 
+struct PrintProperty {
+	int x = 0;
+	int y = 0;
+	int size = 1;
+	uint16_t color = ST77XX_WHITE;
+};
+// 表示設定
+struct PrintProperties{
+	PrintProperty Month;	// 月
+	PrintProperty Day;		// 日
+	PrintProperty Hour;		// 時
+	PrintProperty Min;		// 分
+	PrintProperty Sec;		// 秒
+};
+
+PrintProperties PRINT_PROP;
+
 DispInfo timeDispInfo[5] = {
 	// 月
 	{int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
 	// 日
 	{int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
-	// 時間   
+	// 時間
 	{0, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
 	// 分
 	{FONT_WIDTH * TIME_SIZE * 3, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
@@ -167,6 +181,39 @@ void setup(void) {
 	tft.init(DISPLAY_INFO.height, DISPLAY_INFO.width);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
+
+	// 月
+	PRINT_PROP.Month = {
+		int(FONT_WIDTH * DATE_SIZE * 2.5),
+		fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2),
+		DATE_SIZE
+	};
+	// 日
+	PRINT_PROP.Day = {
+		int(FONT_WIDTH * DATE_SIZE * 5.5),
+		PRINT_PROP.Month.y,
+		DATE_SIZE
+	};
+	// 時間
+	PRINT_PROP.Hour = {
+		0,
+		fromBottom(FONT_HEIGHT * TIME_SIZE),
+		TIME_SIZE
+	};
+	// 分
+	PRINT_PROP.Min = {
+		FONT_WIDTH * TIME_SIZE * 3,
+		PRINT_PROP.Hour.y,
+		TIME_SIZE
+	};
+	// 秒
+	PRINT_PROP.Sec = {
+		FONT_WIDTH * TIME_SIZE * 6,
+		PRINT_PROP.Hour.y,
+		TIME_SIZE
+	};
+
+
 
 	// 初期表示
 	tft.setTextSize(3);
@@ -254,6 +301,7 @@ void setup(void) {
 	tft.setTextSize(1);
 	tft.setCursor(fromRight(FONT_WIDTH * 2) - 3, fromBottom(FONT_HEIGHT * 2) - 8);
 	tft.print('o');
+
 }
 
 // ------------------------------ループ------------------------------
@@ -326,7 +374,9 @@ void loop() {
 	}
 }
 
+// -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
+// -------------------------------------------------------------------
 /**
  * ギアポジションの表示処理
  * @param dispChar char型 表示文字列
@@ -547,4 +597,22 @@ int fromRight(int x){
  */
 int fromBottom(int y){
 	return DISPLAY_INFO.height-1-y;
+}
+
+/**
+ * ディスプレイ表示設定
+ * 
+ * @param p 表示情報
+ * @param isTrans 文字出力時に背景を透過させるか
+ */
+void setProp(PrintProperty* p, bool isTrans = true){
+	tft.setCursor(p->x, p->y);
+	tft.setTextSize(p->size);
+	if(isTrans){
+		tft.setTextColor(p->color);
+	}
+	else{
+		tft.setTextColor(p->color, ST77XX_BLACK);
+	}
+	
 }
