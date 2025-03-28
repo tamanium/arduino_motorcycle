@@ -120,6 +120,10 @@ struct PrintProperties{
 	PrintProperty Hour;		// 時
 	PrintProperty Min;		// 分
 	PrintProperty Sec;		// 秒
+	PrintProperty Temp;		// 温度
+	PrintProperty Gear;		// ギア
+	PrintProperty Init1;	// 初期表示：「hello」
+	PrintProperty Init2;	// 初期表示：モジュール検索
 };
 
 PrintProperties PRINT_PROP;
@@ -159,6 +163,26 @@ GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
 Switch pushSw(PIN.IOEXP.sw, &pcf);
+
+
+/**
+ * ディスプレイ表示設定
+ * 
+ * @param p 表示情報
+ * @param isTrans 文字出力時に背景を透過させるか
+ */
+void setProp(PrintProperty* p, bool isTrans=false){
+	tft.setCursor(p->x, p->y);
+	tft.setTextSize(p->size);
+	if(isTrans){
+		tft.setTextColor(p->color);
+	}
+	else{
+		tft.setTextColor(p->color, ST77XX_BLACK);
+	}
+}
+
+
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -282,12 +306,14 @@ void setup(void) {
 	tft.setCursor(gearCoord.x, gearCoord.y);
 	tft.print('-');
 	// 時間
-	tft.setTextSize(timeDispInfo[HOUR].size);
-	tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
+	//tft.setTextSize(timeDispInfo[HOUR].size);
+	//tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
+	setProp(&PRINT_PROP.Hour);
 	tft.print("  :  :");
 	// 日付
-	tft.setTextSize(timeDispInfo[MONTH].size);
-	tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
+	//tft.setTextSize(timeDispInfo[MONTH].size);
+	//tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
+	setProp(&PRINT_PROP.Month);
 	tft.print("  /");
 	// 温度の値
 	tft.setTextSize(tempDispInfo.size);
@@ -377,23 +403,6 @@ void loop() {
 // -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
-
-/**
- * ディスプレイ表示設定
- * 
- * @param p 表示情報
- * @param isTrans 文字出力時に背景を透過させるか
- */
-void setProp(PrintProperty* p, bool isTrans=false){
-	tft.setCursor(p->x, p->y);
-	tft.setTextSize(p->size);
-	if(isTrans){
-		tft.setTextColor(p->color);
-	}
-	else{
-		tft.setTextColor(p->color, ST77XX_BLACK);
-	}
-}
 
 /**
  * ギアポジションの表示処理
@@ -573,8 +582,6 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
 void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 	// 前回日時
 	static int beforeTimeItems[5] = {99,99,99,99,99};
-	// 初期処理フラグ
-	static boolean firstFlag = true;
 	// 表示情報配列
 	static PrintProperty* printPropArr[5] = {
 		&PRINT_PROP.Month,
