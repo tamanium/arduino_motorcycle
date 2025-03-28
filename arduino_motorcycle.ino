@@ -571,51 +571,50 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
 void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
+	// 前回日時
+	static int beforeTimeItems[5] = {99,99,99,99,99};
+	// 初期処理フラグ
+	static boolean firstFlag = true;
+	// 表示情報配列
+	static PrintProperty* printPropArr[5] = {
+		&PRINT_PROP.Month,
+		&PRINT_PROP.Day,
+		&PRINT_PROP.Hour,
+		&PRINT_PROP.Min,
+		&PRINT_PROP.Sec,
+	};
+	static int itemLen = 5;
+	
 	// 時刻用変数
 	int newTimeItems[5] = {99,99,99,99,99};
-	static boolean firstFlag = true;
+
 	// 現在時刻取得
 	DateTime now = rtc_ds1307->now();
-	// 月・日・時間・分取得
-	newTimeItems[MONTH]  = now.month();
-	newTimeItems[DAY]    = now.day();
-	newTimeItems[HOUR]   = now.hour();
-	newTimeItems[MINUTE] = now.minute();
-	newTimeItems[SECOND] = now.second();
-	if(!firstFlag){
-		firstFlag=true;
-		return;
+	// 各配列に格納
+	int j = 0;
+	newTimeItems[j++] = now.month();
+	newTimeItems[j++] = now.day();
+	newTimeItems[j++] = now.hour();
+	newTimeItems[j++] = now.minute();
+	newTimeItems[j++] = now.second();
+
+	// 出力処理
+	for(int i=0;i<itemLen;i++){
+		// 前回日時と値が同じ場合スキップ
+		if(beforeTimeItems[i] == newTimeItems[i]){
+			continue;
+		}
+		// 表示設定を反映
+		setProp(printPropArr[i]);
+		// 値が1桁の場合は0埋め
+		if(newTimeItems[i] < 10){
+			tft->print('0');
+		}
+		// 値を出力
+		tft->print(newTimeItems[i]);
+		// 前回日時を更新
+		beforeTimeItems[i] = newTimeItems[i];
 	}
-	// 月
-	setProp(&PRINT_PROP.Month);
-	if(newTimeItems[MONTH] < 10){
-		tft->print('0');
-	}
-	tft->print(newTimeItems[MONTH]);
-	// 日
-	setProp(&PRINT_PROP.Day);
-	if(newTimeItems[DAY] < 10){
-		tft->print('0');
-	}
-	tft->print(newTimeItems[DAY]);
-	// 時間
-	setProp(&PRINT_PROP.Hour);
-	if(newTimeItems[HOUR] < 10){
-		tft->print('0');
-	}
-	tft->print(newTimeItems[HOUR]);
-	// 分
-	setProp(&PRINT_PROP.Min);
-	if(newTimeItems[MINUTE] < 10){
-		tft->print('0');
-	}
-	tft->print(newTimeItems[MINUTE]);
-	// 秒
-	setProp(&PRINT_PROP.Sec);
-	if(newTimeItems[SECOND] < 10){
-		tft->print('0');
-	}
-	tft->print(newTimeItems[SECOND]);
 }
 
 /**
