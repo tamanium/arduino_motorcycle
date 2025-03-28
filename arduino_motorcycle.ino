@@ -122,8 +122,8 @@ struct PrintProperties{
 	PrintProperty Sec;		// 秒
 	PrintProperty Temp;		// 温度
 	PrintProperty Gear;		// ギア
-	PrintProperty Init1;	// 初期表示：「hello」
-	PrintProperty Init2;	// 初期表示：モジュール検索
+	PrintProperty InitMsg;	// 初期表示：「hello」
+	PrintProperty InitInfo;	// 初期表示：モジュール検索
 };
 
 PrintProperties PRINT_PROP;
@@ -236,19 +236,34 @@ void setup(void) {
 		PRINT_PROP.Hour.y,
 		TIME_SIZE
 	};
-
+	// 温度
+	PRINT_PROP.Temp = {
+		fromRight(FONT_WIDTH * TEMP_SIZE * 5), 
+		fromBottom(FONT_HEIGHT * TEMP_SIZE), 
+		TEMP_SIZE
+	};
+	// ギア
+	PRINT_PROP.Gear = {
+		98, 24, 8,
+	};
+	// 初期表示メッセージ
+	PRINT_PROP.InitMsg = {
+		0, 0, 3, ST77XX_GREEN
+	};
+	// 初期情報表示
+	PRINT_PROP.InitInfo = {
+		0,
+		FONT_HEIGHT*PRINT_PROP.InitMsg.size,
+		2,
+		ST77XX_WHITE
+	};
 
 
 	// 初期表示
-	tft.setTextSize(3);
-	tft.setTextColor(ST77XX_GREEN);
-	tft.setCursor(0, 0);
-	tft.setTextWrap(true);
+	setProp(&PRINT_PROP.InitMsg);
 	tft.println("hello");
 	delay(2000);
 
-	// i2cモジュールの検索
-	tft.setTextSize(2);
 	// モジュールの配列を作成
 	Module moduleArr[] = {
 		MODULES.ioExp,
@@ -257,8 +272,10 @@ void setup(void) {
 		MODULES.rtcMm,
 		MODULES.rtcIC
 	};
+	// i2cモジュールの検索
+	setProp(&PRINT_PROP.InitInfo);
 	for(byte adrs=1;adrs<127;adrs++){
-		tft.setTextColor(ST77XX_WHITE);
+		tft.setTextColor(PRINT_PROP.InitInfo.color);
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
 		String name = getModuleName(adrs, moduleArr, MODULES.size);
@@ -306,18 +323,13 @@ void setup(void) {
 	tft.setCursor(gearCoord.x, gearCoord.y);
 	tft.print('-');
 	// 時間
-	//tft.setTextSize(timeDispInfo[HOUR].size);
-	//tft.setCursor(timeDispInfo[HOUR].x, timeDispInfo[HOUR].y);
 	setProp(&PRINT_PROP.Hour);
 	tft.print("  :  :");
 	// 日付
-	//tft.setTextSize(timeDispInfo[MONTH].size);
-	//tft.setCursor(timeDispInfo[MONTH].x, timeDispInfo[MONTH].y);
 	setProp(&PRINT_PROP.Month);
 	tft.print("  /");
 	// 温度の値
-	tft.setTextSize(tempDispInfo.size);
-	tft.setCursor(tempDispInfo.x, tempDispInfo.y);
+	setProp(&PRINT_PROP.Temp);
 	tft.print("  .");
 	// 温度の単位
 	tft.setTextSize(2);
@@ -416,10 +428,8 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 	if(nowGear == newGear){
 		return;
 	}
-	tft->setTextSize(8);
 	// ----------新規文字表示----------
-	tft->setCursor(gearCoord.x, gearCoord.y);
-	tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+	setProp(&PRINT_PROP.Gear);
 	tft->print(newGear);
 	// バッファ文字列を上書き
 	nowGear = newGear;
@@ -557,10 +567,7 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
 	if(beforeTempx10 == newTempx10){
 		return;
 	}
-
-	tft->setTextSize(TEMP_SIZE);
-	tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-	tft->setCursor(tempDispInfo.x, tempDispInfo.y);
+	setProp(&PRINT_PROP.Temp);
 	// 温度が一桁以下の場合、十の位にスペース
 	if(10 <= newTempx10 && newTempx10 < 100){
 		tft->print(' ');
