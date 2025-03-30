@@ -61,15 +61,15 @@ struct Pin{
 	struct IoExp{			// IOエキスパンダのピン定義
 		const int sw = 3;	//  スイッチ
 		struct Pos{			//  ギアポジ
-			const int nwt = 2;
-			const int low = 7;
-			const int sec = 6;
-			const int thi = 5;
-			const int top = 4;
+			const int nwt = 0;
+			const int low = 1;
+			const int sec = 2;
+			const int thi = 4;
+			const int top = 5;
  		} POS;
 		struct Wnk{			//  ウインカー
-			const int left = 0;
-			const int right = 1;
+			const int left = 7;
+			const int right = 6;
 		} WNK;
 	} IOEXP;
 } PIN;
