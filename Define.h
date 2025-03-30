@@ -17,8 +17,16 @@
 #define SECOND	4
 
 /**
+ * フォントサイズ
+ **/
+struct Font{
+	int HEIGHT = 8;
+	int WIDTH = 6;
+} FONT;
+
+/**
  * モジュール情報
-*/
+ */
 struct Module{
 	String name;
 	byte address;

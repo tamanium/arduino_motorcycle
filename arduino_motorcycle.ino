@@ -20,9 +20,8 @@ const int DISPLAY_INTERVAL = 30;	//ms
 const int TEMP_INTERVAL    = 1000;	//ms
 const int BUZZER_DURATION  = 100;	//ms
 const int WINKER_DURATION  = 380;	//ms
+
 // フォントの寸法
-const int FONT_HEIGHT = 8;
-const int FONT_WIDTH  = 6;
 const int DATE_SIZE   = 2;
 const int TIME_SIZE   = 3;
 const int TEMP_SIZE   = 3;
@@ -103,8 +102,8 @@ bool existsModule(byte adrs, Module* arr, int size){
 // --------------------インスタンス--------------------
 // 表示座標
 TriangleLocation triCoords[2] = {
-	{30, 24, 30, 160+24, 0, 80+24},
-	{fromRight(30), 24, fromRight(30), 160+24, fromRight(0), 80+24}
+	{30, 34, 30, 160+14, 0, 80+24},
+	{fromRight(30), 34, fromRight(30), 160+14, fromRight(0), 80+24}
 };
 
 struct PrintProperty {
@@ -122,6 +121,8 @@ struct PrintProperties{
 	PrintProperty Sec;		// 秒
 	PrintProperty Temp;		// 温度
 	PrintProperty Gear;		// ギア
+	PrintProperty Speed;	// 速度
+	PrintProperty SpUnit;	// 速度単位
 	PrintProperty InitMsg;	// 初期表示：「hello」
 	PrintProperty InitInfo;	// 初期表示：モジュール検索
 };
@@ -130,22 +131,22 @@ PrintProperties PRINT_PROP;
 
 DispInfo timeDispInfo[5] = {
 	// 月
-	{int(FONT_WIDTH * DATE_SIZE * 2.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
+	{int(FONT.WIDTH * DATE_SIZE * 2.5), fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * DATE_SIZE + FONT.HEIGHT * DATE_SIZE / 2), DATE_SIZE},
 	// 日
-	{int(FONT_WIDTH * DATE_SIZE * 5.5), fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2), DATE_SIZE},
+	{int(FONT.WIDTH * DATE_SIZE * 5.5), fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * DATE_SIZE + FONT.HEIGHT * DATE_SIZE / 2), DATE_SIZE},
 	// 時間
-	{0, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
+	{0, fromBottom(FONT.HEIGHT * TIME_SIZE), TIME_SIZE},
 	// 分
-	{FONT_WIDTH * TIME_SIZE * 3, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE},
+	{FONT.WIDTH * TIME_SIZE * 3, fromBottom(FONT.HEIGHT * TIME_SIZE), TIME_SIZE},
 	// 秒
-	{FONT_WIDTH * TIME_SIZE * 6, fromBottom(FONT_HEIGHT * TIME_SIZE), TIME_SIZE}
+	{FONT.WIDTH * TIME_SIZE * 6, fromBottom(FONT.HEIGHT * TIME_SIZE), TIME_SIZE}
 };
 // シフトポジション表示座標
 Location gearCoord = {98,24};
 // シフトポジション：座標と文字倍率
 DispInfo gearDispInfo = {200, 0, 1};
 // 温度表示：座標と文字倍率
-DispInfo tempDispInfo = {fromRight(FONT_WIDTH * TEMP_SIZE * 5), fromBottom(FONT_HEIGHT * TEMP_SIZE), TEMP_SIZE};
+DispInfo tempDispInfo = {fromRight(FONT.WIDTH * TEMP_SIZE * 5), fromBottom(FONT.HEIGHT * TEMP_SIZE), TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
 
@@ -159,11 +160,9 @@ Adafruit_ST7789 tft(&SPI, PIN.SPI.cs, PIN.SPI.dc, PIN.SPI.rst);
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
-//Winkers winkers(WNK_LEFT, WNK_RIGHT, &pcf);
 Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
 Switch pushSw(PIN.IOEXP.sw, &pcf);
-
 
 /**
  * ディスプレイ表示設定
@@ -208,43 +207,51 @@ void setup(void) {
 
 	// 月
 	PRINT_PROP.Month = {
-		int(FONT_WIDTH * DATE_SIZE * 2.5),
-		fromBottom(FONT_HEIGHT * TIME_SIZE + FONT_HEIGHT * DATE_SIZE + FONT_HEIGHT * DATE_SIZE / 2),
+		int(FONT.WIDTH * DATE_SIZE * 2.5),
+		fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * DATE_SIZE + FONT.HEIGHT * DATE_SIZE / 2),
 		DATE_SIZE
 	};
 	// 日
 	PRINT_PROP.Day = {
-		int(FONT_WIDTH * DATE_SIZE * 5.5),
+		int(FONT.WIDTH * DATE_SIZE * 5.5),
 		PRINT_PROP.Month.y,
 		DATE_SIZE
 	};
 	// 時間
 	PRINT_PROP.Hour = {
 		0,
-		fromBottom(FONT_HEIGHT * TIME_SIZE),
+		fromBottom(FONT.HEIGHT * TIME_SIZE),
 		TIME_SIZE
 	};
 	// 分
 	PRINT_PROP.Min = {
-		FONT_WIDTH * TIME_SIZE * 3,
+		FONT.WIDTH * TIME_SIZE * 3,
 		PRINT_PROP.Hour.y,
 		TIME_SIZE
 	};
 	// 秒
 	PRINT_PROP.Sec = {
-		FONT_WIDTH * TIME_SIZE * 6,
+		FONT.WIDTH * TIME_SIZE * 6,
 		PRINT_PROP.Hour.y,
 		TIME_SIZE
 	};
 	// 温度
 	PRINT_PROP.Temp = {
-		fromRight(FONT_WIDTH * TEMP_SIZE * 5), 
-		fromBottom(FONT_HEIGHT * TEMP_SIZE), 
+		fromRight(FONT.WIDTH * TEMP_SIZE * 5), 
+		fromBottom(FONT.HEIGHT * TEMP_SIZE), 
 		TEMP_SIZE
 	};
 	// ギア
 	PRINT_PROP.Gear = {
-		98, 24, 8,
+		200, 24, 8
+	};
+	// 速度
+	PRINT_PROP.Speed = {
+		50, 80, 12
+	};
+	// 速度単位
+	PRINT_PROP.SpUnit = {
+		200, 145, 3
 	};
 	// 初期表示メッセージ
 	PRINT_PROP.InitMsg = {
@@ -253,9 +260,8 @@ void setup(void) {
 	// 初期情報表示
 	PRINT_PROP.InitInfo = {
 		0,
-		FONT_HEIGHT*PRINT_PROP.InitMsg.size,
-		2,
-		ST77XX_WHITE
+		FONT.HEIGHT * PRINT_PROP.InitMsg.size,
+		2
 	};
 
 
@@ -318,10 +324,17 @@ void setup(void) {
 	//tft.print("gear");
 	
 	// ギアポジション表示開始その2
-	tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-	tft.setTextSize(8);
-	tft.setCursor(gearCoord.x, gearCoord.y);
+	//tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+	//tft.setTextSize(8);
+	//tft.setCursor(gearCoord.x, gearCoord.y);
+	setProp(&PRINT_PROP.Gear);
 	tft.print('-');
+	// 速度
+	setProp(&PRINT_PROP.Speed);
+	tft.print("00");
+	// 速度単位
+	setProp(&PRINT_PROP.SpUnit);
+	tft.print("km/h");
 	// 時間
 	setProp(&PRINT_PROP.Hour);
 	tft.print("  :  :");
@@ -333,11 +346,11 @@ void setup(void) {
 	tft.print("  .");
 	// 温度の単位
 	tft.setTextSize(2);
-	tft.setCursor(fromRight(FONT_WIDTH * 2), fromBottom(FONT_HEIGHT * 2));
+	tft.setCursor(fromRight(FONT.WIDTH * 2), fromBottom(FONT.HEIGHT * 2));
 	tft.print('C');
 	tft.setTextColor(ST77XX_WHITE);
 	tft.setTextSize(1);
-	tft.setCursor(fromRight(FONT_WIDTH * 2) - 3, fromBottom(FONT_HEIGHT * 2) - 8);
+	tft.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	tft.print('o');
 
 }
