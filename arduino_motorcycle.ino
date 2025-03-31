@@ -65,6 +65,15 @@ struct DispInfo{
 	int size = 0;
 };
 
+uint16_t OKNGColor(bool b){
+	if(b){
+		return ST77XX_GREEN;
+	}
+	else{
+		return ST77XX_RED;
+	}
+}
+
 /**
  * i2cモジュールのアドレスから名前を取得 
  *
@@ -111,6 +120,7 @@ struct PrintProperty {
 	int y = 0;
 	int size = 1;
 	uint16_t color = ST77XX_WHITE;
+	boolean disable = false;
 };
 // 表示設定
 struct PrintProperties{
@@ -126,21 +136,8 @@ struct PrintProperties{
 	PrintProperty InitMsg;	// 初期表示：「hello」
 	PrintProperty InitInfo;	// 初期表示：モジュール検索
 };
-
+// 表示設定宣言
 PrintProperties PRINT_PROP;
-
-DispInfo timeDispInfo[5] = {
-	// 月
-	{int(FONT.WIDTH * DATE_SIZE * 2.5), fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * DATE_SIZE + FONT.HEIGHT * DATE_SIZE / 2), DATE_SIZE},
-	// 日
-	{int(FONT.WIDTH * DATE_SIZE * 5.5), fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * DATE_SIZE + FONT.HEIGHT * DATE_SIZE / 2), DATE_SIZE},
-	// 時間
-	{0, fromBottom(FONT.HEIGHT * TIME_SIZE), TIME_SIZE},
-	// 分
-	{FONT.WIDTH * TIME_SIZE * 3, fromBottom(FONT.HEIGHT * TIME_SIZE), TIME_SIZE},
-	// 秒
-	{FONT.WIDTH * TIME_SIZE * 6, fromBottom(FONT.HEIGHT * TIME_SIZE), TIME_SIZE}
-};
 // シフトポジション表示座標
 Location gearCoord = {98,24};
 // シフトポジション：座標と文字倍率
@@ -201,7 +198,7 @@ void setup(void) {
 	analogWrite(PIN.SPI.bl, brightLevel[0]);
 
 	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(DISPLAY_INFO.height, DISPLAY_INFO.width);
+	tft.init(OLED.HEIGHT, OLED.HEIGHT);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -284,16 +281,13 @@ void setup(void) {
 		tft.setTextColor(PRINT_PROP.InitInfo.color);
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
-		String name = getModuleName(adrs, moduleArr, MODULES.size);
-		if(error == 0){
+		// 登録済みモジュールの場合
+		if(existsModule(adrs, moduleArr, MODULES.size)){
+			//module->disable = true;
+			String name = getModuleName(adrs, moduleArr, MODULES.size);
 			tft.print(name + " : ");
-			tft.setTextColor(ST77XX_GREEN);
-			tft.println("OK");
-		}
-		else if(existsModule(adrs, moduleArr, MODULES.size)){
-			tft.print(name + " : ");
-			tft.setTextColor(ST77XX_RED);
-			tft.println("NG");
+			tft.setTextColor(OKNGColor(error == 0));
+			tft.println(OKNGMsg(error == 0));
 		}
 	}
 	tft.setTextColor(ST77XX_GREEN);
@@ -310,10 +304,8 @@ void setup(void) {
 	// ADコンバータ
 	ads.begin(MODULES.adCnv.address, &Wire1);
 	// 疑似ウインカーリレー
-	//pinMode(DMY_RELAY, OUTPUT);
 	pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
-	//pinMode(BZZ_PIN, OUTPUT);
 	pinMode(PIN.buzzer, OUTPUT);
 	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
@@ -323,10 +315,7 @@ void setup(void) {
 	//tft.setTextSize(3);
 	//tft.print("gear");
 	
-	// ギアポジション表示開始その2
-	//tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-	//tft.setTextSize(8);
-	//tft.setCursor(gearCoord.x, gearCoord.y);
+	// ギアポジション表示開始
 	setProp(&PRINT_PROP.Gear);
 	tft.print('-');
 	// 速度
@@ -345,10 +334,10 @@ void setup(void) {
 	setProp(&PRINT_PROP.Temp);
 	tft.print("  .");
 	// 温度の単位
+	tft.setTextColor(ST77XX_WHITE);
 	tft.setTextSize(2);
 	tft.setCursor(fromRight(FONT.WIDTH * 2), fromBottom(FONT.HEIGHT * 2));
 	tft.print('C');
-	tft.setTextColor(ST77XX_WHITE);
 	tft.setTextSize(1);
 	tft.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	tft.print('o');
@@ -436,16 +425,17 @@ void loop() {
  */
 void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 	// バッファ文字列
-	static char nowGear = '-';
+	static char beforeGear = '-';
 	// バッファと引数が同じ場合スキップ
-	if(nowGear == newGear){
+	if(beforeGear == newGear){
 		return;
 	}
-	// ----------新規文字表示----------
+	// ディスプレイ設定
 	setProp(&PRINT_PROP.Gear);
+	// ギア表示更新
 	tft->print(newGear);
 	// バッファ文字列を上書き
-	nowGear = newGear;
+	beforeGear = newGear;
 }
 
 /**
@@ -456,7 +446,7 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
  */
 bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
 	// バッファ状態
-	static bool buffer[2] = {false, false}; 
+	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ
 	bool isSwitched = false;
 
@@ -593,7 +583,7 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
 }
 
 /**
- * 経過時間表示処理
+ * 現在時刻表示処理
  *
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
@@ -642,18 +632,4 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 		// 前回日時を更新
 		beforeTimeItems[i] = newTimeItems[i];
 	}
-}
-
-/**
- * x座標出力（画面右端原点、左向き）
- */
-int fromRight(int x){
-	return DISPLAY_INFO.width-1-x;
-}
-
-/**
- * y座標出力（画面下底原点、上向き）
- */
-int fromBottom(int y){
-	return DISPLAY_INFO.height-1-y;
 }

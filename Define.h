@@ -28,10 +28,12 @@ struct Font{
  * モジュール情報
  */
 struct Module{
-	String name;
-	byte address;
+	String name;		// モジュール名
+	byte address;		// I2Cアドレス
+	bool disable = true;// 使用可能か
 };
 
+// モジュール構造体
 struct Modules{
 	int size = 5;
 	Module ioExp = {"IO Expander ", 0x27};
@@ -44,9 +46,9 @@ struct Modules{
  * ディスプレイ定義
  */
 struct Display{
-	const int width = 320;
-	const int height = 240;
-} DISPLAY_INFO;
+	const int WIDTH = 320;
+	const int HEIGHT = 240;
+} OLED;
 
 /**
  * IOピン定義
@@ -82,4 +84,25 @@ struct Pin{
 	} IOEXP;
 } PIN;
 
+/**
+ * x座標出力（画面右端原点、左向き）
+ */
+int fromRight(int x){
+	return OLED.WIDTH-x-1;
+}
+
+/**
+ * y座標出力（画面下底原点、上向き）
+ */
+int fromBottom(int y){
+	return OLED.HEIGHT-y-1;
+}
+/**
+ * bool値に対応する文字列を出力
+ * @return trueなら"OK"、falseなら"NG"
+ */
+String OKNGMsg(bool b){
+	if(b){	return "OK";}
+	else {	return "NG";}
+}
 #endif
