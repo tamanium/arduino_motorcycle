@@ -8,7 +8,7 @@
  */
 Switch::Switch(int pin, Adafruit_PCF8574 *pcf){
 	this->pin = pin;			//スイッチピン定義
-	this->status = false;			//初期ステータス：キーアップ
+	this->status = KEY_UP;			//初期ステータス：キーアップ
 	this->pushFlag = false;			//プッシュフラグ
 	this->longPressFlag = false;	//長押しフラグ
 	this->pcf = pcf;				//IOエキスパンダ
@@ -51,12 +51,12 @@ void Switch::monitor(){
 	// カウンタ
 	static int counter = 0;
 	// 前回状態
-	static bool beforeStatus = false;
+	static bool beforeStatus = KEY_UP;
 	// 現在状態
-	bool newStatus = false;
+	bool newStatus = KEY_UP;
 	// 各ピンを読み取りウインカー状態へセット
 	if(this->pcf->digitalRead(this->pin) == LOW){
-		newStatus = true;
+		newStatus = KEY_DOWN;
 	}
 
 	// 前回状態と現在状態が異なる場合
@@ -66,13 +66,13 @@ void Switch::monitor(){
 		counter = 0;
 	}
 	// 保持状態と前回状態が異なる場合、またはキーダウンが持続している場合
-	else if(this->status != beforeStatus || newStatus == true){
+	else if(this->status != beforeStatus || newStatus == KEY_DOWN){
 		// カウントアップ
 		counter++;
 	}
 
 	// キーダウンで200カウント以上の場合
-	if(this->status == true && 200 <= counter){
+	if(this->status == KEY_DOWN && 200 <= counter){
 		// 長押しフラグON・プッシュフラグOFF
 		this->longPressFlag = true;
 		this->pushFlag = false;

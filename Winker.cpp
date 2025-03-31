@@ -8,8 +8,8 @@
 Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
 	this->pinLeft = pinLeft;
 	this->pinRight = pinRight;
-	this->statusLR[0] = false;
-	this->statusLR[1] = false;
+	this->statusLR[0] = OFF;
+	this->statusLR[1] = OFF;
 	this->pcf = pcf;
 }
 
@@ -23,7 +23,7 @@ bool Winkers::getStatus(int i){
 	if(i < 2){
 		return this->statusLR[i];
 	}
-	return false;
+	return OFF;
 }
 
 /**
@@ -33,16 +33,16 @@ void Winkers::monitor(){
 	// カウンタ(1は左ウインカー、0は右ウインカー)
 	static int counter[] = {0, 0};
 	// 直前ギア状態(1は左ウインカー、0は右ウインカー)
-	static bool bufferStatusLR[] = {false, false};
+	static bool bufferStatusLR[] = {OFF, OFF};
 	// 現在のウインカー状態(1は左ウインカー、0は右ウインカー)
-	bool newStatusLR[] = {false, false};
+	bool newStatusLR[] = {OFF, OFF};
 
 	// ピンを配列化
 	int pins[] = {this->pinRight, this->pinLeft};
 	// 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
 		if(this->pcf->digitalRead(pins[i]) == HIGH){
-			newStatusLR[i] = true;
+			newStatusLR[i] = ON;
 		}
 	
 		// 直前状態と取得状態が異なる場合
