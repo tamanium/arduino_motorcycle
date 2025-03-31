@@ -6,6 +6,7 @@
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
 #include <Temperature_LM75_Derived.h>   // 温度計
 #include <Adafruit_ADS1X15.h>           // ADコンバータ
+#include <Fonts/FreeMono24pt7b.h>
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -120,6 +121,7 @@ struct PrintProperty {
 	int y = 0;
 	int size = 1;
 	uint16_t color = ST77XX_WHITE;
+	const GFXfont* font = NULL;
 	boolean disable = false;
 };
 // 表示設定
@@ -168,14 +170,19 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
  * @param isTrans 文字出力時に背景を透過させるか
  */
 void setProp(PrintProperty* p, bool isTrans=false){
+	// 描画位置
 	tft.setCursor(p->x, p->y);
+	// テキスト倍率
 	tft.setTextSize(p->size);
+	// テキスト色
 	if(isTrans){
 		tft.setTextColor(p->color);
 	}
 	else{
 		tft.setTextColor(p->color, ST77XX_BLACK);
 	}
+	// テキストフォント
+	tft.setFont(p->font);
 }
 
 
@@ -198,7 +205,7 @@ void setup(void) {
 	analogWrite(PIN.SPI.bl, brightLevel[0]);
 
 	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(OLED.HEIGHT, OLED.HEIGHT);
+	tft.init(OLED.HEIGHT, OLED.WIDTH);
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -240,11 +247,12 @@ void setup(void) {
 	};
 	// ギア
 	PRINT_PROP.Gear = {
-		200, 24, 8
+		210, 50, 8
 	};
 	// 速度
 	PRINT_PROP.Speed = {
 		50, 80, 12
+		//50, 80, 2, ST77XX_WHITE, &FreeMono24pt7b
 	};
 	// 速度単位
 	PRINT_PROP.SpUnit = {
