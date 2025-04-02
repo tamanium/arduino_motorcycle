@@ -17,7 +17,7 @@
 	struct Module{
 		String name;		// モジュール名
 		byte address;		// I2Cアドレス
-		bool disable = true;// 使用可能か
+		bool disabled = true;// 使用可能か
 	};
 
 	// モジュール構造体

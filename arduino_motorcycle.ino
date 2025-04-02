@@ -12,7 +12,7 @@
 #include "Define.h"			// 値定義
 #include "GearPositions.h"	// ギアポジションクラス
 #include "Winker.h"			// ウインカークラス
-#include "Switch.h"         //スイッチクラス
+#include "Switch.h"         // スイッチクラス
 
 // --------------------定数--------------------
 const int CLOCK_INTERVAL   = 200;	//ms
@@ -98,15 +98,15 @@ String getModuleName(byte adrs, Module* arr, int size){
  * @param adrs i2cモジュールのアドレス
  * @param arr モジュール配列
  * @param size i2cモジュール数
- * @return モジュールが接続されていればtrue
+ * @return モジュールが接続されていれば配列のインデックスを
  */
-bool existsModule(byte adrs, Module* arr, int size){
+int existsModule(byte adrs, Module* arr, int size){
 	for(int i=0; i<size; i++){
 		if(arr[i].address == adrs){
-			return true;
+			return i;
 		}
 	}
-	return false;
+	return -1;
 }
 
 // --------------------インスタンス--------------------
@@ -115,16 +115,15 @@ TriangleLocation triCoords[2] = {
 	{30, 34, 30, 160+14, 0, 80+24},
 	{fromRight(30), 34, fromRight(30), 160+14, fromRight(0), 80+24}
 };
-
-struct PrintProperty {
-	int x = 0;
-	int y = 0;
-	int size = 1;
-	uint16_t color = ST77XX_WHITE;
-	const GFXfont* font = NULL;
-	boolean disable = false;
-};
 // 表示設定
+struct PrintProperty {
+	int x = 0;						// x座標
+	int y = 0;						// y座標
+	int size = 1;					// フォント倍率	（デフォルト：1）
+	uint16_t color = ST77XX_WHITE;	// フォント色	（デフォルト：白）
+	const GFXfont* font = NULL;		// フォント		（デフォルト：デフォルトフォント
+};
+// 表示設定まとめ
 struct PrintProperties{
 	PrintProperty Month;	// 月
 	PrintProperty Day;		// 日
@@ -140,12 +139,6 @@ struct PrintProperties{
 };
 // 表示設定宣言
 PrintProperties PRINT_PROP;
-// シフトポジション表示座標
-Location gearCoord = {98,24};
-// シフトポジション：座標と文字倍率
-DispInfo gearDispInfo = {200, 0, 1};
-// 温度表示：座標と文字倍率
-DispInfo tempDispInfo = {fromRight(FONT.WIDTH * TEMP_SIZE * 5), fromBottom(FONT.HEIGHT * TEMP_SIZE), TEMP_SIZE};
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
 
@@ -209,41 +202,43 @@ void setup(void) {
 	tft.setRotation(3);
 	tft.fillScreen(ST77XX_BLACK);
 
+	int dateSize = 2;
 	// 月
 	PRINT_PROP.Month = {
-		int(FONT.WIDTH * DATE_SIZE * 2.5),
-		fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * DATE_SIZE + FONT.HEIGHT * DATE_SIZE / 2),
-		DATE_SIZE
+		int(FONT.WIDTH * dateSize * 2.5),
+		fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * dateSize + FONT.HEIGHT * dateSize / 2),
+		dateSize
 	};
 	// 日
 	PRINT_PROP.Day = {
-		int(FONT.WIDTH * DATE_SIZE * 5.5),
+		int(FONT.WIDTH * dateSize * 5.5),
 		PRINT_PROP.Month.y,
-		DATE_SIZE
+		dateSize
 	};
+	int timeSize = 3;
 	// 時間
 	PRINT_PROP.Hour = {
 		0,
-		fromBottom(FONT.HEIGHT * TIME_SIZE),
-		TIME_SIZE
+		fromBottom(FONT.HEIGHT * timeSize),
+		timeSize
 	};
 	// 分
 	PRINT_PROP.Min = {
-		FONT.WIDTH * TIME_SIZE * 3,
+		FONT.WIDTH * timeSize * 3,
 		PRINT_PROP.Hour.y,
-		TIME_SIZE
+		timeSize
 	};
 	// 秒
 	PRINT_PROP.Sec = {
-		FONT.WIDTH * TIME_SIZE * 6,
+		FONT.WIDTH * timeSize * 6,
 		PRINT_PROP.Hour.y,
-		TIME_SIZE
+		timeSize
 	};
 	// 温度
 	PRINT_PROP.Temp = {
-		fromRight(FONT.WIDTH * TEMP_SIZE * 5), 
-		fromBottom(FONT.HEIGHT * TEMP_SIZE), 
-		TEMP_SIZE
+		fromRight(FONT.WIDTH * timeSize * 5), 
+		fromBottom(FONT.HEIGHT * timeSize), 
+		timeSize
 	};
 	// ギア
 	PRINT_PROP.Gear = {
@@ -252,7 +247,6 @@ void setup(void) {
 	// 速度
 	PRINT_PROP.Speed = {
 		50, 80, 12
-		//50, 80, 2, ST77XX_WHITE, &FreeMono24pt7b
 	};
 	// 速度単位
 	PRINT_PROP.SpUnit = {
@@ -268,7 +262,6 @@ void setup(void) {
 		FONT.HEIGHT * PRINT_PROP.InitMsg.size,
 		2
 	};
-
 
 	// 初期表示
 	setProp(&PRINT_PROP.InitMsg);
@@ -289,14 +282,15 @@ void setup(void) {
 		tft.setTextColor(PRINT_PROP.InitInfo.color);
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
-		// 登録済みモジュールの場合
-		if(existsModule(adrs, moduleArr, MODULES.size)){
-			//module->disable = true;
-			String name = getModuleName(adrs, moduleArr, MODULES.size);
-			tft.print(name + " : ");
-			tft.setTextColor(OKNGColor(error == 0));
-			tft.println(OKNGMsg(error == 0));
+		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
+		if(moduleIndex == -1){
+			continue;
 		}
+		moduleArr[moduleIndex].disabled = (moduleIndex == -1));
+		String name = moduleArr[moduleIndex].name;
+		tft.print(name + " : ");
+		tft.setTextColor(OKNGColor(error == 0));
+		tft.println(OKNGMsg(error == 0));
 	}
 	tft.setTextColor(ST77XX_GREEN);
 	tft.print("done");
@@ -498,7 +492,7 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
 	static int nowBrightLv = 0;
 	bool nowSw = sw->getStatus();
-	tft->setTextSize(tempDispInfo.size);
+	tft->setTextSize(3);
 	tft->setCursor(0, 0);
 
 	// 前回と状態が異なる場合
