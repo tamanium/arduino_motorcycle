@@ -15,7 +15,6 @@
 #include "Switch.h"         // スイッチクラス
 
 // --------------------定数--------------------
-const int CLOCK_INTERVAL   = 200;	//ms
 const int MONITOR_INTERVAL = 5;		//ms
 const int DISPLAY_INTERVAL = 30;	//ms
 const int TEMP_INTERVAL    = 1000;	//ms
@@ -23,22 +22,17 @@ const int BUZZER_DURATION  = 100;	//ms
 const int WINKER_DURATION  = 380;	//ms
 
 // フォントの寸法
-const int DATE_SIZE   = 2;
-const int TIME_SIZE   = 3;
-const int TEMP_SIZE   = 3;
 const int GEAR_SIZE   = 24;
 
 // --------------------変数--------------------
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
-unsigned long clockTime = 0;	// 時計表示
 unsigned long tempTime = 0;		// 温度測定にて使用
 unsigned long bzzTime = 0;
-
 unsigned long debugWinkerTime  = 0;	//疑似ウインカー
 
 // 保持用char配列
-uint16_t timeItems[4] = {0, 0, 0, 0};
+//uint16_t timeItems[4] = {0, 0, 0, 0};
 // シフトポジション配列
 int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.low,
@@ -47,7 +41,7 @@ int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.top};
 // 明るさレベル
 byte brightLevel[] = {50, 100, 250};
-char nowTime[] = " 0:00";
+//char nowTime[] = " 0:00";
 
 // 三角形描画用座標
 struct TriangleLocation {
@@ -386,12 +380,8 @@ void loop() {
 		Serial.println(voltage);
 	}
 
-	// 時計表示処理
-	if(clockTime <= time){
 		// 時刻表示
 		realTimeDisplay(&tft, &rtc);
-		clockTime += CLOCK_INTERVAL;
-	}
 
 	// 各種表示処理
 	if(displayTime <= time){
@@ -593,7 +583,7 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
  */
 void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 	// 前回日時
-	static int beforeTimeItems[5] = {99,99,99,99,99};
+	static uint8_t beforeTime[5] = {13,32,25,60,60};
 	// 表示情報配列
 	static PrintProperty* printPropArr[5] = {
 		&PRINT_PROP.Month,
@@ -605,33 +595,37 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 	static int itemLen = 5;
 	
 	// 時刻用変数
-	int newTimeItems[5] = {99,99,99,99,99};
+	uint8_t newTime[5] = {0,0,0,0,0};
 
 	// 現在時刻取得
 	DateTime now = rtc_ds1307->now();
+	// 秒の値が前回と同じ場合スキップ
+	if(beforeTime[SEC] == now.second()){
+		return;
+	}
 	// 各配列に格納
 	int j = 0;
-	newTimeItems[j++] = now.month();
-	newTimeItems[j++] = now.day();
-	newTimeItems[j++] = now.hour();
-	newTimeItems[j++] = now.minute();
-	newTimeItems[j++] = now.second();
+	newTime[j++] = now.month();
+	newTime[j++] = now.day();
+	newTime[j++] = now.hour();
+	newTime[j++] = now.minute();
+	newTime[j++] = now.second();
 
 	// 出力処理
 	for(int i=0;i<itemLen;i++){
-		// 前回日時と値が同じ場合スキップ
-		if(beforeTimeItems[i] == newTimeItems[i]){
+		// 前回と同じ場合スキップ
+		if(beforeTime[i] == newTime[i]){
 			continue;
 		}
 		// 表示設定を反映
 		setProp(printPropArr[i]);
 		// 値が1桁の場合は0埋め
-		if(newTimeItems[i] < 10){
+		if(newTime[i] < 10){
 			tft->print('0');
 		}
 		// 値を出力
-		tft->print(newTimeItems[i]);
+		tft->print(newTime[i]);
 		// 前回日時を更新
-		beforeTimeItems[i] = newTimeItems[i];
+		beforeTime[i] = newTime[i];
 	}
 }
