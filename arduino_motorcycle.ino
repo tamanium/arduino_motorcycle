@@ -17,7 +17,8 @@
 // --------------------定数--------------------
 const int MONITOR_INTERVAL = 5;		//ms
 const int DISPLAY_INTERVAL = 30;	//ms
-const int TEMP_INTERVAL    = 1000;	//ms
+const int TEMP_INTERVAL    = 2000;	//ms
+const int TIME_INTERVAL    = 30;	//ms
 const int BUZZER_DURATION  = 100;	//ms
 const int WINKER_DURATION  = 380;	//ms
 
@@ -28,6 +29,7 @@ const int GEAR_SIZE   = 24;
 unsigned long displayTime = 0;	// 表示処理
 unsigned long monitorTime = 0;	// 各種読み取り
 unsigned long tempTime = 0;		// 温度測定にて使用
+unsigned long timeTime = 0;		// 時刻測定
 unsigned long bzzTime = 0;
 unsigned long debugWinkerTime  = 0;	//疑似ウインカー
 
@@ -200,7 +202,7 @@ void setup(void) {
 	// 月
 	PRINT_PROP.Month = {
 		int(FONT.WIDTH * dateSize * 2.5),
-		fromBottom(FONT.HEIGHT * TIME_SIZE + FONT.HEIGHT * dateSize + FONT.HEIGHT * dateSize / 2),
+		fromBottom(FONT.HEIGHT * 2 + FONT.HEIGHT * dateSize + FONT.HEIGHT * dateSize),
 		dateSize
 	};
 	// 日
@@ -280,7 +282,7 @@ void setup(void) {
 		if(moduleIndex == -1){
 			continue;
 		}
-		moduleArr[moduleIndex].disabled = (moduleIndex == -1));
+		moduleArr[moduleIndex].disabled = (moduleIndex == -1);
 		String name = moduleArr[moduleIndex].name;
 		tft.print(name + " : ");
 		tft.setTextColor(OKNGColor(error == 0));
@@ -368,28 +370,32 @@ void loop() {
 		winkers.monitor();
 		// スイッチ状態取得
 		pushSw.monitor();
-		monitorTime += MONITOR_INTERVAL;
+		monitorTime = time + MONITOR_INTERVAL;
 	}
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
-		tempDisplay(&tft, &lm75);
-		tempTime += TEMP_INTERVAL;
+		tempDisplay();
+		tempTime = time + TEMP_INTERVAL;
 		uint16_t raw = ads.readADC_SingleEnded(3);
 		String voltage = String((raw * 0.0001875f), 2);
 		Serial.print("Voltage:");
 		Serial.println(voltage);
 	}
 
-		// 時刻表示
-		realTimeDisplay(&tft, &rtc);
+	// 時刻表示
+	if(timeTime <= time){
+		realTimeDisplay();
+		timeTime = time + TIME_INTERVAL;
+	}
+		
 
 	// 各種表示処理
 	if(displayTime <= time){
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw, &tft);
 		 // ギア表示
-		gearDisplay(gearPositions.getGear(), &tft);
-		bool isSwitchStatus = winkersDisplay(winkers, &tft);
+		gearDisplay(gearPositions.getGear());
+		bool isSwitchStatus = winkersDisplay(winkers);
 		// ウインカー点灯状態が切り替わった場合
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
@@ -397,7 +403,7 @@ void loop() {
 			// 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
-		displayTime += DISPLAY_INTERVAL;
+		displayTime = time + DISPLAY_INTERVAL;
 	}
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
@@ -415,7 +421,7 @@ void loop() {
  * @param dispChar char型 表示文字列
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void gearDisplay(char newGear, Adafruit_ST77xx *tft){
+void gearDisplay(char newGear){
 	// バッファ文字列
 	static char beforeGear = '-';
 	// バッファと引数が同じ場合スキップ
@@ -425,7 +431,7 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
 	// ディスプレイ設定
 	setProp(&PRINT_PROP.Gear);
 	// ギア表示更新
-	tft->print(newGear);
+	tft.print(newGear);
 	// バッファ文字列を上書き
 	beforeGear = newGear;
 }
@@ -436,7 +442,7 @@ void gearDisplay(char newGear, Adafruit_ST77xx *tft){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
-bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
+bool winkersDisplay(Winkers &winkers){
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ
@@ -450,7 +456,7 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
 		// バッファ上書き
 		buffer[side] = winkers.getStatus(side);
 		// ディスプレイ表示処理
-		displayTriangle(triCoords[side], buffer[side], tft);
+		displayTriangle(triCoords[side], buffer[side]);
 		// フラグ立てる
 		isSwitched = true;
 	}
@@ -460,9 +466,8 @@ bool winkersDisplay(Winkers &winkers, Adafruit_ST77xx *tft){
  * 三角形表示処理
  * @param coord TriangleLocation型 
  * @param status bool型 true...点灯, false...消灯
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void displayTriangle(TriangleLocation coord, bool status, Adafruit_ST77xx *tft){
+void displayTriangle(TriangleLocation coord, bool status){
 	// 文字色宣言（初期値は黒）
 	uint16_t color = ST77XX_BLACK;
 	// 条件trueの場合は文字色変更
@@ -470,7 +475,7 @@ void displayTriangle(TriangleLocation coord, bool status, Adafruit_ST77xx *tft){
 		color = ST77XX_YELLOW;
 	}
 	// 図形表示（BLACKの場合は削除）
-	tft->fillTriangle(coord.x1, coord.y1,
+	tft.fillTriangle(coord.x1, coord.y1,
 					 coord.x2, coord.y2,
 					 coord.x3, coord.y3,
 					 color);
@@ -547,10 +552,10 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
  * @param *tft IOエキスパンダ
  * @param *lm75 温度計モジュール
  */
-void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
+void tempDisplay(){
 	static int beforeTempx10 = 0;
 	// 温度取得(10倍)
-	int newTempx10 = lm75->readTemperatureC() * 10;
+	int newTempx10 = lm75.readTemperatureC() * 10;
 	// 100度以上の場合は99.9度(変数では999)に修正
 	if(1000 <= newTempx10){
 		newTempx10 = 999;
@@ -565,11 +570,11 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
 	setProp(&PRINT_PROP.Temp);
 	// 温度が一桁以下の場合、十の位にスペース
 	if(10 <= newTempx10 && newTempx10 < 100){
-		tft->print(' ');
+		tft.print(' ');
 	}
-	tft->print(int(newTempx10/10));
-	tft->print('.');
-	tft->print(int(newTempx10)%10);
+	tft.print(int(newTempx10/10));
+	tft.print('.');
+	tft.print(int(newTempx10)%10);
 	// 保持変数を更新
 	beforeTempx10 = newTempx10;
 }
@@ -581,7 +586,7 @@ void tempDisplay(Adafruit_ST77xx *tft, Generic_LM75 *lm75){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
-void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
+void realTimeDisplay(){
 	// 前回日時
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
 	// 表示情報配列
@@ -593,14 +598,13 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 		&PRINT_PROP.Sec,
 	};
 	static int itemLen = 5;
-	
 	// 時刻用変数
-	uint8_t newTime[5] = {0,0,0,0,0};
+	uint8_t newTime[itemLen] = {0,0,0,0,0};
 
 	// 現在時刻取得
-	DateTime now = rtc_ds1307->now();
+	DateTime now = rtc.now();
 	// 秒の値が前回と同じ場合スキップ
-	if(beforeTime[SEC] == now.second()){
+	if(beforeTime[SECOND] == now.second()){
 		return;
 	}
 	// 各配列に格納
@@ -621,10 +625,10 @@ void realTimeDisplay(Adafruit_ST77xx *tft, RTC_DS1307 *rtc_ds1307){
 		setProp(printPropArr[i]);
 		// 値が1桁の場合は0埋め
 		if(newTime[i] < 10){
-			tft->print('0');
+			tft.print('0');
 		}
 		// 値を出力
-		tft->print(newTime[i]);
+		tft.print(newTime[i]);
 		// 前回日時を更新
 		beforeTime[i] = newTime[i];
 	}
