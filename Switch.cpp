@@ -76,8 +76,6 @@ void Switch::monitor(){
 		// 長押しフラグON・プッシュフラグOFF
 		this->longPressFlag = true;
 		this->pushFlag = false;
-		// カウンタリセット
-		counter = 0;
 		return;
 	}
 
@@ -86,7 +84,7 @@ void Switch::monitor(){
 		// 現在状態に直前状態を代入
 		this->status = beforeStatus;
 		// キーアップの場合
-		if(this->status == false){
+		if(this->status == KEY_UP){
 			// カウンタリセット
 			counter = 0;
 			// 長押しフラグオフの場合
