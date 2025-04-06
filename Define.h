@@ -58,9 +58,9 @@
 		struct IoExp{			// IOエキスパンダのピン定義
 			const int sw = 3;	//  スイッチ
 			struct Pos{			//  ギアポジ
-				const int nwt = 0;
-				const int low = 1;
-				const int sec = 2;
+				const int nwt = 2;
+				const int low = 0;
+				const int sec = 1;
 				const int thi = 4;
 				const int top = 5;
 			} POS;
