@@ -6,7 +6,7 @@
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
 #include <Temperature_LM75_Derived.h>   // 温度計
 #include <Adafruit_ADS1X15.h>           // ADコンバータ
-#include <Fonts/FreeMono24pt7b.h>
+#include <Adafruit_NeoPixel.h>          // オンボLED
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
@@ -137,7 +137,7 @@ struct PrintProperties{
 PrintProperties PRINT_PROP;
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
-
+Adafruit_NeoPixel pixels(1, LED_PIN);	//ブザーがわりのオンボLED
 RTC_DS1307 rtc;			// RTC
 Adafruit_PCF8574 pcf;	// IOエキスパンダ
 Adafruit_ADS1X15 ads;	// ADコンバータ
@@ -305,6 +305,7 @@ void setup(void) {
 	pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
 	pinMode(PIN.buzzer, OUTPUT);
+	pixels.begin();
 	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -400,6 +401,8 @@ void loop() {
 		if(isSwitchStatus == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PIN.buzzer, HIGH);
+			pixels.setPixelColor(0, pixels.Color(10,10,0));
+			pixels.show();
 			// 時間設定
 			bzzTime = time + BUZZER_DURATION;
 		}
@@ -408,6 +411,8 @@ void loop() {
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		digitalWrite(PIN.buzzer, LOW);
+		pixels.clear();
+		pixels.show();
 		bzzTime = 0;
 	}
 }
