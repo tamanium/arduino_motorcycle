@@ -43,7 +43,6 @@ int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.top};
 // 明るさレベル
 byte brightLevel[] = {50, 100, 250};
-//char nowTime[] = " 0:00";
 
 // 三角形描画用座標
 struct TriangleLocation {
@@ -137,7 +136,7 @@ struct PrintProperties{
 PrintProperties PRINT_PROP;
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
-Adafruit_NeoPixel pixels(1, LED_PIN);	//ブザーがわりのオンボLED
+Adafruit_NeoPixel pixels(1, PIN.LED);	//ブザーがわりのオンボLED
 RTC_DS1307 rtc;			// RTC
 Adafruit_PCF8574 pcf;	// IOエキスパンダ
 Adafruit_ADS1X15 ads;	// ADコンバータ
@@ -258,11 +257,16 @@ void setup(void) {
 		FONT.HEIGHT * PRINT_PROP.InitMsg.size,
 		2
 	};
-
+	pixels.begin();
+	pixels.setPixelColor(0, pixels.Color(1,1,0));
+	pixels.show();
 	// 初期表示
 	setProp(&PRINT_PROP.InitMsg);
 	tft.println("hello");
 	delay(2000);
+
+	pixels.clear();
+	pixels.show();
 
 	// モジュールの配列を作成
 	Module moduleArr[] = {
@@ -305,7 +309,6 @@ void setup(void) {
 	pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
 	pinMode(PIN.buzzer, OUTPUT);
-	pixels.begin();
 	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -340,7 +343,6 @@ void setup(void) {
 	tft.setTextSize(1);
 	tft.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	tft.print('o');
-
 }
 
 // ------------------------------ループ------------------------------
@@ -388,20 +390,18 @@ void loop() {
 		realTimeDisplay();
 		timeTime = time + TIME_INTERVAL;
 	}
-		
-
+	
 	// 各種表示処理
 	if(displayTime <= time){
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw, &tft);
 		 // ギア表示
 		gearDisplay(gearPositions.getGear());
-		bool isSwitchStatus = winkersDisplay(winkers);
 		// ウインカー点灯状態が切り替わった場合
-		if(isSwitchStatus == true && bzzTime == 0 ){
+		if(winkersDisplay(winkers) == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PIN.buzzer, HIGH);
-			pixels.setPixelColor(0, pixels.Color(10,10,0));
+			pixels.setPixelColor(0, pixels.Color(1,1,0));
 			pixels.show();
 			// 時間設定
 			bzzTime = time + BUZZER_DURATION;
@@ -444,7 +444,6 @@ void gearDisplay(char newGear){
 /**
  * ウインカー表示処理
  * @param winkers Winkers型 ウインカークラス
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
 bool winkersDisplay(Winkers &winkers){
@@ -454,7 +453,7 @@ bool winkersDisplay(Winkers &winkers){
 	bool isSwitched = false;
 
 	for(int side=LEFT; side<=RIGHT; side++){
-		// 左ウインカー状態を判定
+		// 左右ウインカー状態を判定
 		if(buffer[side] == winkers.getStatus(side)){
 			continue;
 		}
@@ -475,8 +474,8 @@ bool winkersDisplay(Winkers &winkers){
 void displayTriangle(TriangleLocation coord, bool status){
 	// 文字色宣言（初期値は黒）
 	uint16_t color = ST77XX_BLACK;
-	// 条件trueの場合は文字色変更
-	if(status == true){
+	// 条件falseの場合は文字色変更
+	if(status == false){
 		color = ST77XX_YELLOW;
 	}
 	// 図形表示（BLACKの場合は削除）
