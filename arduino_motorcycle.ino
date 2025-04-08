@@ -19,7 +19,7 @@ const int MONITOR_INTERVAL = 5;		//ms
 const int DISPLAY_INTERVAL = 30;	//ms
 const int TEMP_INTERVAL    = 2000;	//ms
 const int TIME_INTERVAL    = 30;	//ms
-const int BUZZER_DURATION  = 100;	//ms
+const int BUZZER_DURATION  = 50;	//ms
 const int WINKER_DURATION  = 380;	//ms
 
 // フォントの寸法
@@ -309,6 +309,7 @@ void setup(void) {
 	pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
 	pinMode(PIN.buzzer, OUTPUT);
+	//analogWrite(PIN.buzzer, 51);
 	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
 
@@ -352,16 +353,8 @@ void loop() {
 	
 	// 疑似ウインカーリレー
 	if(debugWinkerTime <= time){
-		//if(digitalRead(DMY_RELAY) == HIGH){
-		// 	digitalWrite(DMY_RELAY, LOW);
-		//}
-		//else{
-		//	digitalWrite(DMY_RELAY, HIGH);
-		//}
 		// 出力反転
-		//digitalWrite(DMY_RELAY, !digitalRead(DMY_RELAY));
 		digitalWrite(PIN.relay, !digitalRead(PIN.relay));
-		
 		debugWinkerTime += WINKER_DURATION;
 	}
 
@@ -398,9 +391,10 @@ void loop() {
 		 // ギア表示
 		gearDisplay(gearPositions.getGear());
 		// ウインカー点灯状態が切り替わった場合
-		if(winkersDisplay(winkers) == true && bzzTime == 0 ){
+		if(winkersDisplay() == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PIN.buzzer, HIGH);
+			//analogWrite(PIN.buzzer, 153);
 			pixels.setPixelColor(0, pixels.Color(1,1,0));
 			pixels.show();
 			// 時間設定
@@ -411,6 +405,7 @@ void loop() {
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		digitalWrite(PIN.buzzer, LOW);
+		//analogWrite(PIN.buzzer, 0);
 		pixels.clear();
 		pixels.show();
 		bzzTime = 0;
@@ -446,7 +441,7 @@ void gearDisplay(char newGear){
  * @param winkers Winkers型 ウインカークラス
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
-bool winkersDisplay(Winkers &winkers){
+bool winkersDisplay(){
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ

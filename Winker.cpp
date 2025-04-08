@@ -19,11 +19,7 @@ Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
  * @return bool型 ウインカーが点灯している場合true
  */
 bool Winkers::getStatus(int i){
-	// 配列数以上の数値の場合false
-	if(i < 2){
-		return this->statusLR[i];
-	}
-	return OFF;
+	return this->statusLR[i];
 }
 
 /**
@@ -32,7 +28,7 @@ bool Winkers::getStatus(int i){
 void Winkers::monitor(){
 	// カウンタ(1は左ウインカー、0は右ウインカー)
 	static int counter[] = {0, 0};
-	// 直前ギア状態(1は左ウインカー、0は右ウインカー)
+	// 直前ウインカー状態(1は左ウインカー、0は右ウインカー)
 	static bool bufferStatusLR[] = {OFF, OFF};
 	// 現在のウインカー状態(1は左ウインカー、0は右ウインカー)
 	bool newStatusLR[] = {OFF, OFF};
