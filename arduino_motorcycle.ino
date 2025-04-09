@@ -309,6 +309,8 @@ void setup(void) {
 	pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
 	pinMode(PIN.buzzer, OUTPUT);
+	//digitalWrite(PIN.buzzer, HIGH);
+	digitalWrite(PIN.buzzer, LOW);
 	//analogWrite(PIN.buzzer, 51);
 	// 画面リセット
 	tft.fillScreen(ST77XX_BLACK);
@@ -394,6 +396,7 @@ void loop() {
 		if(winkersDisplay() == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PIN.buzzer, HIGH);
+			//digitalWrite(PIN.buzzer, LOW);
 			//analogWrite(PIN.buzzer, 153);
 			pixels.setPixelColor(0, pixels.Color(1,1,0));
 			pixels.show();
@@ -405,6 +408,7 @@ void loop() {
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		digitalWrite(PIN.buzzer, LOW);
+		//digitalWrite(PIN.buzzer, HIGH);
 		//analogWrite(PIN.buzzer, 0);
 		pixels.clear();
 		pixels.show();

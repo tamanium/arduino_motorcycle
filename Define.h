@@ -42,7 +42,7 @@
 	*/
 	struct Pin{
 		const int LED = 16;
-		const int buzzer = 27;	// ブザー
+		const int buzzer = 26;	// ブザー
 		const int relay = 0;	// ダミーリレー
 		struct I2c{				// I2C通信
 			const int scl = 15;
