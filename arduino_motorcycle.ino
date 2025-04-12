@@ -365,9 +365,9 @@ void loop() {
 		// 現在のギアポジを取得
 		gearPositions.update();
 		// 現在のウインカー状態を取得
-		winkers.monitor();
+		winkers.updateStatus();
 		// スイッチ状態取得
-		pushSw.monitor();
+		pushSw.update();
 		monitorTime = time + MONITOR_INTERVAL;
 	}
 	// 温度電圧モニタリング・表示
