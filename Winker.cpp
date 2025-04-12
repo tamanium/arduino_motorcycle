@@ -25,7 +25,7 @@ bool Winkers::getStatus(int i){
 /**
  *  ウインカー状態を更新
  */
-void Winkers::monitor(){
+void Winkers::updateStatus(){
 	// カウンタ(1は左ウインカー、0は右ウインカー)
 	static int counter[] = {0, 0};
 	// 直前ウインカー状態(1は左ウインカー、0は右ウインカー)
