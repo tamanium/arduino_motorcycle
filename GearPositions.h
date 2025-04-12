@@ -8,7 +8,7 @@
 		private:
 			Gear gears[5];			// ギアクラス配列
 			char nowGear;			// 現在のギア表示値
-			int numOfGear;			// ギア個数
+			int GearNum;			// ギア個数
 			Adafruit_PCF8574 *pcf;	// IOエキスパンダポインタ
 		public:
 			// コンストラクタ
@@ -16,7 +16,7 @@
 			// 表示値取得
 			char getGear();
 			// ギア状態更新
-			void monitor();
+			void updateGear();
 	};
 
 #endif
