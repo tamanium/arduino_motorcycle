@@ -3,9 +3,7 @@
 /**
  * デフォルトコンストラクタ
  */
-Gear::Gear(){
-
-}
+Gear::Gear(){}
 
 /**
  * コンストラクタ
@@ -24,6 +22,10 @@ Gear::Gear(int pin, char dispChar){
 void Gear::begin(Adafruit_PCF8574 *pcf){
 	pcf->pinMode(this->pin, INPUT_PULLUP);
 }
+void Gear::begin(int pin){
+	;
+}
+
 
 /**
  * 表示値を取得
