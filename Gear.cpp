@@ -23,10 +23,6 @@ Gear::Gear(int pin, char dispChar){
 void Gear::begin(Adafruit_PCF8574 *pcf){
 	pcf->pinMode(this->pin, INPUT_PULLUP);
 }
-void Gear::begin(int pin){
-	pinMode(this->pin, INPUT_PULLUP);
-}
-
 
 /**
  * 表示値を取得
