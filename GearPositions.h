@@ -16,7 +16,7 @@
 			// 表示値取得
 			char getGear();
 			// ギア状態更新
-			void updateGear();
+			void updateStatus();
 	};
 
 #endif
