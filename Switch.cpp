@@ -47,7 +47,7 @@ bool Switch::isLongPress(){
 /**
  *  ウインカー状態を更新
  */
-void Switch::monitor(){
+void Switch::update(){
 	// カウンタ
 	static int counter = 0;
 	// 前回状態
