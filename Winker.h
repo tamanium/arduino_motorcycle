@@ -17,7 +17,7 @@
 			// ウインカー状態取得
 			bool getStatus(int i);
 			// ウインカー状態更新
-			void monitor();
+			void updateStatus();
 	};
 
 #endif
