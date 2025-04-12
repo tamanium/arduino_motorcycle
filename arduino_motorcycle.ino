@@ -363,7 +363,7 @@ void loop() {
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
 		// 現在のギアポジを取得
-		gearPositions.monitor();
+		gearPositions.update();
 		// 現在のウインカー状態を取得
 		winkers.monitor();
 		// スイッチ状態取得
