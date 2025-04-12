@@ -18,7 +18,7 @@
 			bool getStatus();       //【Getter】ウインカー状態
 			bool isPush();          // プッシュしたか
 			bool isLongPress();     // 長押ししているか
-			void monitor();         // ウインカー状態更新
+			void update();         // ウインカー状態更新
 	};
 
 #endif
