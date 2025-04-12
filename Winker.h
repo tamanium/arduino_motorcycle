@@ -7,8 +7,7 @@
 	// ウインカークラス
 	class Winkers{
 		private:
-			int pinLeft;			// 左ウインカー読み取りピン
-			int pinRight;			// 右ウインカー読み取りピン
+			int pin[2];			// ウインカー読み取りピン
 			bool statusLR[2];		// ウインカー状態
 			Adafruit_PCF8574 *pcf;	// IOエキスパンダ
 		public:
