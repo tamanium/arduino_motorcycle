@@ -12,6 +12,7 @@
 		public:
 			// コンストラクタ
 			Gear();
+			Gear(int p);
 			Gear(int p, char c);
 			// ピン読み取り設定
 			void begin(Adafruit_PCF8574 *pcf);
