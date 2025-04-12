@@ -13,6 +13,7 @@ Gear::Gear(){}
  */
 Gear::Gear(int pin, char dispChar){
 	this->pin = pin;
+	this->status = OFF;
 	this->dispChar = dispChar;
 }
 
