@@ -30,7 +30,7 @@ char GearPositions::getGear(){
 /**
  * 現在のギア表示値を更新
  */
-void GearPositions::updateGear(){
+void GearPositions::update(){
 	// カウンタ・直前ギア
 	static int counter = 0;
 	static char bufferGear = '-';
