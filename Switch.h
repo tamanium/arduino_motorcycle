@@ -8,12 +8,10 @@
 	// スイッチクラス
 	class Switch{
 		private:
-			IOPin sw;			// 入出力ピンクラス
-			int pin;				// スイッチ読み取りピン
+			IOPin pin;			// 入出力ピンクラス
 			bool status;			// スイッチ状態
 			bool pushFlag;			// プッシュしたか
 			bool longPressFlag;		// 長押ししているか
-			Adafruit_PCF8574 *pcf;	// IOエキスパンダ
 		public:
 			// コンストラクタ
 			Switch(int pin, Adafruit_PCF8574 *pcf);
