@@ -35,13 +35,17 @@ char IOPin::getChar(){
 }
 
 /**
- * ポジションが自分自身か判定
- * @return 自分自身がポジションとなっている場合true
+ * 読み取り値がLOWかどうか
+ * @return 読み取り値がLOWの場合場合true
  */
 bool IOPin::isLow(){
 	return (this->pcf->digitalRead(this->pin) == LOW);
 }
 
+/**
+ * 読み取り値がHIGHかどうか
+ * @return 読み取り値がHIGHの場合場合true
+ */
 bool IOPin::isHIGH(){
 	return (this->pcf->digitalRead(this->pin) == HIGH);
 }
