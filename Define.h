@@ -7,8 +7,8 @@
 	* フォントサイズ
 	**/
 	struct Font{
-		int HEIGHT = 8;
 		int WIDTH = 6;
+		int HEIGHT = 8;
 	} FONT;
 
 	/**
@@ -59,11 +59,11 @@
 		struct IoExp{			// IOエキスパンダのピン定義
 			const int sw = 3;	//  スイッチ
 			struct Pos{			//  ギアポジ
-				const int nwt = 1;
+				const int nwt = 2;
 				const int low = 0;
-				const int sec = 5;
+				const int sec = 1;
 				const int thi = 4;
-				const int top = 2;
+				const int top = 5;
 			} POS;
 			struct Wnk{			//  ウインカー
 				const int left = 7;
@@ -73,24 +73,35 @@
 	} PIN;
 
 	/**
-	* x座標出力（画面右端原点、左向き）
-	*/
+	 * x座標出力（画面右端原点、左向き）
+	 */
 	int fromRight(int x){
 		return OLED.WIDTH-x-1;
 	}
 
 	/**
-	* y座標出力（画面下底原点、上向き）
-	*/
+	 * y座標出力（画面下底原点、上向き）
+	 */
 	int fromBottom(int y){
 		return OLED.HEIGHT-y-1;
+	}
+	/**
+	 * x座標中央揃え
+	 *
+	 * @param ratio フォント倍率
+	 * @param size 文字数
+	 */
+	int centerHorizontal(int ratio, int size){
+		return OLED.WIDTH/2-FONT.WIDTH*ratio*size/2;
 	}
 	/**
 	* bool値に対応する文字列を出力
 	* @return trueなら"OK"、falseなら"NG"
 	*/
 	String OKNGMsg(bool b){
-		if(b){	return "OK";}
-		else {	return "NG";}
+		if(b){
+			return "OK";
+		}
+		return "NG";
 	}
 #endif

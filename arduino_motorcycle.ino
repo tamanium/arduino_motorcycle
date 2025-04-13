@@ -65,9 +65,7 @@ uint16_t OKNGColor(bool b){
 	if(b){
 		return ST77XX_GREEN;
 	}
-	else{
-		return ST77XX_RED;
-	}
+	return ST77XX_RED;
 }
 
 /**
@@ -107,8 +105,8 @@ int existsModule(byte adrs, Module* arr, int size){
 // --------------------インスタンス--------------------
 // 表示座標
 TriangleLocation triCoords[2] = {
-	{30, 34, 30, 160+14, 0, 80+24},
-	{fromRight(30), 34, fromRight(30), 160+14, fromRight(0), 80+24}
+	{50, 34, 50, 160+14, 0, 80+24},
+	{fromRight(50), 34, fromRight(50), 160+14, fromRight(0), 80+24}
 };
 // 表示設定
 struct PrintProperty {
@@ -237,15 +235,21 @@ void setup(void) {
 	};
 	// ギア
 	PRINT_PROP.Gear = {
-		210, 50, 8
+		centerHorizontal(6, 1),
+		140,
+		6
 	};
 	// 速度
 	PRINT_PROP.Speed = {
-		50, 80, 12
+		centerHorizontal(10, 2),
+		30,
+		10
 	};
 	// 速度単位
 	PRINT_PROP.SpUnit = {
-		200, 145, 3
+		centerHorizontal(2, 4),
+		110,
+		2
 	};
 	// 初期表示メッセージ
 	PRINT_PROP.InitMsg = {
@@ -494,19 +498,20 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	tft->setCursor(0, 0);
 
 	// 前回と状態が異なる場合
+	/*
 	if(beforeSw != nowSw){
 		// 表示リセット
 		tft->setTextColor(ST77XX_BLACK);
+		String msg ="OFF";
 		if(beforeSw){
-			tft->print("ON");
-			}
-		else{
-			tft->print("OFF");
+			msg = "ON";
 		}
+		tft->print(msg);
 		//　前回状態を更新
 		beforeSw = nowSw;
 		tft->setCursor(0, 0);
 	}
+	*/
 	// キーダウンの場合
 	if(nowSw){
 		if(beforeSw != nowSw){
@@ -524,8 +529,11 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	}
 	// キーアップの場合
 	else{
-		tft->setTextColor(ST77XX_BLUE);
-		tft->print("OFF ");
+		if(beforeSw != nowSw){
+			tft->setTextColor(ST77XX_BLUE, ST77XX_BLACK);
+			tft->print("OFF");
+			beforeSw = OFF;
+		}
 		// 長押し
 		if(beforeLong){
 			tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);

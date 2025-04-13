@@ -1,9 +1,9 @@
-#include "Gear.h"
+#include "IOPin.h"
 
 /**
  * デフォルトコンストラクタ
  */
-Gear::Gear(){}
+IOPin::IOPin(){}
 
 /**
  * コンストラクタ
@@ -11,7 +11,7 @@ Gear::Gear(){}
  * @param pin int型 表示値
  * @param dispChar char型 表示値
  */
-Gear::Gear(int pin, char dispChar){
+IOPin::IOPin(int pin, char dispChar){
 	this->pin = pin;
 	this->status = OFF;
 	this->dispChar = dispChar;
@@ -20,7 +20,7 @@ Gear::Gear(int pin, char dispChar){
 /**
  * //ピン読み取り設定
  */
-void Gear::begin(Adafruit_PCF8574 *pcf){
+void IOPin::begin(Adafruit_PCF8574 *pcf){
 	pcf->pinMode(this->pin, INPUT_PULLUP);
 }
 
@@ -29,7 +29,7 @@ void Gear::begin(Adafruit_PCF8574 *pcf){
  *
  * @return dispChar char型 表示値
  */
-char Gear::getChar(){
+char IOPin::getChar(){
 	return dispChar;
 }
 
@@ -37,6 +37,6 @@ char Gear::getChar(){
  * ポジションが自分自身か判定
  * @return 自分自身がポジションとなっている場合true
  */
-bool Gear::isActive(Adafruit_PCF8574 *pcf){
+bool IOPin::isActive(Adafruit_PCF8574 *pcf){
 	return pcf->digitalRead(this->pin) == LOW;
 }

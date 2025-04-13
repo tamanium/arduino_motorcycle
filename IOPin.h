@@ -1,19 +1,19 @@
-#ifndef GEAR_H_INCLUDE
-	#define GEAR_H_INCLUDE
+#ifndef IOPIN_H_INCLUDE
+	#define IOPIN_H_INCLUDE
 	#include <Arduino.h>
 	#include <Adafruit_PCF8574.h>
 	#include "CommonDefine.h"
 	
 	// ギアポジションクラス
-	class Gear{
+	class IOPin{
 		private:
 			int pin;		// 読み取りピン番号
 			boolean status;	// ステータス
 			char dispChar;	// 表示値
 		public:
 			// コンストラクタ
-			Gear();
-			Gear(int p, char c = '0');
+			IOPin();
+			IOPin(int p, char c = '0');
 			// ピン読み取り設定
 			void begin(Adafruit_PCF8574 *pcf);
 			void begin(int pin);
