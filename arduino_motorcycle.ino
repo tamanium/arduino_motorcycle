@@ -382,7 +382,7 @@ void loop() {
 
 	// 時刻表示
 	if(timeTime <= time){
-		realTimeDisplay();
+		displayRTC();
 		timeTime = time + TIME_INTERVAL;
 	}
 	
@@ -391,9 +391,9 @@ void loop() {
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw, &tft);
 		 // ギア表示
-		gearDisplay(gearPositions.getGear());
+		displayGear(gearPositions.getGear());
 		// ウインカー点灯状態が切り替わった場合
-		if(winkersDisplay() == true && bzzTime == 0 ){
+		if(displayWinker() == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PIN.buzzer, HIGH);
 			//digitalWrite(PIN.buzzer, LOW);
@@ -425,7 +425,7 @@ void loop() {
  * @param dispChar char型 表示文字列
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
-void gearDisplay(char newGear){
+void displayGear(char newGear){
 	// バッファ文字列
 	static char beforeGear = '-';
 	// バッファと引数が同じ場合スキップ
@@ -445,7 +445,7 @@ void gearDisplay(char newGear){
  * @param winkers Winkers型 ウインカークラス
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
-bool winkersDisplay(){
+bool displayWinker(){
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ
@@ -555,7 +555,7 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
  * @param *tft IOエキスパンダ
  * @param *lm75 温度計モジュール
  */
-void tempDisplay(){
+void displayTemp(){
 	static int beforeTempx10 = 0;
 	// 温度取得(10倍)
 	int newTempx10 = lm75.readTemperatureC() * 10;
@@ -589,7 +589,7 @@ void tempDisplay(){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
-void realTimeDisplay(){
+void displayRTC(){
 	// 前回日時
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
 	// 表示情報配列
