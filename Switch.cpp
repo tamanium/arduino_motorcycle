@@ -44,7 +44,7 @@ bool Switch::isLongPress(){
 }
 
 /**
- *  ウインカー状態を更新
+ * プッシュ・長押し状態を更新
  */
 void Switch::updateStatus(){
 	// カウンタ
