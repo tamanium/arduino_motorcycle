@@ -14,8 +14,8 @@
 		public:
 			// コンストラクタ
 			IOPin();
-			IOPin(int pin, Adafruit_PCF8574 *pcf=NULL);
 			IOPin(int pin, char c = '0', Adafruit_PCF8574 *pcf=NULL);
+			IOPin(int pin, Adafruit_PCF8574 *pcf=NULL);
 			char getChar();	// 表示値取得
 			bool isLow();	// 読取値がLOWかどうか
 			bool isHIGH();	//読取値がHIGHかどうか
