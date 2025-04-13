@@ -17,12 +17,12 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->status = false;
 	this->dispChar = dispChar;
 	this->pcf = pcf;
-	if(pcf != NULL){
+	//if(pcf != NULL){
 		pcf->pinMode(this->pin, INPUT_PULLUP);
-	}
-	else{
-		pinMode(pin, INPUT_PULLUP);
-	}
+	//}
+	//else{
+	//	pinMode(pin, INPUT_PULLUP);
+	//}
 }
 
 /**
