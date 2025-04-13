@@ -7,11 +7,10 @@
  * @param *pcf IOエキスパンダクラス
  */
 Switch::Switch(int pin, Adafruit_PCF8574 *pcf){
-	this->pin = pin;			//スイッチピン定義
+	this->pin = IOPin(pin, pcf);			//読取ピンインスタンス化
 	this->status = KEY_UP;			//初期ステータス：キーアップ
 	this->pushFlag = false;			//プッシュフラグ
 	this->longPressFlag = false;	//長押しフラグ
-	this->pcf = pcf;				//IOエキスパンダ
 }
 
 /**
@@ -53,11 +52,7 @@ void Switch::updateStatus(){
 	// 前回状態
 	static bool beforeStatus = KEY_UP;
 	// 現在状態
-	bool newStatus = KEY_UP;
-	// 各ピンを読み取りウインカー状態へセット
-	if(this->pcf->digitalRead(this->pin) == LOW){
-		newStatus = KEY_DOWN;
-	}
+	bool newStatus = (this->pin->isLow());
 
 	// 前回状態と現在状態が異なる場合
 	if(beforeStatus != newStatus) {
