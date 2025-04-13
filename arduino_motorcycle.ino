@@ -372,7 +372,7 @@ void loop() {
 	}
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
-		tempDisplay();
+		displayTemp();
 		tempTime = time + TEMP_INTERVAL;
 		uint16_t raw = ads.readADC_SingleEnded(3);
 		String voltage = String((raw * 0.0001875f), 2);
