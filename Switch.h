@@ -8,6 +8,7 @@
 	// スイッチクラス
 	class Switch{
 		private:
+			IOPin sw;			// 入出力ピンクラス
 			int pin;				// スイッチ読み取りピン
 			bool status;			// スイッチ状態
 			bool pushFlag;			// プッシュしたか
