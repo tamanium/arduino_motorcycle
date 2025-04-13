@@ -10,6 +10,7 @@ IOPin::IOPin(){}
  *
  * @param pin int型 表示値
  * @param dispChar char型 表示値
+ * @param Adafruit_PCF8574 IOエキスパンダクラス
  */
 IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->pin = pin;
@@ -22,6 +23,16 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	else{
 		pinMode(pin, INPUT_PULLUP);
 	}
+}
+
+/**
+ * コンストラクタ
+ *
+ * @param pin int型 表示値
+ * @param Adafruit_PCF8574 IOエキスパンダクラス
+ */
+IOPin::IOPin(int pin, Adafruit_PCF8574 *pcf){
+	IOPin(pin, '0', pcf);
 }
 
 /**
