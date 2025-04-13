@@ -15,13 +15,9 @@
 			// コンストラクタ
 			IOPin();
 			IOPin(int p, char c = '0', Adafruit_PCF8574 *pcf = NULL);
-			// ピン読み取り設定
-			void begin();
-			// 表示値取得
-			char getChar();
-			// ポジションが自身か判定（表示値を参照渡し）
-			bool isLow();
-			bool isHIGH();
+			char getChar();	// 表示値取得
+			bool isLow();	// 読取値がLOWかどうか
+			bool isHIGH();	//読取値がHIGHかどうか
 	};
 
 #endif
