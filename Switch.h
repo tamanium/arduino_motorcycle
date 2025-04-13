@@ -2,6 +2,7 @@
 	#define SWITCH_H_INCLUDE
 	#include <Arduino.h>
 	#include <Adafruit_PCF8574.h>
+	#include "IOPin.h"	//入出力ピンクラス
 	#include "Const.h"
 
 	// スイッチクラス
