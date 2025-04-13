@@ -2,7 +2,7 @@
 	#define SWITCH_H_INCLUDE
 	#include <Arduino.h>
 	#include <Adafruit_PCF8574.h>
-	#include "CommonDefine.h"
+	#include "Const.h"
 
 	// スイッチクラス
 	class Switch{

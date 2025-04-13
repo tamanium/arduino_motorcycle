@@ -1,7 +1,7 @@
 #ifndef DEFINE_H_INCLUDE
 	#define DEFINE_H_INCLUDE
 
-	#include "CommonDefine.h"
+	#include "Const.h"
 
 	/**
 	* フォントサイズ

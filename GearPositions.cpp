@@ -11,11 +11,10 @@ GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
 		if(0<i){
 			c = '0'+i;
 		}
-		this->gears[i] = Gear(pins[i], c);
+		this->gears[i] = IOPin(pins[i], c, pcf);
 	}
 	this->GearNum = len;
 	this->nowGear = '-';
-	this->pcf = pcf;
 }
 
 /**
@@ -38,7 +37,7 @@ void GearPositions::updateStatus(){
 	char newGear = '-';
 	// ギア配列でループし、現在のギア表示値を取得
 	for(int i=0; i<this->GearNum; i++){
-		if(this->gears[i].isActive(this->pcf) == true){
+		if(this->gears[i].isLow()){
 			newGear = this->gears[i].getChar();
 			break;
 		}
