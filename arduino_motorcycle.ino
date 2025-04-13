@@ -497,12 +497,11 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	if(beforeSw != nowSw){
 		// 表示リセット
 		tft->setTextColor(ST77XX_BLACK);
+		String swStr = "OFF";
 		if(beforeSw){
-			tft->print("ON");
-			}
-		else{
-			tft->print("OFF");
+			swStr = "ON";
 		}
+		tft->print(swStr);
 		//　前回状態を更新
 		beforeSw = nowSw;
 		tft->setCursor(0, 0);
