@@ -16,13 +16,12 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->status = false;
 	this->dispChar = dispChar;
 	this->pcf = pcf;
-}
-
-/**
- * //ピン読み取り設定
- */
-void IOPin::begin(){
-	pcf->pinMode(this->pin, INPUT_PULLUP);
+	if(pcf != NULL){
+		pcf->pinMode(this->pin, INPUT_PULLUP);
+	}
+	else{
+		pinMode(pin, INPUT_PULLUP);
+	}
 }
 
 /**
@@ -39,7 +38,10 @@ char IOPin::getChar(){
  * @return 読み取り値がLOWの場合場合true
  */
 bool IOPin::isLow(){
-	return (this->pcf->digitalRead(this->pin) == LOW);
+	if(pcf != NULL){
+		return (this->pcf->digitalRead(this->pin)==LOW);
+	}
+	return (digitalRead(this->pin)==LOW);
 }
 
 /**
@@ -47,5 +49,8 @@ bool IOPin::isLow(){
  * @return 読み取り値がHIGHの場合場合true
  */
 bool IOPin::isHIGH(){
-	return (this->pcf->digitalRead(this->pin) == HIGH);
+	if(pcf != NULL){
+		return (this->pcf->digitalRead(this->pin)==HIGH);
+	}
+	return (digitalRead(this->pin)==HIGH);
 }
