@@ -19,7 +19,7 @@ Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
  * @return bool型 ウインカーが点灯している場合true
  */
 bool Winkers::getStatus(int i){
-	return this->statusLR[i];
+	return this->status[i];
 }
 
 /**
@@ -34,7 +34,7 @@ void Winkers::updateStatus(){
 	bool now[] = {OFF, OFF};
 
 	// ピンを配列化
-	int pins[] = {this->pinRight, this->pinLeft};
+	int pins[] = {this->pin[1], this->pin[0]};
 	// 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
 			now[i] = (this->pcf->digitalRead(pins[i]) == ON);

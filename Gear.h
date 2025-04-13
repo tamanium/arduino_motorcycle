@@ -2,7 +2,8 @@
 	#define GEAR_H_INCLUDE
 	#include <Arduino.h>
 	#include <Adafruit_PCF8574.h>
-
+	#include "CommonDefine.h"
+	
 	// ギアポジションクラス
 	class Gear{
 		private:
