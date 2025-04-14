@@ -236,23 +236,16 @@ void setup(void) {
 	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
 
-	//SPI1設定
+	// SPI1設定
 	SPI.setTX(PIN.SPI.mosi);
 	SPI.setSCK(PIN.SPI.sclk);
 
-	// ディスプレイ明るさ設定(0-255)
-	analogWrite(PIN.SPI.bl, brightLevel[0]);
+	// ディスプレイの初期化
+	display.init();
+	display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
+	display.fillScreen(TFT_BLACK);
 
-	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(OLED.HEIGHT, OLED.WIDTH);
-	tft.setRotation(3);
-	tft.fillScreen(ST77XX_BLACK);
-
-	// LovyanGFXの初期化
-	//display.init();
-	//display.setTextSize((std::max(display.width(), display.height()) + 255) >> 8);
-	//display.fillScreen(TFT_BLACK);
-
+	// 表示文字情報
 	int dateSize = 2;
 	// 月
 	PRINT_PROP.Month = {
@@ -319,9 +312,21 @@ void setup(void) {
 		FONT.HEIGHT * PRINT_PROP.InitMsg.size,
 		2
 	};
+
+	// ブザー連動LED設定
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1,1,0));
 	pixels.show();
+
+  /*
+	// ディスプレイ明るさ設定(0-255)
+	analogWrite(PIN.SPI.bl, brightLevel[0]);
+
+	// ディスプレイ初期化・画面向き・画面リセット
+	tft.init(OLED.HEIGHT, OLED.WIDTH);
+	tft.setRotation(3);
+	tft.fillScreen(ST77XX_BLACK);
+
 	// 初期表示
 	setProp(&PRINT_PROP.InitMsg);
 	tft.println("hello");
@@ -408,10 +413,13 @@ void setup(void) {
 	tft.setTextSize(1);
 	tft.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	tft.print('o');
+*/
 }
 
 // ------------------------------ループ------------------------------
 void loop() {
+	/*
+
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 	
@@ -476,6 +484,7 @@ void loop() {
 		pixels.show();
 		bzzTime = 0;
 	}
+	*/
 }
 
 // -------------------------------------------------------------------
