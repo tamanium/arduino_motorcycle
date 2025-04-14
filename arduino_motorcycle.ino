@@ -245,6 +245,12 @@ void setup(void) {
 	display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
 	display.fillScreen(TFT_BLACK);
 
+	display.setFont(&fonts::Font0);
+	display.setCursor(0,0);
+	display.print("Hello");
+	display.println("hello");
+
+
 	// 表示文字情報
 	int dateSize = 2;
 	// 月
