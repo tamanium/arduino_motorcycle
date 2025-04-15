@@ -246,10 +246,19 @@ void setup(void) {
 	display.fillScreen(TFT_BLACK);
 
 	display.setFont(&fonts::Font0);
+	display.setTextColor(TFT_WHITE, TFT_BLACK);
 	display.setCursor(0,0);
 	display.print("Hello");
 	display.println("hello");
 
+	// モジュールの配列を作成
+	Module moduleArr[] = {
+		MODULES.ioExp,
+		MODULES.therm,
+		MODULES.adCnv,
+		MODULES.rtcMm,
+		MODULES.rtcIC
+	};
 
 	// 表示文字情報
 	int dateSize = 2;
@@ -323,6 +332,33 @@ void setup(void) {
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1,1,0));
 	pixels.show();
+	
+	// i2cモジュールの検索
+	display.println("I2C Module Scanning...");
+	setProp(&PRINT_PROP.InitInfo);
+	for(byte adrs=1;adrs<127;adrs++){
+		//tft.setTextColor(PRINT_PROP.InitInfo.color);
+		display.setTextColor(TFT_WHITE, TFT_BLACK);
+		Wire1.beginTransmission(adrs);
+		byte error = Wire1.endTransmission();
+		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
+		if(moduleIndex == -1){
+			continue;
+		}
+		moduleArr[moduleIndex].disabled = (moduleIndex == -1);
+		String name = moduleArr[moduleIndex].name;
+		//tft.print(name + " : ");
+		display.print(name + ":");
+		//tft.setTextColor(OKNGColor(error == 0));
+		if(error==0){
+			display.setTextColor(TFT_RED, TFT_BLACK);
+		}
+		else{
+			display.setTextColor(TFT_GREEN, TFT_BLACK);
+		}
+		//tft.println(OKNGMsg(error == 0));
+		display.println(OKNGMsg(error == 0));
+	}
 
   /*
 	// ディスプレイ明るさ設定(0-255)
@@ -341,30 +377,6 @@ void setup(void) {
 	pixels.clear();
 	pixels.show();
 
-	// モジュールの配列を作成
-	Module moduleArr[] = {
-		MODULES.ioExp,
-		MODULES.therm,
-		MODULES.adCnv,
-		MODULES.rtcMm,
-		MODULES.rtcIC
-	};
-	// i2cモジュールの検索
-	setProp(&PRINT_PROP.InitInfo);
-	for(byte adrs=1;adrs<127;adrs++){
-		tft.setTextColor(PRINT_PROP.InitInfo.color);
-		Wire1.beginTransmission(adrs);
-		byte error = Wire1.endTransmission();
-		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
-		if(moduleIndex == -1){
-			continue;
-		}
-		moduleArr[moduleIndex].disabled = (moduleIndex == -1);
-		String name = moduleArr[moduleIndex].name;
-		tft.print(name + " : ");
-		tft.setTextColor(OKNGColor(error == 0));
-		tft.println(OKNGMsg(error == 0));
-	}
 	tft.setTextColor(ST77XX_GREEN);
 	tft.print("done");
 	delay(5000);
