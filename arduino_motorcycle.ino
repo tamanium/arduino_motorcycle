@@ -48,7 +48,7 @@ public:
       cfg.pin_busy = -1;  // BUSYが接続されているピン番号 (-1 = disable)
       cfg.panel_width      =   240;  // 実際に表示可能な幅
       cfg.panel_height     =   320;  // 実際に表示可能な高さ
-      cfg.offset_rotation  =     0;  // 回転方向の値のオフセット 0~7 (4~7は上下反転)
+      cfg.offset_rotation  =     1;  // 回転方向の値のオフセット 0~7 (4~7は上下反転)
       cfg.invert           = true;  // パネルの明暗が反転してしまう場合 trueに設定
       _panel_instance.config(cfg);
     }
@@ -206,6 +206,21 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
 
 /**
  * ディスプレイ表示設定
+ */
+void setDisplay(PrintProperty* p, bool isTrans=false){
+	display.setCursor(p->x,p->y);	//描画位置
+	display.setTextSize(p->size);	//テキスト倍率
+	//display.setFont(&fonts::Font0);	//フォント
+	//文字色
+	//if(isTrans){
+	//	display.setTextColor(TFT_WHITE);
+	//}
+	//else{
+	//	display.setTextColor(TFT_WHITE, TFT_BLACK);
+	//}
+}
+/**
+ * ディスプレイ表示設定
  * 
  * @param p 表示情報
  * @param isTrans 文字出力時に背景を透過させるか
@@ -244,12 +259,15 @@ void setup(void) {
 	display.init();
 	display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
 	display.fillScreen(TFT_BLACK);
+	display.setBrightness(50);
 
 	display.setFont(&fonts::Font0);
 	display.setTextColor(TFT_WHITE, TFT_BLACK);
+	display.setTextSize(2);
 	display.setCursor(0,0);
-	display.print("Hello");
-	display.println("hello");
+	display.println("Hello");
+	display.println("");
+	delay(2000);
 
 	// モジュールの配列を作成
 	Module moduleArr[] = {
@@ -335,7 +353,7 @@ void setup(void) {
 	
 	// i2cモジュールの検索
 	display.println("I2C Module Scanning...");
-	setProp(&PRINT_PROP.InitInfo);
+	//setProp(&PRINT_PROP.InitInfo);
 	for(byte adrs=1;adrs<127;adrs++){
 		//tft.setTextColor(PRINT_PROP.InitInfo.color);
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -351,35 +369,20 @@ void setup(void) {
 		display.print(name + ":");
 		//tft.setTextColor(OKNGColor(error == 0));
 		if(error==0){
-			display.setTextColor(TFT_RED, TFT_BLACK);
+			display.setTextColor(TFT_GREEN, TFT_BLACK);
 		}
 		else{
-			display.setTextColor(TFT_GREEN, TFT_BLACK);
+			display.setTextColor(TFT_RED, TFT_BLACK);
 		}
 		//tft.println(OKNGMsg(error == 0));
 		display.println(OKNGMsg(error == 0));
 	}
+	display.println("done.");
+	delay(5000);
 
   /*
 	// ディスプレイ明るさ設定(0-255)
-	analogWrite(PIN.SPI.bl, brightLevel[0]);
-
-	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(OLED.HEIGHT, OLED.WIDTH);
-	tft.setRotation(3);
-	tft.fillScreen(ST77XX_BLACK);
-
-	// 初期表示
-	setProp(&PRINT_PROP.InitMsg);
-	tft.println("hello");
-	delay(2000);
-
-	pixels.clear();
-	pixels.show();
-
-	tft.setTextColor(ST77XX_GREEN);
-	tft.print("done");
-	delay(5000);
+	analogWrite(PIN.SPI.bl, brightLevel[0])
 
 	// IOエキスパンダ
 	pcf.begin(MODULES.ioExp.address, &Wire1);
