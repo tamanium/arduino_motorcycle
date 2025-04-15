@@ -14,6 +14,61 @@
 #include "Winker.h"			// ウインカークラス
 #include "Switch.h"         // スイッチクラス
 
+#include <LovyanGFX.hpp>
+class LGFX : public lgfx::LGFX_Device{
+
+// 接続するパネルの型にあったインスタンスを用意します。
+lgfx::Panel_ST7789  _panel_instance;
+// パネルを接続するバスの種類にあったインスタンスを用意します。
+lgfx::Bus_SPI       _bus_instance;   // SPIバスのインスタンス
+// バックライト制御が可能な場合はインスタンスを用意します。(必要なければ削除)
+lgfx::Light_PWM     _light_instance;
+
+public:
+  LGFX(void){
+    { // バス制御の設定を行います。
+      auto cfg = _bus_instance.config();    // バス設定用の構造体を取得します。
+      // SPIバスの設定
+      cfg.spi_host = 0;     // 使用するSPIを選択
+      cfg.spi_mode = 0;             // SPI通信モードを設定 (0 ~ 3)
+      cfg.freq_write = 40000000;    // 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
+      cfg.freq_read  = 20000000;    // 受信時のSPIクロック
+      cfg.pin_sclk = 2;            // SPIのSCLKピン番号を設定
+      cfg.pin_mosi = 3;            // SPIのMOSIピン番号を設定
+      cfg.pin_miso = -1;            // SPIのMISOピン番号を設定 (-1 = disable)
+      cfg.pin_dc   = 7;            // SPIのD/Cピン番号を設定  (-1 = disable
+      _bus_instance.config(cfg);    // 設定値をバスに反映します。
+      _panel_instance.setBus(&_bus_instance);      // バスをパネルにセットします。
+    }
+
+    { // 表示パネル制御の設定を行います。
+      auto cfg = _panel_instance.config();    // 表示パネル設定用の構造体を取得します。
+      cfg.pin_cs = 6;  // CSが接続されているピン番号   (-1 = disable)
+      cfg.pin_rst = 8;  // RSTが接続されているピン番号  (-1 = disable)
+      cfg.pin_busy = -1;  // BUSYが接続されているピン番号 (-1 = disable)
+      cfg.panel_width      =   240;  // 実際に表示可能な幅
+      cfg.panel_height     =   320;  // 実際に表示可能な高さ
+      cfg.offset_rotation  =     0;  // 回転方向の値のオフセット 0~7 (4~7は上下反転)
+      cfg.invert           = true;  // パネルの明暗が反転してしまう場合 trueに設定
+      _panel_instance.config(cfg);
+    }
+
+    { // バックライト制御の設定を行います。（必要なければ削除）
+      auto cfg = _light_instance.config();    // バックライト設定用の構造体を取得します。
+      cfg.pin_bl = 5;              // バックライトが接続されているピン番号
+      cfg.invert = false;           // バックライトの輝度を反転させる場合 true
+      cfg.freq   = 44100;           // バックライトのPWM周波数
+      cfg.pwm_channel = 7;          // 使用するPWMのチャンネル番号
+      _light_instance.config(cfg);
+      _panel_instance.setLight(&_light_instance);  // バックライトをパネルにセットします。
+    }
+    setPanel(&_panel_instance); // 使用するパネルをセットします。
+  }
+};
+
+// 準備したクラスのインスタンスを作成します。
+LGFX display;
+
 // --------------------定数--------------------
 const int MONITOR_INTERVAL = 5;		//ms
 const int DISPLAY_INTERVAL = 30;	//ms
@@ -65,9 +120,7 @@ uint16_t OKNGColor(bool b){
 	if(b){
 		return ST77XX_GREEN;
 	}
-	else{
-		return ST77XX_RED;
-	}
+	return ST77XX_RED;
 }
 
 /**
@@ -107,8 +160,8 @@ int existsModule(byte adrs, Module* arr, int size){
 // --------------------インスタンス--------------------
 // 表示座標
 TriangleLocation triCoords[2] = {
-	{30, 34, 30, 160+14, 0, 80+24},
-	{fromRight(30), 34, fromRight(30), 160+14, fromRight(0), 80+24}
+	{50, 34, 50, 160+14, 0, 80+24},
+	{fromRight(50), 34, fromRight(50), 160+14, fromRight(0), 80+24}
 };
 // 表示設定
 struct PrintProperty {
@@ -173,8 +226,6 @@ void setProp(PrintProperty* p, bool isTrans=false){
 	tft.setFont(p->font);
 }
 
-
-
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	// デバッグ用シリアル設定
@@ -185,18 +236,22 @@ void setup(void) {
 	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
 
-	//SPI1設定
+	// SPI1設定
 	SPI.setTX(PIN.SPI.mosi);
 	SPI.setSCK(PIN.SPI.sclk);
 
-	// ディスプレイ明るさ設定(0-255)
-	analogWrite(PIN.SPI.bl, brightLevel[0]);
+	// ディスプレイの初期化
+	display.init();
+	display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
+	display.fillScreen(TFT_BLACK);
 
-	// ディスプレイ初期化・画面向き・画面リセット
-	tft.init(OLED.HEIGHT, OLED.WIDTH);
-	tft.setRotation(3);
-	tft.fillScreen(ST77XX_BLACK);
+	display.setFont(&fonts::Font0);
+	display.setCursor(0,0);
+	display.print("Hello");
+	display.println("hello");
 
+
+	// 表示文字情報
 	int dateSize = 2;
 	// 月
 	PRINT_PROP.Month = {
@@ -237,15 +292,21 @@ void setup(void) {
 	};
 	// ギア
 	PRINT_PROP.Gear = {
-		210, 50, 8
+		centerHorizontal(6, 1),
+		140,
+		6
 	};
 	// 速度
 	PRINT_PROP.Speed = {
-		50, 80, 12
+		centerHorizontal(10, 2),
+		30,
+		10
 	};
 	// 速度単位
 	PRINT_PROP.SpUnit = {
-		200, 145, 3
+		centerHorizontal(2, 4),
+		110,
+		2
 	};
 	// 初期表示メッセージ
 	PRINT_PROP.InitMsg = {
@@ -257,9 +318,21 @@ void setup(void) {
 		FONT.HEIGHT * PRINT_PROP.InitMsg.size,
 		2
 	};
+
+	// ブザー連動LED設定
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1,1,0));
 	pixels.show();
+
+  /*
+	// ディスプレイ明るさ設定(0-255)
+	analogWrite(PIN.SPI.bl, brightLevel[0]);
+
+	// ディスプレイ初期化・画面向き・画面リセット
+	tft.init(OLED.HEIGHT, OLED.WIDTH);
+	tft.setRotation(3);
+	tft.fillScreen(ST77XX_BLACK);
+
 	// 初期表示
 	setProp(&PRINT_PROP.InitMsg);
 	tft.println("hello");
@@ -346,10 +419,13 @@ void setup(void) {
 	tft.setTextSize(1);
 	tft.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	tft.print('o');
+*/
 }
 
 // ------------------------------ループ------------------------------
 void loop() {
+	/*
+
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 	
@@ -414,6 +490,7 @@ void loop() {
 		pixels.show();
 		bzzTime = 0;
 	}
+	*/
 }
 
 // -------------------------------------------------------------------
@@ -494,18 +571,28 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	tft->setCursor(0, 0);
 
 	// 前回と状態が異なる場合
+	/*
 	if(beforeSw != nowSw){
 		// 表示リセット
 		tft->setTextColor(ST77XX_BLACK);
+<<<<<<< HEAD
 		String swStr = "OFF";
 		if(beforeSw){
 			swStr = "ON";
 		}
 		tft->print(swStr);
+=======
+		String msg ="OFF";
+		if(beforeSw){
+			msg = "ON";
+		}
+		tft->print(msg);
+>>>>>>> 9b9aa296a482cf02e06a2cd6729ddd5e2860e12f
 		//　前回状態を更新
 		beforeSw = nowSw;
 		tft->setCursor(0, 0);
 	}
+	*/
 	// キーダウンの場合
 	if(nowSw){
 		if(beforeSw != nowSw){
@@ -523,8 +610,11 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	}
 	// キーアップの場合
 	else{
-		tft->setTextColor(ST77XX_BLUE);
-		tft->print("OFF ");
+		if(beforeSw != nowSw){
+			tft->setTextColor(ST77XX_BLUE, ST77XX_BLACK);
+			tft->print("OFF");
+			beforeSw = OFF;
+		}
 		// 長押し
 		if(beforeLong){
 			tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);

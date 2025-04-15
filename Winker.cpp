@@ -34,7 +34,11 @@ void Winkers::updateStatus(){
 	bool now[] = {OFF, OFF};
 
 	// ピンを配列化
+<<<<<<< HEAD
 	int pins[2] = {this->pin[LEFT], this->pin[RIGHT]};
+=======
+	int pins[] = {this->pin[1], this->pin[0]};
+>>>>>>> 9b9aa296a482cf02e06a2cd6729ddd5e2860e12f
 	// 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
 			now[i] = (this->pcf->digitalRead(pins[i]) == ON);
