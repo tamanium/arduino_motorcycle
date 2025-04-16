@@ -20,7 +20,7 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 		pcf->pinMode(this->pin, INPUT_PULLUP);
 	}
 	else{
-		pinMode(this->pin);
+		pinMode(this->pin, INPUT_PULLUP);
 	}
 }
 /**
@@ -29,7 +29,7 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
  * @return dispChar char型 表示値
  */
 char IOPin::getChar(){
-	return dispChar;
+	return this->dispChar;
 }
 
 /**
