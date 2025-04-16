@@ -14,7 +14,6 @@ IOPin::IOPin(){}
  */
 IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->pin = pin;
-	this->status = OFF;
 	this->dispChar = dispChar;
 	if(pcf != null){
 		pcf->pinMode(this->pin, INPUT_PULLUP);
