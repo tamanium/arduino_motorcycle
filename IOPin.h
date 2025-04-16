@@ -9,7 +9,7 @@
 		private:
 			int pin;		// 読み取りピン番号
 			char dispChar;	// 表示値
-			Adafruit_PCF8574 *pcr;
+			Adafruit_PCF8574 *pcf;
 		public:
 			// コンストラクタ
 			IOPin();
