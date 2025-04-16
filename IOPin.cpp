@@ -15,13 +15,17 @@ IOPin::IOPin(){}
 IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->pin = pin;
 	this->dispChar = dispChar;
+	this->pcf = pcf;
+/*
 	if(pcf != null){
 		pcf->pinMode(this->pin, INPUT_PULLUP);
 	}
 	else{
 		pinMode(this->pin, INPUT_PULLUP);
 	}
+*/
 }
+
 /**
  * 表示値を取得
  *
