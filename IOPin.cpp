@@ -3,21 +3,26 @@
 /**
  * デフォルトコンストラクタ
  */
-//IOPin::IOPin(){}
+IOPin::IOPin(){}
 
 /**
  * コンストラクタ
  *
- * @param pin int型 表示値
+ * @param pin ピン番号
  * @param dispChar char型 表示値
- 
+ * @param pcf IOエキスパンダクラス
+ */
 IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->pin = pin;
 	this->status = OFF;
 	this->dispChar = dispChar;
-	pcf->pinMode(this->pin, INPUT_PULLUP);
+	if(pcf != null){
+		pcf->pinMode(this->pin, INPUT_PULLUP);
+	}
+	else{
+		pinMode(this->pin);
+	}
 }
-*/
 /**
  * 表示値を取得
  *
@@ -31,6 +36,9 @@ char IOPin::getChar(){
  * ポジションが自分自身か判定
  * @return 自分自身がポジションとなっている場合true
  */
-bool IOPin::isActive(Adafruit_PCF8574 *pcf){
-	return pcf->digitalRead(this->pin) == LOW;
+bool IOPin::isLow(){
+	if(pcf != null){
+		return (pcf->digitalRead(this->pin) == LOW);
+	}
+	return (digitalRead(this->pin) == LOW);
 }
