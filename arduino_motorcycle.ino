@@ -29,40 +29,40 @@ public:
     { // バス制御の設定を行います。
       auto cfg = _bus_instance.config();    // バス設定用の構造体を取得します。
       // SPIバスの設定
-      cfg.spi_host = 0;     // 使用するSPIを選択
-      cfg.spi_mode = 0;             // SPI通信モードを設定 (0 ~ 3)
-      cfg.freq_write = 40000000;    // 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
-      cfg.freq_read  = 20000000;    // 受信時のSPIクロック
-      cfg.pin_sclk = 2;            // SPIのSCLKピン番号を設定
-      cfg.pin_mosi = 3;            // SPIのMOSIピン番号を設定
-      cfg.pin_miso = -1;            // SPIのMISOピン番号を設定 (-1 = disable)
-      cfg.pin_dc   = 7;            // SPIのD/Cピン番号を設定  (-1 = disable
-      _bus_instance.config(cfg);    // 設定値をバスに反映します。
-      _panel_instance.setBus(&_bus_instance);      // バスをパネルにセットします。
+      cfg.spi_host = 0;				// 使用するSPIを選択
+      cfg.spi_mode = 0;				// SPI通信モードを設定 (0 ~ 3)
+      cfg.freq_write = 40000000;	// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
+      cfg.freq_read = 20000000;		// 受信時のSPIクロック
+      cfg.pin_sclk = 2;				// SPIのSCLKピン番号を設定
+      cfg.pin_mosi = 3;				// SPIのMOSIピン番号を設定
+      cfg.pin_miso = -1;			// SPIのMISOピン番号を設定 (-1 = disable)
+      cfg.pin_dc = 7;				// SPIのD/Cピン番号を設定  (-1 = disable
+      _bus_instance.config(cfg);	// 設定値をバスに反映します。
+      _panel_instance.setBus(&_bus_instance);	// バスをパネルにセットします。
     }
 
     { // 表示パネル制御の設定を行います。
-      auto cfg = _panel_instance.config();    // 表示パネル設定用の構造体を取得します。
-      cfg.pin_cs = 6;  // CSが接続されているピン番号   (-1 = disable)
-      cfg.pin_rst = 8;  // RSTが接続されているピン番号  (-1 = disable)
-      cfg.pin_busy = -1;  // BUSYが接続されているピン番号 (-1 = disable)
-      cfg.panel_width      =   240;  // 実際に表示可能な幅
-      cfg.panel_height     =   320;  // 実際に表示可能な高さ
-      cfg.offset_rotation  =     1;  // 回転方向の値のオフセット 0~7 (4~7は上下反転)
-      cfg.invert           = true;  // パネルの明暗が反転してしまう場合 trueに設定
+      auto cfg = _panel_instance.config();	// 表示パネル設定用の構造体を取得します。
+      cfg.pin_cs = 6;			// CSが接続されているピン番号   (-1 = disable)
+      cfg.pin_rst = 8;			// RSTが接続されているピン番号  (-1 = disable)
+      cfg.pin_busy = -1;		// BUSYが接続されているピン番号 (-1 = disable)
+      cfg.panel_width = 240;	// 実際に表示可能な幅
+      cfg.panel_height = 320;	// 実際に表示可能な高さ
+      cfg.offset_rotation = 1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+      cfg.invert = true;		// パネルの明暗が反転してしまう場合 trueに設定
       _panel_instance.config(cfg);
     }
 
     { // バックライト制御の設定を行います。（必要なければ削除）
       auto cfg = _light_instance.config();    // バックライト設定用の構造体を取得します。
-      cfg.pin_bl = 5;              // バックライトが接続されているピン番号
-      cfg.invert = false;           // バックライトの輝度を反転させる場合 true
-      cfg.freq   = 44100;           // バックライトのPWM周波数
-      cfg.pwm_channel = 7;          // 使用するPWMのチャンネル番号
+      cfg.pin_bl = 5;				// バックライトが接続されているピン番号
+      cfg.invert = false;			// バックライトの輝度を反転させる場合 true
+      cfg.freq   = 44100;			// バックライトのPWM周波数
+      cfg.pwm_channel = 7;			// 使用するPWMのチャンネル番号
       _light_instance.config(cfg);
-      _panel_instance.setLight(&_light_instance);  // バックライトをパネルにセットします。
+      _panel_instance.setLight(&_light_instance);	// バックライトをパネルにセットします。
     }
-    setPanel(&_panel_instance); // 使用するパネルをセットします。
+    setPanel(&_panel_instance);		// 使用するパネルをセットします。
   }
 };
 
@@ -210,14 +210,6 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
 void setDisplay(PrintProperty* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);	//描画位置
 	display.setTextSize(p->size);	//テキスト倍率
-	//display.setFont(&fonts::Font0);	//フォント
-	//文字色
-	//if(isTrans){
-	//	display.setTextColor(TFT_WHITE);
-	//}
-	//else{
-	//	display.setTextColor(TFT_WHITE, TFT_BLACK);
-	//}
 }
 /**
  * ディスプレイ表示設定
@@ -254,20 +246,6 @@ void setup(void) {
 	// SPI1設定
 	SPI.setTX(PIN.SPI.mosi);
 	SPI.setSCK(PIN.SPI.sclk);
-
-	// ディスプレイの初期化
-	display.init();
-	display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
-	display.fillScreen(TFT_BLACK);
-	display.setBrightness(50);
-
-	display.setFont(&fonts::Font0);
-	display.setTextColor(TFT_WHITE, TFT_BLACK);
-	display.setTextSize(2);
-	display.setCursor(0,0);
-	display.println("Hello");
-	display.println("");
-	delay(2000);
 
 	// モジュールの配列を作成
 	Module moduleArr[] = {
@@ -346,6 +324,18 @@ void setup(void) {
 		2
 	};
 
+	// ディスプレイの初期化
+	display.init();
+	//display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
+	display.fillScreen(TFT_BLACK);
+	display.setFont(&fonts::Font0);
+	display.setBrightness(50);
+	// 初期表示メッセージ
+	setDisplay(&PRINT_PROP.InitMsg);
+	display.println("Hello");
+	display.println("");
+	delay(2000);
+
 	// ブザー連動LED設定
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1,1,0));
@@ -364,25 +354,18 @@ void setup(void) {
 			continue;
 		}
 		moduleArr[moduleIndex].disabled = (moduleIndex == -1);
-		String name = moduleArr[moduleIndex].name;
-		//tft.print(name + " : ");
-		display.print(name + ":");
-		//tft.setTextColor(OKNGColor(error == 0));
+		String nameColon = moduleArr[moduleIndex].name + ":";
+		display.print(nameColon);
 		if(error==0){
 			display.setTextColor(TFT_GREEN, TFT_BLACK);
 		}
 		else{
 			display.setTextColor(TFT_RED, TFT_BLACK);
 		}
-		//tft.println(OKNGMsg(error == 0));
 		display.println(OKNGMsg(error == 0));
 	}
 	display.println("done.");
 	delay(5000);
-
-  /*
-	// ディスプレイ明るさ設定(0-255)
-	analogWrite(PIN.SPI.bl, brightLevel[0])
 
 	// IOエキスパンダ
 	pcf.begin(MODULES.ioExp.address, &Wire1);
@@ -400,41 +383,40 @@ void setup(void) {
 	//digitalWrite(PIN.buzzer, HIGH);
 	digitalWrite(PIN.buzzer, LOW);
 	//analogWrite(PIN.buzzer, 51);
+	
 	// 画面リセット
-	tft.fillScreen(ST77XX_BLACK);
+	display.fillScreen(TFT_BLACK);
 
 	// ギアポジション表示開始その1
 	//tft.setCursor(184, 8*8);
 	//tft.setTextSize(3);
 	//tft.print("gear");
-	
+
 	// ギアポジション表示開始
-	setProp(&PRINT_PROP.Gear);
-	tft.print('-');
+	setDisplay(&PRINT_PROP.Gear);
+	display.print('-');
 	// 速度
-	setProp(&PRINT_PROP.Speed);
-	tft.print("00");
+	setDisplay(&PRINT_PROP.Speed);
+	display.print("00");
 	// 速度単位
-	setProp(&PRINT_PROP.SpUnit);
-	tft.print("km/h");
+	setDisplay(&PRINT_PROP.SpUnit);
+	display.print("km/h");
 	// 時間
-	setProp(&PRINT_PROP.Hour);
-	tft.print("  :  :");
+	setDisplay(&PRINT_PROP.Hour);
+	display.print("  :  :");
 	// 日付
-	setProp(&PRINT_PROP.Month);
-	tft.print("  /");
+	setDisplay(&PRINT_PROP.Month);
+	display.print("  /");
 	// 温度の値
-	setProp(&PRINT_PROP.Temp);
-	tft.print("  .");
+	setDisplay(&PRINT_PROP.Temp);
+	display.print("  .");
 	// 温度の単位
-	tft.setTextColor(ST77XX_WHITE);
-	tft.setTextSize(2);
-	tft.setCursor(fromRight(FONT.WIDTH * 2), fromBottom(FONT.HEIGHT * 2));
-	tft.print('C');
-	tft.setTextSize(1);
-	tft.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
-	tft.print('o');
-*/
+	display.setTextSize(2);
+	display.setCursor(fromRight(FONT.WIDTH * 2), fromBottom(FONT.HEIGHT * 2));
+	display.print('C');
+	display.setTextSize(1);
+	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
+	display.print('o');
 }
 
 // ------------------------------ループ------------------------------
