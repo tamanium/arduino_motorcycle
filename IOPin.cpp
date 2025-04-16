@@ -40,7 +40,7 @@ char IOPin::getChar(){
  * @return 自分自身がポジションとなっている場合true
  */
 bool IOPin::isLow(){
-	if(pcf != null){
+	if(pcf != NULL){
 		return (pcf->digitalRead(this->pin) == LOW);
 	}
 	return (digitalRead(this->pin) == LOW);

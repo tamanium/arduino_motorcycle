@@ -9,7 +9,7 @@
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
-#include "GearPositions.h"	// ギアポジションクラス
+//#include "GearPositions.h"	// ギアポジションクラス
 #include "Winker.h"			// ウインカークラス
 #include "Switch.h"			// スイッチクラス
 #include "MyLovyanGFX.h"	// ディスプレイ設定
@@ -136,7 +136,7 @@ Adafruit_ADS1X15 ads;	// ADコンバータ
 // 温度計
 Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 // ギアポジション
-GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
+//GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
 Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
@@ -417,6 +417,7 @@ void loop() {
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  */
 void gearDisplay(char newGear){
+	/*
 	// バッファ文字列
 	static char beforeGear = '-';
 	// バッファと引数が同じ場合スキップ
@@ -429,6 +430,7 @@ void gearDisplay(char newGear){
 	display.print(newGear);
 	// バッファ文字列を上書き
 	beforeGear = newGear;
+	*/
 }
 
 /**
@@ -437,6 +439,7 @@ void gearDisplay(char newGear){
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
 bool winkersDisplay(){
+	/*
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ
@@ -455,6 +458,8 @@ bool winkersDisplay(){
 		isSwitched = true;
 	}
 	return isSwitched;
+	*/
+	return true;
 }
 /**
  * 三角形表示処理
