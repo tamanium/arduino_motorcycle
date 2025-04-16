@@ -1,6 +1,5 @@
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>               // 画面出力
-#include <Adafruit_ST7789.h>            // ディスプレイ
 #include <SPI.h>                        // SPI通信
 #include <RTClib.h>                     // 時計機能
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
@@ -12,59 +11,8 @@
 #include "Define.h"			// 値定義
 #include "GearPositions.h"	// ギアポジションクラス
 #include "Winker.h"			// ウインカークラス
-#include "Switch.h"         // スイッチクラス
-
-#include <LovyanGFX.hpp>
-class LGFX : public lgfx::LGFX_Device{
-
-// 接続するパネルの型にあったインスタンスを用意します。
-lgfx::Panel_ST7789  _panel_instance;
-// パネルを接続するバスの種類にあったインスタンスを用意します。
-lgfx::Bus_SPI       _bus_instance;   // SPIバスのインスタンス
-// バックライト制御が可能な場合はインスタンスを用意します。(必要なければ削除)
-lgfx::Light_PWM     _light_instance;
-
-public:
-  LGFX(void){
-    { // バス制御の設定を行います。
-      auto cfg = _bus_instance.config();    // バス設定用の構造体を取得します。
-      // SPIバスの設定
-      cfg.spi_host = 0;				// 使用するSPIを選択
-      cfg.spi_mode = 0;				// SPI通信モードを設定 (0 ~ 3)
-      cfg.freq_write = 40000000;	// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
-      cfg.freq_read = 20000000;		// 受信時のSPIクロック
-      cfg.pin_sclk = 2;				// SPIのSCLKピン番号を設定
-      cfg.pin_mosi = 3;				// SPIのMOSIピン番号を設定
-      cfg.pin_miso = -1;			// SPIのMISOピン番号を設定 (-1 = disable)
-      cfg.pin_dc = 7;				// SPIのD/Cピン番号を設定  (-1 = disable
-      _bus_instance.config(cfg);	// 設定値をバスに反映します。
-      _panel_instance.setBus(&_bus_instance);	// バスをパネルにセットします。
-    }
-
-    { // 表示パネル制御の設定を行います。
-      auto cfg = _panel_instance.config();	// 表示パネル設定用の構造体を取得します。
-      cfg.pin_cs = 6;			// CSが接続されているピン番号   (-1 = disable)
-      cfg.pin_rst = 8;			// RSTが接続されているピン番号  (-1 = disable)
-      cfg.pin_busy = -1;		// BUSYが接続されているピン番号 (-1 = disable)
-      cfg.panel_width = 240;	// 実際に表示可能な幅
-      cfg.panel_height = 320;	// 実際に表示可能な高さ
-      cfg.offset_rotation = 1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
-      cfg.invert = true;		// パネルの明暗が反転してしまう場合 trueに設定
-      _panel_instance.config(cfg);
-    }
-
-    { // バックライト制御の設定を行います。（必要なければ削除）
-      auto cfg = _light_instance.config();    // バックライト設定用の構造体を取得します。
-      cfg.pin_bl = 5;				// バックライトが接続されているピン番号
-      cfg.invert = false;			// バックライトの輝度を反転させる場合 true
-      cfg.freq   = 44100;			// バックライトのPWM周波数
-      cfg.pwm_channel = 7;			// 使用するPWMのチャンネル番号
-      _light_instance.config(cfg);
-      _panel_instance.setLight(&_light_instance);	// バックライトをパネルにセットします。
-    }
-    setPanel(&_panel_instance);		// 使用するパネルをセットします。
-  }
-};
+#include "Switch.h"			// スイッチクラス
+#include "MyLovyanGFX.h"	// ディスプレイ設定
 
 // 準備したクラスのインスタンスを作成します。
 LGFX display;
@@ -116,13 +64,6 @@ struct DispInfo{
 	int size = 0;
 };
 
-uint16_t OKNGColor(bool b){
-	if(b){
-		return ST77XX_GREEN;
-	}
-	return ST77XX_RED;
-}
-
 /**
  * i2cモジュールのアドレスから名前を取得 
  *
@@ -168,7 +109,6 @@ struct PrintProperty {
 	int x = 0;						// x座標
 	int y = 0;						// y座標
 	int size = 1;					// フォント倍率	（デフォルト：1）
-	uint16_t color = ST77XX_WHITE;	// フォント色	（デフォルト：白）
 	const GFXfont* font = NULL;		// フォント		（デフォルト：デフォルトフォント
 };
 // 表示設定まとめ
@@ -195,8 +135,6 @@ Adafruit_PCF8574 pcf;	// IOエキスパンダ
 Adafruit_ADS1X15 ads;	// ADコンバータ
 // 温度計
 Generic_LM75 lm75(&Wire1, MODULES.therm.address);
-// ディスプレイ
-Adafruit_ST7789 tft(&SPI, PIN.SPI.cs, PIN.SPI.dc, PIN.SPI.rst);
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
@@ -210,27 +148,6 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
 void setDisplay(PrintProperty* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);	//描画位置
 	display.setTextSize(p->size);	//テキスト倍率
-}
-/**
- * ディスプレイ表示設定
- * 
- * @param p 表示情報
- * @param isTrans 文字出力時に背景を透過させるか
- */
-void setProp(PrintProperty* p, bool isTrans=false){
-	// 描画位置
-	tft.setCursor(p->x, p->y);
-	// テキスト倍率
-	tft.setTextSize(p->size);
-	// テキスト色
-	if(isTrans){
-		tft.setTextColor(p->color);
-	}
-	else{
-		tft.setTextColor(p->color, ST77XX_BLACK);
-	}
-	// テキストフォント
-	tft.setFont(p->font);
 }
 
 // ------------------------------初期設定------------------------------
@@ -315,7 +232,7 @@ void setup(void) {
 	};
 	// 初期表示メッセージ
 	PRINT_PROP.InitMsg = {
-		0, 0, 3, ST77XX_GREEN
+		0, 0, 2
 	};
 	// 初期情報表示
 	PRINT_PROP.InitInfo = {
@@ -326,6 +243,7 @@ void setup(void) {
 
 	// ディスプレイの初期化
 	display.init();
+	display.setTextSize(1);
 	//display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
 	display.fillScreen(TFT_BLACK);
 	display.setFont(&fonts::Font0);
@@ -364,7 +282,7 @@ void setup(void) {
 		}
 		display.println(OKNGMsg(error == 0));
 	}
-	display.println("done.");
+	display.println("done");
 	delay(5000);
 
 	// IOエキスパンダ
@@ -421,8 +339,8 @@ void setup(void) {
 
 // ------------------------------ループ------------------------------
 void loop() {
-	/*
 
+/*
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 	
@@ -432,7 +350,6 @@ void loop() {
 		digitalWrite(PIN.relay, !digitalRead(PIN.relay));
 		debugWinkerTime += WINKER_DURATION;
 	}
-
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
 		// 現在のギアポジを取得
@@ -462,7 +379,7 @@ void loop() {
 	// 各種表示処理
 	if(displayTime <= time){
 		// デバッグ用スイッチ表示
-		displaySwitch(&pushSw, &tft);
+		displaySwitch(&pushSw);
 		 // ギア表示
 		gearDisplay(gearPositions.getGear());
 		// ウインカー点灯状態が切り替わった場合
@@ -507,9 +424,9 @@ void gearDisplay(char newGear){
 		return;
 	}
 	// ディスプレイ設定
-	setProp(&PRINT_PROP.Gear);
+	setDisplay(&PRINT_PROP.Gear);
 	// ギア表示更新
-	tft.print(newGear);
+	display.print(newGear);
 	// バッファ文字列を上書き
 	beforeGear = newGear;
 }
@@ -546,26 +463,26 @@ bool winkersDisplay(){
  */
 void displayTriangle(TriangleLocation coord, bool status){
 	// 文字色宣言（初期値は黒）
-	uint16_t color = ST77XX_BLACK;
+	//uint16_t color = ST77XX_BLACK;
 	// 条件falseの場合は文字色変更
-	if(status == false){
-		color = ST77XX_YELLOW;
-	}
+	//if(status == false){
+	//	color = ST77XX_YELLOW;
+	//}
 	// 図形表示（BLACKの場合は削除）
-	tft.fillTriangle(coord.x1, coord.y1,
-					 coord.x2, coord.y2,
-					 coord.x3, coord.y3,
-					 color);
+	//tft.fillTriangle(coord.x1, coord.y1,
+	//				 coord.x2, coord.y2,
+	//				 coord.x3, coord.y3,
+	//				 color);
 }
 
-void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
+void displaySwitch(Switch *sw){
 	static bool beforeSw = false;
 	static bool beforeLong = false;
 	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
 	static int nowBrightLv = 0;
 	bool nowSw = sw->getStatus();
-	tft->setTextSize(3);
-	tft->setCursor(0, 0);
+	display.setTextSize(3);
+	display.setCursor(0, 0);
 
 	// 前回と状態が異なる場合
 	/*
@@ -585,43 +502,43 @@ void displaySwitch(Switch *sw, Adafruit_ST77xx *tft){
 	// キーダウンの場合
 	if(nowSw){
 		if(beforeSw != nowSw){
-			tft->setTextColor(ST77XX_RED, ST77XX_BLACK);
-			tft->print("ON ");
+			display.setTextColor(TFT_RED, TFT_BLACK);
+			display.print("ON ");
 			beforeSw = ON;
 		}
 		// 長押し
 		else if(beforeLong != sw->isLongPress()){
-			tft->setTextColor(ST77XX_RED, ST77XX_BLACK);
-			tft->setCursor(200,0);
-			tft->print("long");
+			display.setTextColor(TFT_RED, TFT_BLACK);
+			display.setCursor(200,0);
+			display.print("long");
 			beforeLong = sw->isLongPress();
 		}
 	}
 	// キーアップの場合
 	else{
 		if(beforeSw != nowSw){
-			tft->setTextColor(ST77XX_BLUE, ST77XX_BLACK);
-			tft->print("OFF");
+			display.setTextColor(TFT_BLUE, TFT_BLACK);
+			display.print("OFF");
 			beforeSw = OFF;
 		}
 		// 長押し
 		if(beforeLong){
-			tft->setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-			tft->setCursor(200,0);
-			tft->print("    ");
+			display.setTextColor(TFT_WHITE, TFT_BLACK);
+			display.setCursor(200,0);
+			display.print("    ");
 			beforeLong = false;
 		}
 		// プッシュ
 		else if(sw->isPush()){
-			tft->setTextColor(ST77XX_BLUE, ST77XX_BLACK);
-			tft->setCursor(100,0);
+			display.setTextColor(TFT_BLUE, TFT_BLACK);
+			display.setCursor(100,0);
 			nowBrightLv++;
 			if(brightLvMax < nowBrightLv){
 				nowBrightLv = 0;
 			}
 			//analogWrite(TFT_BL,brightLevel[nowBrightLv]);
-			analogWrite(PIN.SPI.bl, brightLevel[nowBrightLv]);
-			tft->print(nowBrightLv);
+			//analogWrite(PIN.SPI.bl, brightLevel[nowBrightLv]);
+			display.print(nowBrightLv);
 			beforeSw = OFF;
 		}
 	}
@@ -648,14 +565,14 @@ void tempDisplay(){
 	if(beforeTempx10 == newTempx10){
 		return;
 	}
-	setProp(&PRINT_PROP.Temp);
+	setDisplay(&PRINT_PROP.Temp);
 	// 温度が一桁以下の場合、十の位にスペース
 	if(10 <= newTempx10 && newTempx10 < 100){
-		tft.print(' ');
+		display.print(' ');
 	}
-	tft.print(int(newTempx10/10));
-	tft.print('.');
-	tft.print(int(newTempx10)%10);
+	display.print(int(newTempx10/10));
+	display.print('.');
+	display.print(int(newTempx10)%10);
 	// 保持変数を更新
 	beforeTempx10 = newTempx10;
 }
@@ -703,13 +620,13 @@ void realTimeDisplay(){
 			continue;
 		}
 		// 表示設定を反映
-		setProp(printPropArr[i]);
+		setDisplay(printPropArr[i]);
 		// 値が1桁の場合は0埋め
 		if(newTime[i] < 10){
-			tft.print('0');
+			display.print('0');
 		}
 		// 値を出力
-		tft.print(newTime[i]);
+		display.print(newTime[i]);
 		// 前回日時を更新
 		beforeTime[i] = newTime[i];
 	}

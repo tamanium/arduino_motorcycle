@@ -3,27 +3,21 @@
 /**
  * デフォルトコンストラクタ
  */
-IOPin::IOPin(){}
+//IOPin::IOPin(){}
 
 /**
  * コンストラクタ
  *
  * @param pin int型 表示値
  * @param dispChar char型 表示値
- */
-IOPin::IOPin(int pin, char dispChar){
+ 
+IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->pin = pin;
 	this->status = OFF;
 	this->dispChar = dispChar;
-}
-
-/**
- * //ピン読み取り設定
- */
-void IOPin::begin(Adafruit_PCF8574 *pcf){
 	pcf->pinMode(this->pin, INPUT_PULLUP);
 }
-
+*/
 /**
  * 表示値を取得
  *
