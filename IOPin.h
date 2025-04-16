@@ -8,7 +8,6 @@
 	class IOPin{
 		private:
 			int pin;		// 読み取りピン番号
-			boolean status;	// ステータス
 			char dispChar;	// 表示値
 			Adafruit_PCF8574 *pcr;
 		public:
