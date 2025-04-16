@@ -37,7 +37,7 @@ void GearPositions::updateStatus(){
 	char newGear = '-';
 	// ギア配列でループし、現在のギア表示値を取得
 	for(int i=0; i<this->GearNum; i++){
-		if(this->gears[i].isActive() == true){
+		if(this->gears[i].isLow() == true){
 			newGear = this->gears[i].getChar();
 			break;
 		}
