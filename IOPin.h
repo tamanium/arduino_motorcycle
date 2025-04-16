@@ -10,10 +10,11 @@
 			int pin;		// 読み取りピン番号
 			boolean status;	// ステータス
 			char dispChar;	// 表示値
+			Adafruit_PCF8574 *pcr;
 		public:
 			// コンストラクタ
-			//IOPin();
-			//IOPin(int p, char c, Adafruit_PCF8574 *pcf);
+			IOPin();
+			IOPin(int p, char c, Adafruit_PCF8574 *pcf);
 			// 表示値取得
 			char getChar();
 			// ポジションが自身か判定（表示値を参照渡し）
