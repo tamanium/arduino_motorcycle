@@ -17,7 +17,7 @@
 			// 表示値取得
 			char getChar();
 			// ポジションが自身か判定（表示値を参照渡し）
-			bool isActive(Adafruit_PCF8574 *pcf);
+			bool isLow();
 	};
 
 #endif
