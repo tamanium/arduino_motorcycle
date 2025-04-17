@@ -161,8 +161,8 @@ void setup(void) {
 	Wire1.begin();// いらないけど明示しておく
 
 	// SPI1設定
-	SPI.setTX(PIN.SPI.mosi);
-	SPI.setSCK(PIN.SPI.sclk);
+	//SPI.setTX(PIN.SPI.mosi);
+	//SPI.setSCK(PIN.SPI.sclk);
 
 	// モジュールの配列を作成
 	Module moduleArr[] = {
@@ -335,8 +335,8 @@ void setup(void) {
 	display.setTextSize(1);
 	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	display.print('o');
-	displayTriangle(triCoords[0]);
-	displayTriangle(triCoords[1]);
+	//displayTriangle(triCoords[0]);
+	//displayTriangle(triCoords[1]);
 }
 
 // ------------------------------ループ------------------------------
