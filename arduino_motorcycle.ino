@@ -10,8 +10,8 @@
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
 //#include "GearPositions.h"	// ギアポジションクラス
-#include "Winker.h"			// ウインカークラス
-#include "Switch.h"			// スイッチクラス
+//#include "Winker.h"			// ウインカークラス
+//#include "Switch.h"			// スイッチクラス
 #include "MyLovyanGFX.h"	// ディスプレイ設定
 
 // 準備したクラスのインスタンスを作成します。
@@ -138,9 +138,9 @@ Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 // ギアポジション
 //GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
-Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
+//Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
-Switch pushSw(PIN.IOEXP.sw, &pcf);
+//Switch pushSw(PIN.IOEXP.sw, &pcf);
 
 /**
  * ディスプレイ表示設定
@@ -247,7 +247,7 @@ void setup(void) {
 	//display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
 	display.fillScreen(TFT_BLACK);
 	display.setFont(&fonts::Font0);
-	display.setBrightness(50);
+	display.setBrightness(30);
 	// 初期表示メッセージ
 	setDisplay(&PRINT_PROP.InitMsg);
 	display.println("Hello");
@@ -286,16 +286,16 @@ void setup(void) {
 	delay(5000);
 
 	// IOエキスパンダ
-	pcf.begin(MODULES.ioExp.address, &Wire1);
+	//pcf.begin(MODULES.ioExp.address, &Wire1);
 	// RTC
 	rtc.begin(&Wire1);
 	// 時計合わせ
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 	// ADコンバータ
-	ads.begin(MODULES.adCnv.address, &Wire1);
+	//ads.begin(MODULES.adCnv.address, &Wire1);
 	// 疑似ウインカーリレー
-	pinMode(PIN.relay, OUTPUT);
+	//pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
 	pinMode(PIN.buzzer, OUTPUT);
 	//digitalWrite(PIN.buzzer, HIGH);
@@ -480,6 +480,7 @@ void displayTriangle(TriangleLocation coord, bool status){
 	//				 color);
 }
 
+	/*
 void displaySwitch(Switch *sw){
 	static bool beforeSw = false;
 	static bool beforeLong = false;
@@ -490,20 +491,18 @@ void displaySwitch(Switch *sw){
 	display.setCursor(0, 0);
 
 	// 前回と状態が異なる場合
-	/*
-	if(beforeSw != nowSw){
-		// 表示リセット
-		tft->setTextColor(ST77XX_BLACK);
-		String msg ="OFF";
-		if(beforeSw){
-			msg = "ON";
-		}
-		tft->print(msg);
-		//　前回状態を更新
-		beforeSw = nowSw;
-		tft->setCursor(0, 0);
-	}
-	*/
+	//if(beforeSw != nowSw){
+	//	// 表示リセット
+	//	tft->setTextColor(ST77XX_BLACK);
+	//	String msg ="OFF";
+	//	if(beforeSw){
+	//		msg = "ON";
+	//	}
+	//	tft->print(msg);
+	//	//　前回状態を更新
+	//	beforeSw = nowSw;
+	//	tft->setCursor(0, 0);
+	//}
 	// キーダウンの場合
 	if(nowSw){
 		if(beforeSw != nowSw){
@@ -549,6 +548,7 @@ void displaySwitch(Switch *sw){
 	}
 }
 
+	*/
 /**
  * 温度表示
  * 
