@@ -335,6 +335,8 @@ void setup(void) {
 	display.setTextSize(1);
 	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	display.print('o');
+	displayTriangle(triCoords[0]);
+	displayTriangle(triCoords[1]);
 }
 
 // ------------------------------ループ------------------------------
@@ -468,16 +470,16 @@ bool winkersDisplay(){
  */
 void displayTriangle(TriangleLocation coord, bool status){
 	// 文字色宣言（初期値は黒）
-	//uint16_t color = ST77XX_BLACK;
+	uint16_t color = TFT_BLACK;
 	// 条件falseの場合は文字色変更
-	//if(status == false){
-	//	color = ST77XX_YELLOW;
-	//}
+	if(status == false){
+		color = TFT_YELLOW;
+	}
 	// 図形表示（BLACKの場合は削除）
-	//tft.fillTriangle(coord.x1, coord.y1,
-	//				 coord.x2, coord.y2,
-	//				 coord.x3, coord.y3,
-	//				 color);
+	display.fillTriangle(coord.x1, coord.y1,
+					 coord.x2, coord.y2,
+					 coord.x3, coord.y3,
+					 color);
 }
 
 	/*
