@@ -1,4 +1,4 @@
-/*
+
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>               // 画面出力
 #include <SPI.h>                        // SPI通信
@@ -10,9 +10,9 @@
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"			// 値定義
-//#include "GearPositions.h"	// ギアポジションクラス
-//#include "Winker.h"			// ウインカークラス
-//#include "Switch.h"			// スイッチクラス
+#include "GearPositions.h"	// ギアポジションクラス
+#include "Winker.h"			// ウインカークラス
+#include "Switch.h"			// スイッチクラス
 #include "MyLovyanGFX.h"	// ディスプレイ設定
 
 // 準備したクラスのインスタンスを作成します。
@@ -64,7 +64,6 @@ struct DispInfo{
 	int y = 0;
 	int size = 0;
 };
-*/
 
 /**
  * i2cモジュールのアドレスから名前を取得 
@@ -73,6 +72,7 @@ struct DispInfo{
  * @param arr モジュール配列
  * @param size i2cモジュール数
  * @return i2cモジュールの名前 hitしなければアドレス
+ */
  
 String getModuleName(byte adrs, Module* arr, int size){
 	for(int i=0; i<size; i++){
@@ -82,7 +82,7 @@ String getModuleName(byte adrs, Module* arr, int size){
 	}
 	return String(adrs, HEX)+"   ";
 }
-*/
+
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
@@ -91,7 +91,7 @@ String getModuleName(byte adrs, Module* arr, int size){
  * @param arr モジュール配列
  * @param size i2cモジュール数
  * @return モジュールが接続されていれば配列のインデックスを
- 
+ */
 int existsModule(byte adrs, Module* arr, int size){
 	for(int i=0; i<size; i++){
 		if(arr[i].address == adrs){
@@ -100,10 +100,8 @@ int existsModule(byte adrs, Module* arr, int size){
 	}
 	return -1;
 }
-*/
 
 // --------------------インスタンス--------------------
-/*
 // 表示座標
 TriangleLocation triCoords[2] = {
 	{50, 34, 50, 160+14, 0, 80+24},
@@ -146,26 +144,25 @@ Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 //Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
 //Switch pushSw(PIN.IOEXP.sw, &pcf);
-*/
+
 /**
  * ディスプレイ表示設定
- 
+ */
 void setDisplay(PrintProperty* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);	//描画位置
 	display.setTextSize(p->size);	//テキスト倍率
 }
-*/
+
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
-/*
 	// I2C設定
 	Wire1.setSDA(PIN.I2C.sda);
 	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
-
+	
 	// SPI1設定
 	//SPI.setTX(PIN.SPI.mosi);
 	//SPI.setSCK(PIN.SPI.sclk);
@@ -288,9 +285,10 @@ void setup(void) {
 		}
 		display.println(OKNGMsg(error == 0));
 	}
+	display.println("");
 	display.println("done");
 	delay(5000);
-
+	/*
 	// IOエキスパンダ
 	//pcf.begin(MODULES.ioExp.address, &Wire1);
 	// RTC
