@@ -1,3 +1,4 @@
+/*
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>               // 画面出力
 #include <SPI.h>                        // SPI通信
@@ -63,6 +64,7 @@ struct DispInfo{
 	int y = 0;
 	int size = 0;
 };
+*/
 
 /**
  * i2cモジュールのアドレスから名前を取得 
@@ -71,7 +73,7 @@ struct DispInfo{
  * @param arr モジュール配列
  * @param size i2cモジュール数
  * @return i2cモジュールの名前 hitしなければアドレス
- */
+ 
 String getModuleName(byte adrs, Module* arr, int size){
 	for(int i=0; i<size; i++){
 		if(arr[i].address == adrs){
@@ -80,6 +82,7 @@ String getModuleName(byte adrs, Module* arr, int size){
 	}
 	return String(adrs, HEX)+"   ";
 }
+*/
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
@@ -88,7 +91,7 @@ String getModuleName(byte adrs, Module* arr, int size){
  * @param arr モジュール配列
  * @param size i2cモジュール数
  * @return モジュールが接続されていれば配列のインデックスを
- */
+ 
 int existsModule(byte adrs, Module* arr, int size){
 	for(int i=0; i<size; i++){
 		if(arr[i].address == adrs){
@@ -97,8 +100,10 @@ int existsModule(byte adrs, Module* arr, int size){
 	}
 	return -1;
 }
+*/
 
 // --------------------インスタンス--------------------
+/*
 // 表示座標
 TriangleLocation triCoords[2] = {
 	{50, 34, 50, 160+14, 0, 80+24},
@@ -141,20 +146,21 @@ Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 //Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
 //Switch pushSw(PIN.IOEXP.sw, &pcf);
-
+*/
 /**
  * ディスプレイ表示設定
- */
+ 
 void setDisplay(PrintProperty* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);	//描画位置
 	display.setTextSize(p->size);	//テキスト倍率
 }
+*/
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
-
+/*
 	// I2C設定
 	Wire1.setSDA(PIN.I2C.sda);
 	Wire1.setSCL(PIN.I2C.scl);
@@ -337,6 +343,7 @@ void setup(void) {
 	display.print('o');
 	//displayTriangle(triCoords[0]);
 	//displayTriangle(triCoords[1]);
+*/
 }
 
 // ------------------------------ループ------------------------------
@@ -417,9 +424,7 @@ void loop() {
  * ギアポジションの表示処理
  * @param dispChar char型 表示文字列
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
- */
 void gearDisplay(char newGear){
-	/*
 	// バッファ文字列
 	static char beforeGear = '-';
 	// バッファと引数が同じ場合スキップ
@@ -432,16 +437,14 @@ void gearDisplay(char newGear){
 	display.print(newGear);
 	// バッファ文字列を上書き
 	beforeGear = newGear;
-	*/
 }
+*/
 
 /**
  * ウインカー表示処理
  * @param winkers Winkers型 ウインカークラス
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
- */
 bool winkersDisplay(){
-	/*
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ
@@ -460,14 +463,14 @@ bool winkersDisplay(){
 		isSwitched = true;
 	}
 	return isSwitched;
-	*/
 	return true;
 }
+*/
 /**
  * 三角形表示処理
  * @param coord TriangleLocation型 
  * @param status bool型 true...点灯, false...消灯
- */
+ 
 void displayTriangle(TriangleLocation coord, bool status){
 	// 文字色宣言（初期値は黒）
 	uint16_t color = TFT_BLACK;
@@ -481,7 +484,7 @@ void displayTriangle(TriangleLocation coord, bool status){
 					 coord.x3, coord.y3,
 					 color);
 }
-
+*/
 	/*
 void displaySwitch(Switch *sw){
 	static bool beforeSw = false;
@@ -556,7 +559,6 @@ void displaySwitch(Switch *sw){
  * 
  * @param *tft IOエキスパンダ
  * @param *lm75 温度計モジュール
- */
 void tempDisplay(){
 	static int beforeTempx10 = 0;
 	// 温度取得(10倍)
@@ -582,7 +584,7 @@ void tempDisplay(){
 	display.print(int(newTempx10)%10);
 	// 保持変数を更新
 	beforeTempx10 = newTempx10;
-}
+}*/
 
 /**
  * 現在時刻表示処理
@@ -590,7 +592,6 @@ void tempDisplay(){
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
- */
 void realTimeDisplay(){
 	// 前回日時
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
@@ -637,4 +638,4 @@ void realTimeDisplay(){
 		// 前回日時を更新
 		beforeTime[i] = newTime[i];
 	}
-}
+}*/
