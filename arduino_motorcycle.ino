@@ -107,13 +107,7 @@ TriangleLocation triCoords[2] = {
 	{50, 34, 50, 160+14, 0, 80+24},
 	{fromRight(50), 34, fromRight(50), 160+14, fromRight(0), 80+24}
 };
-// 表示設定
-struct PrintProperty {
-	int x = 0;						// x座標
-	int y = 0;						// y座標
-	int size = 1;					// フォント倍率	（デフォルト：1）
-	const GFXfont* font = NULL;		// フォント		（デフォルト：デフォルトフォント
-};
+
 // 表示設定まとめ
 struct PrintProperties{
 	PrintProperty Month;	// 月
