@@ -91,9 +91,6 @@
 	* @return trueなら"OK"、falseなら"NG"
 	*/
 	String OKNGMsg(bool b){
-		if(b){
-			return "OK";
+			return b ? "OK" : "NG";
 		}
-		return "NG";
-	}
 #endif
