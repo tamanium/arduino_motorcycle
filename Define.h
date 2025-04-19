@@ -48,14 +48,6 @@
 			const int scl = 15;
 			const int sda = 14;
 		} I2C;
-		struct Spi{				// SPI通信
-			const int mosi = 3;
-			const int sclk = 2;
-			const int bl   = 5;
-			const int cs   = 6;
-			const int dc   = 7;
-			const int rst  = 8;
-		} SPI;
 		struct IoExp{			// IOエキスパンダのピン定義
 			const int sw = 3;	//  スイッチ
 			struct Pos{			//  ギアポジ

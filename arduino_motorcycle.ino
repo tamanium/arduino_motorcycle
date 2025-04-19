@@ -139,11 +139,11 @@ Adafruit_ADS1X15 ads;	// ADコンバータ
 // 温度計
 Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 // ギアポジション
-//GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
+GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
-//Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
+Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
 // スイッチ
-//Switch pushSw(PIN.IOEXP.sw, &pcf);
+Switch pushSw(PIN.IOEXP.sw, &pcf);
 
 /**
  * ディスプレイ表示設定
@@ -288,16 +288,16 @@ void setup(void) {
 	display.println("");
 	display.println("done");
 	delay(5000);
-	/*
+	
 	// IOエキスパンダ
-	//pcf.begin(MODULES.ioExp.address, &Wire1);
+	pcf.begin(MODULES.ioExp.address, &Wire1);
 	// RTC
 	rtc.begin(&Wire1);
 	// 時計合わせ
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
 	// ADコンバータ
-	//ads.begin(MODULES.adCnv.address, &Wire1);
+	ads.begin(MODULES.adCnv.address, &Wire1);
 	// 疑似ウインカーリレー
 	//pinMode(PIN.relay, OUTPUT);
 	// ウインカー音
@@ -341,22 +341,22 @@ void setup(void) {
 	display.print('o');
 	//displayTriangle(triCoords[0]);
 	//displayTriangle(triCoords[1]);
-*/
+
 }
 
 // ------------------------------ループ------------------------------
 void loop() {
 
-/*
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-	
+
 	// 疑似ウインカーリレー
 	if(debugWinkerTime <= time){
 		// 出力反転
 		digitalWrite(PIN.relay, !digitalRead(PIN.relay));
-		debugWinkerTime += WINKER_DURATION;
+		debugWinkerTime = debugWinkerTime + WINKER_DURATION;
 	}
+	
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
 		// 現在のギアポジを取得
@@ -370,11 +370,11 @@ void loop() {
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
 		tempDisplay();
-		tempTime = time + TEMP_INTERVAL;
 		uint16_t raw = ads.readADC_SingleEnded(3);
 		String voltage = String((raw * 0.0001875f), 2);
 		Serial.print("Voltage:");
 		Serial.println(voltage);
+		tempTime = time + TEMP_INTERVAL;
 	}
 
 	// 時刻表示
@@ -387,7 +387,7 @@ void loop() {
 	if(displayTime <= time){
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw);
-		 // ギア表示
+		// ギア表示
 		gearDisplay(gearPositions.getGear());
 		// ウインカー点灯状態が切り替わった場合
 		if(winkersDisplay() == true && bzzTime == 0 ){
@@ -411,7 +411,6 @@ void loop() {
 		pixels.show();
 		bzzTime = 0;
 	}
-	*/
 }
 
 // -------------------------------------------------------------------
@@ -422,6 +421,7 @@ void loop() {
  * ギアポジションの表示処理
  * @param dispChar char型 表示文字列
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ */
 void gearDisplay(char newGear){
 	// バッファ文字列
 	static char beforeGear = '-';
@@ -436,12 +436,13 @@ void gearDisplay(char newGear){
 	// バッファ文字列を上書き
 	beforeGear = newGear;
 }
-*/
+
 
 /**
  * ウインカー表示処理
  * @param winkers Winkers型 ウインカークラス
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
+ */
 bool winkersDisplay(){
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
@@ -463,12 +464,11 @@ bool winkersDisplay(){
 	return isSwitched;
 	return true;
 }
-*/
 /**
  * 三角形表示処理
  * @param coord TriangleLocation型 
  * @param status bool型 true...点灯, false...消灯
- 
+ */
 void displayTriangle(TriangleLocation coord, bool status){
 	// 文字色宣言（初期値は黒）
 	uint16_t color = TFT_BLACK;
@@ -482,8 +482,8 @@ void displayTriangle(TriangleLocation coord, bool status){
 					 coord.x3, coord.y3,
 					 color);
 }
-*/
-	/*
+
+
 void displaySwitch(Switch *sw){
 	static bool beforeSw = false;
 	static bool beforeLong = false;
@@ -551,12 +551,12 @@ void displaySwitch(Switch *sw){
 	}
 }
 
-	*/
 /**
  * 温度表示
  * 
  * @param *tft IOエキスパンダ
  * @param *lm75 温度計モジュール
+*/
 void tempDisplay(){
 	static int beforeTempx10 = 0;
 	// 温度取得(10倍)
@@ -582,7 +582,7 @@ void tempDisplay(){
 	display.print(int(newTempx10)%10);
 	// 保持変数を更新
 	beforeTempx10 = newTempx10;
-}*/
+}
 
 /**
  * 現在時刻表示処理
@@ -590,6 +590,7 @@ void tempDisplay(){
  * @param totalSec long型 経過時間(秒)
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
+ */
 void realTimeDisplay(){
 	// 前回日時
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
@@ -636,4 +637,4 @@ void realTimeDisplay(){
 		// 前回日時を更新
 		beforeTime[i] = newTime[i];
 	}
-}*/
+}
