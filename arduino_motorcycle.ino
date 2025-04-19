@@ -107,7 +107,13 @@ TriangleLocation triCoords[2] = {
 	{50, 34, 50, 160+14, 0, 80+24},
 	{fromRight(50), 34, fromRight(50), 160+14, fromRight(0), 80+24}
 };
-
+// 表示設定
+struct PrintProperty {
+	int x = 0;						// x座標
+	int y = 0;						// y座標
+	int size = 1;					// フォント倍率	（デフォルト：1）
+	const GFXfont* font = NULL;		// フォント		（デフォルト：デフォルトフォント
+};
 // 表示設定まとめ
 struct PrintProperties{
 	PrintProperty Month;	// 月
@@ -156,10 +162,6 @@ void setup(void) {
 	Wire1.setSDA(PIN.I2C.sda);
 	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
-	
-	// SPI1設定
-	//SPI.setTX(PIN.SPI.mosi);
-	//SPI.setSCK(PIN.SPI.sclk);
 
 	// モジュールの配列を作成
 	Module moduleArr[] = {
@@ -260,7 +262,6 @@ void setup(void) {
 	display.println("I2C Module Scanning...");
 	//setProp(&PRINT_PROP.InitInfo);
 	for(byte adrs=1;adrs<127;adrs++){
-		//tft.setTextColor(PRINT_PROP.InitInfo.color);
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();

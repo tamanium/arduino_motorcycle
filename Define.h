@@ -66,11 +66,11 @@
 	} PIN;
 	
 	// 表示設定
-struct PrintProperty {
-	int x = 0;						// x座標
-	int y = 0;						// y座標
-	int size = 1;					// フォント倍率	（デフォルト：1）
-};
+	struct PrintProperty {
+		int x = 0;		// x座標
+		int y = 0;		// y座標
+		int size = 1;	// フォント倍率	（デフォルト：1）
+	};
 
 	/**
 	 * x座標出力（画面右端原点、左向き）
