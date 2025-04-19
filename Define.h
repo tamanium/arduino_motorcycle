@@ -4,16 +4,16 @@
 	#include "CommonDefine.h"
 
 	/**
-	* フォントサイズ
-	**/
+	 * フォントサイズ
+	 */
 	struct Font{
 		int WIDTH = 6;
 		int HEIGHT = 8;
 	} FONT;
 
 	/**
-	* モジュール情報
-	*/
+	 * モジュール情報
+	 */
 	struct Module{
 		String name;		// モジュール名
 		byte address;		// I2Cアドレス
@@ -29,17 +29,18 @@
 		Module rtcMm = {"RTC memory  ", 0x50};
 		Module rtcIC = {"RTC IC      ", 0x68};
 	} MODULES;
+	
 	/**
-	* ディスプレイ定義
-	*/
+	 * ディスプレイ定義
+	 */
 	struct Display{
 		const int WIDTH = 320;
 		const int HEIGHT = 240;
 	} OLED;
 
 	/**
-	* IOピン定義
-	*/
+	 * IOピン定義
+	 */
 	struct Pin{
 		const int LED = 16;
 		const int buzzer = 26;	// ブザー
