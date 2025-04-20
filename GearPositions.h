@@ -12,7 +12,7 @@
 		public:
 			// コンストラクタ
 			GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf);  
-			begin();
+			void begin();
 			// 表示値取得
 			char getGear();
 			// ギア状態更新

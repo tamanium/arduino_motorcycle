@@ -21,7 +21,7 @@ GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
  * 動作開始
  *
  */
-GearPositions::begin(){
+void GearPositions::begin(){
 	for(IOPin p : this->gears){
 		p.begin(INPUT_PULLUP);
 	}

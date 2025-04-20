@@ -15,7 +15,7 @@
 			IOPin();
 			IOPin(int p, char c, Adafruit_PCF8574 *pcf);
 			// 動作開始
-			begin(int mode);
+			void begin(int mode);
 			// 表示値取得
 			char getChar();
 			// 読み取り
