@@ -46,7 +46,21 @@ int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.thi,
 				PIN.IOEXP.POS.top};
 // 明るさレベル
-byte brightLevel[] = {50, 100, 250};
+byte brightLevel[] = {0x10,
+                       0x20,
+                       0x30,
+                       0x40,
+                       0x50,
+                       0x60,
+                       0x70,
+                       0x80,
+                       0x90,
+                       0xA0,
+                       0xB0,
+                       0xC0,
+                       0xD0,
+                       0xE0,
+                       0xF0};
 
 // 三角形描画用座標
 struct TriangleLocation {
@@ -64,25 +78,6 @@ struct DispInfo{
 	int y = 0;
 	int size = 0;
 };
-
-/**
- * i2cモジュールのアドレスから名前を取得 
- *
- * @param adrs i2cモジュールのアドレス
- * @param arr モジュール配列
- * @param size i2cモジュール数
- * @return i2cモジュールの名前 hitしなければアドレス
- */
- 
-String getModuleName(byte adrs, Module* arr, int size){
-	for(int i=0; i<size; i++){
-		if(arr[i].address == adrs){
-			return arr[i].name;
-		}
-	}
-	return String(adrs, HEX)+"   ";
-}
-
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
@@ -126,16 +121,19 @@ struct PrintProperties{
 	PrintProperty Speed;	// 速度
 	PrintProperty SpUnit;	// 速度単位
 	PrintProperty InitMsg;	// 初期表示：「hello」
-	PrintProperty InitInfo;	// 初期表示：モジュール検索
 };
 // 表示設定宣言
 PrintProperties PRINT_PROP;
 // 電圧表示：座標と文字倍率
 DispInfo voltDispInfo = {0, 0, 3};
-Adafruit_NeoPixel pixels(1, PIN.LED);	//ブザーがわりのオンボLED
-RTC_DS1307 rtc;			// RTC
-Adafruit_PCF8574 pcf;	// IOエキスパンダ
-Adafruit_ADS1X15 ads;	// ADコンバータ
+// オンボLED
+Adafruit_NeoPixel pixels(1, PIN.LED);
+// RTC
+RTC_DS1307 rtc;
+// IOエキスパンダ
+Adafruit_PCF8574 pcf;
+// ADコンバータ
+Adafruit_ADS1X15 ads;
 // 温度計
 Generic_LM75 lm75(&Wire1, MODULES.therm.address);
 // ギアポジション
@@ -152,7 +150,6 @@ void setDisplay(PrintProperty* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);	//描画位置
 	display.setTextSize(p->size);	//テキスト倍率
 }
-
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -234,18 +231,16 @@ void setup(void) {
 		0, 0, 2
 	};
 	// 初期情報表示
-	PRINT_PROP.InitInfo = {
-		0,
-		FONT.HEIGHT * PRINT_PROP.InitMsg.size,
-		2
-	};
 
 	// ディスプレイの初期化
 	display.init();
+	// テキストサイズ
 	display.setTextSize(1);
-	//display.setTextSize((std::max(display.width(), display.height()) + 0xFF) >> 8);
+	// 画面全体黒塗り
 	display.fillScreen(TFT_BLACK);
+	// フォント
 	display.setFont(&fonts::Font0);
+	// 明るさ
 	display.setBrightness(30);
 	// 初期表示メッセージ
 	setDisplay(&PRINT_PROP.InitMsg);
@@ -316,13 +311,13 @@ void setup(void) {
 	display.print("km/h");
 	// 時間
 	setDisplay(&PRINT_PROP.Hour);
-	display.print("  :  :");
+	display.print("HH:mm:ss");
 	// 日付
 	setDisplay(&PRINT_PROP.Month);
-	display.print("  /");
+	display.print("MM/dd");
 	// 温度の値
 	setDisplay(&PRINT_PROP.Temp);
-	display.print("  .");
+	display.print("00.0");
 	// 温度の単位
 	display.setTextSize(2);
 	display.setCursor(fromRight(FONT.WIDTH * 2), fromBottom(FONT.HEIGHT * 2));
@@ -471,7 +466,10 @@ void displayTriangle(TriangleLocation coord, bool status){
 					 color);
 }
 
-
+/**
+ * スイッチ動作表示
+ * @param Switch スイッチクラス
+ */
 void displaySwitch(Switch *sw){
 	static bool beforeSw = false;
 	static bool beforeLong = false;
@@ -481,29 +479,15 @@ void displaySwitch(Switch *sw){
 	display.setTextSize(3);
 	display.setCursor(0, 0);
 
-	// 前回と状態が異なる場合
-	//if(beforeSw != nowSw){
-	//	// 表示リセット
-	//	tft->setTextColor(ST77XX_BLACK);
-	//	String msg ="OFF";
-	//	if(beforeSw){
-	//		msg = "ON";
-	//	}
-	//	tft->print(msg);
-	//	//　前回状態を更新
-	//	beforeSw = nowSw;
-	//	tft->setCursor(0, 0);
-	//}
 	// キーダウンの場合
 	if(nowSw){
+		display.setTextColor(TFT_RED, TFT_BLACK);
 		if(beforeSw != nowSw){
-			display.setTextColor(TFT_RED, TFT_BLACK);
 			display.print("ON ");
 			beforeSw = ON;
 		}
 		// 長押し
 		else if(beforeLong != sw->isLongPress()){
-			display.setTextColor(TFT_RED, TFT_BLACK);
 			display.setCursor(200,0);
 			display.print("long");
 			beforeLong = sw->isLongPress();
@@ -527,12 +511,8 @@ void displaySwitch(Switch *sw){
 		else if(sw->isPush()){
 			display.setTextColor(TFT_BLUE, TFT_BLACK);
 			display.setCursor(100,0);
-			nowBrightLv++;
-			if(brightLvMax < nowBrightLv){
-				nowBrightLv = 0;
-			}
-			//analogWrite(TFT_BL,brightLevel[nowBrightLv]);
-			//analogWrite(PIN.SPI.bl, brightLevel[nowBrightLv]);
+			nowBrightLv = (nowBrightLv+1) % brightLvMax;
+			display.setBrightness(brightLevel[nowBrightLv]);
 			display.print(nowBrightLv);
 			beforeSw = OFF;
 		}
@@ -561,6 +541,7 @@ void tempDisplay(){
 		return;
 	}
 	setDisplay(&PRINT_PROP.Temp);
+	display.setTextColor(TFT_WHITE, TFT_BLACK);
 	// 温度が一桁以下の場合、十の位にスペース
 	if(10 <= newTempx10 && newTempx10 < 100){
 		display.print(' ');
