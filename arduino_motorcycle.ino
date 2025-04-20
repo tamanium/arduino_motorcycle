@@ -256,6 +256,8 @@ void setup(void) {
 	
 	// IOエキスパンダ
 	pcf.begin(MODULES.ioExp.address, &Wire1);
+	// シフトインジケータ
+	gearPositions.begin();
 	// RTC
 	rtc.begin(&Wire1);
 	// 時計合わせ
