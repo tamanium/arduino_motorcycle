@@ -18,6 +18,16 @@ GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
 }
 
 /**
+ * 動作開始
+ *
+ */
+GearPositions::begin(){
+	for(IOPin p : this->gears){
+		p.begin(INPUT_PULLUP);
+	}
+}
+
+/**
  * 表示値を取得
  *
  * @return nowGear char型 表示値
