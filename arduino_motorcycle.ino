@@ -260,25 +260,21 @@ void setup(void) {
 	
 	// i2cモジュールの検索
 	display.println("I2C Module Scanning...");
-	//setProp(&PRINT_PROP.InitInfo);
 	for(byte adrs=1;adrs<127;adrs++){
-		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		Wire1.beginTransmission(adrs);
-		byte error = Wire1.endTransmission();
 		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
 		if(moduleIndex == -1){
 			continue;
 		}
+		Wire1.beginTransmission(adrs);
+		byte error = Wire1.endTransmission();
 		moduleArr[moduleIndex].disabled = (moduleIndex == -1);
+		display.setTextColor(TFT_WHITE, TFT_BLACK);
 		String nameColon = moduleArr[moduleIndex].name + ":";
 		display.print(nameColon);
-		if(error==0){
-			display.setTextColor(TFT_GREEN, TFT_BLACK);
-		}
-		else{
-			display.setTextColor(TFT_RED, TFT_BLACK);
-		}
-		display.println(OKNGMsg(error == 0));
+		uint16_t color = (error==0) ? TFT_GREEN : TFT_RED;
+		Stirng msg = (error==0) ? "OK" : "NG";
+		display.setTextColor(color, TFT_BLACK);
+		display.println(msg);
 	}
 	display.println("");
 	display.println("done");
@@ -465,12 +461,9 @@ bool winkersDisplay(){
  * @param status bool型 true...点灯, false...消灯
  */
 void displayTriangle(TriangleLocation coord, bool status){
-	// 文字色宣言（初期値は黒）
-	uint16_t color = TFT_BLACK;
-	// 条件falseの場合は文字色変更
-	if(status == false){
-		color = TFT_YELLOW;
-	}
+	// 文字色宣言（ONで黄、OFFで黒、デバッグ時は逆)
+	uint16_t color = !status ? TFT_YELLOW : TFT_BLACK;
+
 	// 図形表示（BLACKの場合は削除）
 	display.fillTriangle(coord.x1, coord.y1,
 					 coord.x2, coord.y2,
