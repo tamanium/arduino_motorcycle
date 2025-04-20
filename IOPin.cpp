@@ -16,14 +16,12 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	this->pin = pin;
 	this->dispChar = dispChar;
 	this->pcf = pcf;
-/*
-	if(pcf != null){
-		pcf->pinMode(this->pin, INPUT_PULLUP);
-	}
-	else{
-		pinMode(this->pin, INPUT_PULLUP);
-	}
-*/
+	//if(pcf != NULL){
+	//	pcf->pinMode(pin, INPUT_PULLUP);
+	//}
+	//else{
+	//	pinMode(pin, INPUT_PULLUP);
+	//}
 }
 
 /**
@@ -34,14 +32,20 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 char IOPin::getChar(){
 	return this->dispChar;
 }
-
 /**
- * ポジションが自分自身か判定
- * @return 自分自身がポジションとなっている場合true
+ * 読み取り値がLOWか判別
+ * @return LOWの場合true
+ */
+bool IOPin::isHigh(){
+	if(pcf != NULL){
+		return (pcf->digitalRead(this->pin) == HIGH);
+	}
+	return (digitalRead(this->pin) == HIGH);
+}
+/**
+ * 読み取り値がLOWか判別
+ * @return LOWの場合true
  */
 bool IOPin::isLow(){
-	if(pcf != NULL){
-		return (pcf->digitalRead(this->pin) == LOW);
-	}
-	return (digitalRead(this->pin) == LOW);
+	return !isHigh();
 }
