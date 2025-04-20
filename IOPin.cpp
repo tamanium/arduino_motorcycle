@@ -23,6 +23,13 @@ IOPin::IOPin(int pin, char dispChar, Adafruit_PCF8574 *pcf){
 	//	pinMode(pin, INPUT_PULLUP);
 	//}
 }
+void IOPin::begin(int mode){
+	if(pcf != NULL){
+		pcf->pinMode(this->pin, mode);
+		return;
+	}
+	pinMode(this->pin, mode);
+}
 
 /**
  * 表示値を取得
