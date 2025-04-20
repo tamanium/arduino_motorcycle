@@ -67,9 +67,14 @@
 	
 	// 表示設定
 	struct PrintProperty {
-		int x = 0;		// x座標
-		int y = 0;		// y座標
-		int size = 1;	// フォント倍率	（デフォルト：1）
+		// x座標
+		int x = 0;
+		// y座標
+		int y = 0;
+		// フォント倍率
+		int size = 1;
+		// フォント
+		const GFXfont* font = NULL;
 	};
 
 	/**

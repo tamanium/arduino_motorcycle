@@ -66,18 +66,6 @@ byte brightLevel[] = {0x10,
 struct TriangleLocation {
 	int x1, y1, x2, y2, x3, y3;
 };
-// 座標
-struct Location {
-	int x = 0;
-	int y = 0;
-};
-
-// 表示情報
-struct DispInfo{
-	int x = 0;
-	int y = 0;
-	int size = 0;
-};
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
@@ -102,13 +90,6 @@ TriangleLocation triCoords[2] = {
 	{50, 34, 50, 160+14, 0, 80+24},
 	{fromRight(50), 34, fromRight(50), 160+14, fromRight(0), 80+24}
 };
-// 表示設定
-struct PrintProperty {
-	int x = 0;						// x座標
-	int y = 0;						// y座標
-	int size = 1;					// フォント倍率	（デフォルト：1）
-	const GFXfont* font = NULL;		// フォント		（デフォルト：デフォルトフォント
-};
 // 表示設定まとめ
 struct PrintProperties{
 	PrintProperty Month;	// 月
@@ -124,8 +105,6 @@ struct PrintProperties{
 };
 // 表示設定宣言
 PrintProperties PRINT_PROP;
-// 電圧表示：座標と文字倍率
-DispInfo voltDispInfo = {0, 0, 3};
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
 // RTC
@@ -267,7 +246,7 @@ void setup(void) {
 		String nameColon = moduleArr[moduleIndex].name + ":";
 		display.print(nameColon);
 		uint16_t color = (error==0) ? TFT_GREEN : TFT_RED;
-		Stirng msg = (error==0) ? "OK" : "NG";
+		String msg = (error==0) ? "OK" : "NG";
 		display.setTextColor(color, TFT_BLACK);
 		display.println(msg);
 	}
