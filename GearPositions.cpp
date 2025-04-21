@@ -7,10 +7,8 @@
  */
 GearPositions::GearPositions(int *pins, int gearNum, Adafruit_PCF8574 *pcf){
 	for(int i=0; i<gearNum; i++){
-		char c = '0'+i;
-		if(0<i){
-			c = 'N';
-		}
+		// 0ならN、1以上ならその数字
+		char c = (i==0) ? 'N' : '0'+i;
 		this->gears[i] = IOPin(pins[i], pcf, c);
 	}
 	this->GearNum = gearNum;
@@ -22,14 +20,9 @@ GearPositions::GearPositions(int *pins, int gearNum, Adafruit_PCF8574 *pcf){
  *
  */
 void GearPositions::begin(){
-	// 通常for文ver.
-	for(int i=0;i<this->GearNum;i++){
-		this->gears[i].begin(INPUT_PULLUP);
+	for(IOPin p : this->gears){
+		p.begin(INPUT_PULLUP);
 	}
-	// 拡張for文ver.
-	//for(IOPin p : this->gears){
-	//	p.begin(INPUT_PULLUP);
-	//}
 }
 
 /**

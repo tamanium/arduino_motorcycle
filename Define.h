@@ -2,6 +2,7 @@
 	#define DEFINE_H_INCLUDE
 
 	#include "CommonDefine.h"
+	#include <LovyanGFX.hpp>
 
 	/**
 	 * フォントサイズ
@@ -70,6 +71,7 @@
 		int x = 0;                  // x座標
 		int y = 0;                  // y座標
 		int size = 1;               // フォント倍率
+		uint16_t color = TFT_WHITE; // 色
 		const GFXfont* font = NULL; // フォント
 	};
 
@@ -95,11 +97,5 @@
 	int centerHorizontal(int ratio, int size){
 		return OLED.WIDTH/2-FONT.WIDTH*ratio*size/2;
 	}
-	/**
-	* bool値に対応する文字列を出力
-	* @return trueなら"OK"、falseなら"NG"
-	*/
-	String OKNGMsg(bool b){
-			return b ? "OK" : "NG";
-		}
+
 #endif

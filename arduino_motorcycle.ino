@@ -126,8 +126,14 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
  * ディスプレイ表示設定
  */
 void setDisplay(PrintProperty* p, bool isTrans=false){
-	display.setCursor(p->x,p->y);	//描画位置
-	display.setTextSize(p->size);	//テキスト倍率
+	display.setCursor(p->x,p->y);   //描画位置
+	display.setTextSize(p->size);   //テキスト倍率
+	if(isTrans){
+		display.setTextColor(p->color);
+	}
+	else{
+		display.setTextColor(p->color, TFT_BLACK); //色
+	}
 }
 
 // ------------------------------初期設定------------------------------
@@ -250,6 +256,7 @@ void setup(void) {
 		display.setTextColor(color, TFT_BLACK);
 		display.println(msg);
 	}
+	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("done");
 	delay(5000);
