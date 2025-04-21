@@ -5,15 +5,15 @@
  *
  * @param nowGear char型 表示値
  */
-GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
-	for(int i=0; i<len; i++){
+GearPositions::GearPositions(int *pins, int gearNum, Adafruit_PCF8574 *pcf){
+	for(int i=0; i<gearNum; i++){
 		char c = '0'+i;
 		if(0<i){
 			c = 'N';
 		}
-		this->gears[i] = IOPin(pins[i], c, pcf);
+		this->gears[i] = IOPin(pins[i], pcf, c);
 	}
-	this->GearNum = len;
+	this->GearNum = gearNum;
 	this->nowGear = '-';
 }
 
@@ -22,9 +22,14 @@ GearPositions::GearPositions(int *pins, int len, Adafruit_PCF8574 *pcf){
  *
  */
 void GearPositions::begin(){
-	for(IOPin p : this->gears){
-		p.begin(INPUT_PULLUP);
+	// 通常for文ver.
+	for(int i=0;i<this->GearNum;i++){
+		this->gears[i].begin(INPUT_PULLUP);
 	}
+	// 拡張for文ver.
+	//for(IOPin p : this->gears){
+	//	p.begin(INPUT_PULLUP);
+	//}
 }
 
 /**

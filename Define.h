@@ -43,22 +43,22 @@
 	 */
 	struct Pin{
 		const int LED = 16;
-		const int buzzer = 26;	// ブザー
-		const int relay = 0;	// ダミーリレー
-		struct I2c{				// I2C通信
+		const int buzzer = 26;     // ブザー
+		const int relay = 0;       // ダミーリレー
+		struct I2c{                // I2C通信
 			const int scl = 15;
 			const int sda = 14;
 		} I2C;
-		struct IoExp{			// IOエキスパンダのピン定義
-			const int sw = 3;	//  スイッチ
-			struct Pos{			//  ギアポジ
+		struct IoExp{              // IOエキスパンダのピン定義
+			const int sw = 3;      // スイッチ
+			struct Pos{            //  ギアポジ
 				const int nwt = 2;
 				const int low = 0;
 				const int sec = 1;
 				const int thi = 4;
 				const int top = 5;
 			} POS;
-			struct Wnk{			//  ウインカー
+			struct Wnk{             // ウインカー
 				const int left = 7;
 				const int right = 6;
 			} WNK;
@@ -67,14 +67,10 @@
 	
 	// 表示設定
 	struct PrintProperty {
-		// x座標
-		int x = 0;
-		// y座標
-		int y = 0;
-		// フォント倍率
-		int size = 1;
-		// フォント
-		const GFXfont* font = NULL;
+		int x = 0;                  // x座標
+		int y = 0;                  // y座標
+		int size = 1;               // フォント倍率
+		const GFXfont* font = NULL; // フォント
 	};
 
 	/**

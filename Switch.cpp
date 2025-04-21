@@ -7,11 +7,17 @@
  * @param *pcf IOエキスパンダクラス
  */
 Switch::Switch(int pin, Adafruit_PCF8574 *pcf){
-	this->pin = pin;			//スイッチピン定義
-	this->status = KEY_UP;			//初期ステータス：キーアップ
-	this->pushFlag = false;			//プッシュフラグ
-	this->longPressFlag = false;	//長押しフラグ
-	this->pcf = pcf;				//IOエキスパンダ
+	this->swPin = IOPin(pin, pcf);
+	this->status = KEY_UP;       //初期ステータス：キーアップ
+	this->pushFlag = false;	     //プッシュフラグ
+	this->longPressFlag = false; //長押しフラグ
+}
+
+/**
+ * 動作開始
+ */
+void Switch::begin(){
+	this->swPin.begin(INPUT_PULLUP);
 }
 
 /**
@@ -48,16 +54,10 @@ bool Switch::isLongPress(){
  *  ウインカー状態を更新
  */
 void Switch::updateStatus(){
-	// カウンタ
-	static int counter = 0;
-	// 前回状態
-	static bool beforeStatus = KEY_UP;
-	// 現在状態
-	bool newStatus = KEY_UP;
-	// 各ピンを読み取りウインカー状態へセット
-	if(this->pcf->digitalRead(this->pin) == LOW){
-		newStatus = KEY_DOWN;
-	}
+	
+	static int counter = 0;               // カウンタ
+	static bool beforeStatus = KEY_UP;    // 前回状態
+	bool newStatus = this->swPin.isLow(); // 現在状態
 
 	// 前回状態と現在状態が異なる場合
 	if(beforeStatus != newStatus) {
@@ -92,15 +92,13 @@ void Switch::updateStatus(){
 				// プッシュフラグオン
 				this->pushFlag = true;
 			}
-			// 長押しフラグリセット
-			this->longPressFlag = false;
 		}
 		// キーダウンの場合
 		else{
 			// プッシュフラグリセット
 			this->pushFlag = false;
-			// 長押しフラグリセット
-			this->longPressFlag = false;
 		}
+		// 長押しフラグリセット
+		this->longPressFlag = false;
 	}
 }

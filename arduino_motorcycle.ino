@@ -234,14 +234,14 @@ void setup(void) {
 	
 	// i2cモジュールの検索
 	display.println("I2C Module Scanning...");
-	for(byte adrs=1;adrs<127;adrs++){
+	for(byte adrs=1; adrs<0x7F; adrs++){
 		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
 		if(moduleIndex == -1){
 			continue;
 		}
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
-		moduleArr[moduleIndex].disabled = (moduleIndex == -1);
+		//moduleArr[moduleIndex].disabled = (moduleIndex == -1);
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
 		String nameColon = moduleArr[moduleIndex].name + ":";
 		display.print(nameColon);

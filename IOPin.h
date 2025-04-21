@@ -7,20 +7,17 @@
 	// ギアポジションクラス
 	class IOPin{
 		private:
-			int pin;               // 読み取りピン番号
+			int pin;               // 読取ピン番号
+			int mode;              // 入出力モード
 			char dispChar;         // 表示値
-			Adafruit_PCF8574 *pcf; // IOエキスパンダ
+			Adafruit_PCF8574 *pcf; // IOエキスパンダクラス
 		public:
-			// コンストラクタ
-			IOPin();
-			IOPin(int p, char c, Adafruit_PCF8574 *pcf);
-			// 動作開始
-			void begin(int mode);
-			// 表示値取得
-			char getChar();
-			// 読み取り
-			bool isHigh();
-			bool isLow();
+			IOPin();                                     // コンストラクタ
+			IOPin(int p, Adafruit_PCF8574 *pcf, char c='0'); // コンストラクタ
+			void begin(int mode = INPUT_PULLUP);         // 動作開始
+			char getChar();                              // 表示値取得
+			bool isHigh();                               // 読取値がHIGHかどうか
+			bool isLow();                                // 読取値がLOWかどうか
 	};
 
 #endif
