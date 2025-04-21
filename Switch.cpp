@@ -52,7 +52,7 @@ void Switch::updateStatus(){
 	// 前回状態
 	static bool beforeStatus = KEY_UP;
 	// 現在状態
-	bool newStatus = (this->pin->isLow());
+	bool newStatus = (this->pin.isLow());
 
 	// 前回状態と現在状態が異なる場合
 	if(beforeStatus != newStatus) {
