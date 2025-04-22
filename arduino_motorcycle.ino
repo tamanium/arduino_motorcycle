@@ -247,13 +247,12 @@ void setup(void) {
 		}
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
-		//moduleArr[moduleIndex].disabled = (moduleIndex == -1);
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
 		String nameColon = moduleArr[moduleIndex].name + ":";
 		display.print(nameColon);
 		uint16_t color = (error==0) ? TFT_GREEN : TFT_RED;
-		String msg = (error==0) ? "OK" : "NG";
 		display.setTextColor(color, TFT_BLACK);
+		String msg = (error==0) ? "OK" : "NG";
 		display.println(msg);
 	}
 	display.setTextColor(TFT_WHITE);
@@ -261,24 +260,16 @@ void setup(void) {
 	display.println("done");
 	delay(5000);
 	
-	// IOエキスパンダ
-	pcf.begin(MODULES.ioExp.address, &Wire1);
-	// シフトインジケータ
-	gearPositions.begin();
-	// RTC
-	rtc.begin(&Wire1);
-	// 時計合わせ
-	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
-
-	// ADコンバータ
-	ads.begin(MODULES.adCnv.address, &Wire1);
-	// 疑似ウインカーリレー
-	//pinMode(PIN.relay, OUTPUT);
-	// ウインカー音
-	pinMode(PIN.buzzer, OUTPUT);
-	//digitalWrite(PIN.buzzer, HIGH);
+	// 各モジュール動作開始
+	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
+	gearPositions.begin();                    // シフトインジケータ
+	pushSw.begin();                           // スイッチ
+	rtc.begin(&Wire1);                        // RTC
+	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
+	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
 	digitalWrite(PIN.buzzer, LOW);
-	//analogWrite(PIN.buzzer, 51);
+	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
+	//pinMode(PIN.relay, OUTPUT);// 疑似ウインカーリレー
 	
 	// 画面リセット
 	display.fillScreen(TFT_BLACK);
