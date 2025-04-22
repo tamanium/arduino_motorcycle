@@ -6,7 +6,8 @@
  * @param pinRight int 右ウインカーピン
  */
 Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
-	this->winker[LEFT] = 
+	this->winker[LEFT] = Winker(pinLeft, pcf);
+	this->winker[RIGHT] = Winker(pinRight, pcf);
 	//this->pin[LEFT] = IOPin(pinLeft, pcf);
 	//this->pin[RIGHT] = IOPin(pinRight, pcf);
 	//this->status[LEFT] = OFF;
@@ -17,8 +18,8 @@ Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
  * 動作開始
  */
 void Winkers::begin(){
-	this->pin[LEFT].begin(INPUT_PULLUP);
-	this->pin[RIGHT].begin(INPUT_PULLUP);
+	this->winker[LEFT].pin.begin(INPUT_PULLUP);
+	this->winker[RIGHT].pin.begin(INPUT_PULLUP);
 }
 
 /**
@@ -43,7 +44,7 @@ void Winkers::updateStatus(){
 
 	// 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
-		now[i] = this->pin[i].isHigh();
+		now[i] = this->winker[i].pin.isHigh();
 		// 直前状態と取得状態が異なる場合
 		if(buffer[i] != now[i]) {
 			// 直前状態を更新・カウンタをリセット
@@ -51,13 +52,13 @@ void Winkers::updateStatus(){
 			counter[i] = 0;
 		}
 		// 現在状態と直前状態が異なる場合
-		else if(this->status[i] != buffer[i]){
+		else if(this->winker[i].status != buffer[i]){
 			counter[i]++;
 		}
 		// 5カウント以上の場合
 		if(5 <= counter[i]){
 			// 現在状態に直前状態を代入し、カウンタをリセット
-			this->status[i] = buffer[i];
+			this->winker[i].status = buffer[i];
 			counter[i] = 0;
 		}
 	}
