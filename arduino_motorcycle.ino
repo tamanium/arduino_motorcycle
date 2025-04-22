@@ -30,11 +30,11 @@ const int WINKER_DURATION  = 380;	//ms
 const int GEAR_SIZE   = 24;
 
 // --------------------変数--------------------
-unsigned long displayTime = 0;	// 表示処理
-unsigned long monitorTime = 0;	// 各種読み取り
-unsigned long tempTime = 0;		// 温度測定にて使用
-unsigned long timeTime = 0;		// 時刻測定
-unsigned long bzzTime = 0;
+unsigned long displayTime = 0; // 表示処理
+unsigned long monitorTime = 0; // 各種読み取り
+unsigned long tempTime = 0;    // 温度測定にて使用
+unsigned long timeTime = 0;    // 時刻測定
+unsigned long bzzTime = 0;     // ブザー
 unsigned long debugWinkerTime  = 0;	//疑似ウインカー
 
 // 保持用char配列
@@ -46,21 +46,13 @@ int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.thi,
 				PIN.IOEXP.POS.top};
 // 明るさレベル
-byte brightLevel[] = {0x10,
-                       0x20,
-                       0x30,
-                       0x40,
-                       0x50,
-                       0x60,
-                       0x70,
-                       0x80,
-                       0x90,
-                       0xA0,
-                       0xB0,
-                       0xC0,
-                       0xD0,
-                       0xE0,
-                       0xF0};
+byte brightLevel[] = {0x20,
+                     0x40,
+                     0x60,
+                      0x80,
+                      0xA0,
+                      0xC0,
+                      0xE0};
 
 // 三角形描画用座標
 struct TriangleLocation {
