@@ -9,6 +9,10 @@
 	struct Winker{
 		IOPin pin;
 		bool status;
+		Winker(int pin, Adafruit_PCF8574 *pcf){
+			pin = IOPin(pin,pcf);
+			status = false;
+		}
 	};
 
 	// ウインカークラス
