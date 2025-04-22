@@ -2,7 +2,7 @@
 	#define SWITCH_H_INCLUDE
 	#include <Arduino.h>
 	#include "CommonDefine.h"
-	#include <Adafruit_PCF8574.h>//IOエキスパンダクラス
+	#include <Adafruit_PCF8574.h> //IOエキスパンダクラス
 	#include "IOPin.h"            //IOピン自作クラス
 
 	// スイッチクラス

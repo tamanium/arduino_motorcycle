@@ -265,6 +265,7 @@ void setup(void) {
 	gearPositions.begin();                    // シフトインジケータ
 	pushSw.begin();                           // スイッチ
 	rtc.begin(&Wire1);                        // RTC
+	winkers.begin();                          // ウインカー
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
 	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
 	digitalWrite(PIN.buzzer, LOW);

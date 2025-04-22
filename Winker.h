@@ -1,18 +1,20 @@
+#include <iterator>
 #ifndef WINKERS_H_INCLUDE
 	#define WINKERS_H_INCLUDE
 	#include <Arduino.h>
 	#include <Adafruit_PCF8574.h>
 	#include "CommonDefine.h"
+	#include "IOPin.h"            //IOピン自作クラス
 
 	// ウインカークラス
 	class Winkers{
 		private:
-			int pin[2];			// ウインカー読み取りピン
+			IOPin pin[2];
 			bool status[2];		// ウインカー状態
-			Adafruit_PCF8574 *pcf;	// IOエキスパンダ
 		public:
 			// コンストラクタ
 			Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf);
+			void begin();
 			// ウインカー状態取得
 			bool getStatus(int i);
 			// ウインカー状態更新

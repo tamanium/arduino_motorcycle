@@ -6,11 +6,18 @@
  * @param pinRight int 右ウインカーピン
  */
 Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
-	this->pin[LEFT] = pinLeft;
-	this->pin[RIGHT] = pinRight;
+	this->pin[LEFT] = IOPin(pinLeft, pcf);
+	this->pin[RIGHT] = IOPin(pinRight, pcf);
 	this->status[LEFT] = OFF;
 	this->status[RIGHT] = OFF;
-	this->pcf = pcf;
+}
+
+/**
+ * 動作開始
+ */
+void Winkers::begin(){
+	this->pin[LEFT].begin(INPUT_PULLUP);
+	this->pin[RIGHT].begin(INPUT_PULLUP);
 }
 
 /**
@@ -33,11 +40,9 @@ void Winkers::updateStatus(){
 	// 現在のウインカー状態(1は左ウインカー、0は右ウインカー)
 	bool now[] = {OFF, OFF};
 
-	// ピンを配列化
-	int pins[] = {this->pin[1], this->pin[0]};
 	// 各ピンを読み取りウインカー状態へセット
 	for(int i=0; i<=1; i++){
-			now[i] = (this->pcf->digitalRead(pins[i]) == ON);
+		now[i] = this->pin[i].isHigh();
 		// 直前状態と取得状態が異なる場合
 		if(buffer[i] != now[i]) {
 			// 直前状態を更新・カウンタをリセット
