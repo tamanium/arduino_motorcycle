@@ -6,8 +6,8 @@
  * @param pinRight int 右ウインカーピン
  */
 Winkers::Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf){
-	this->winker[LEFT] = Winker(pinLeft, pcf);
-	this->winker[RIGHT] = Winker(pinRight, pcf);
+	this->winker[LEFT].pin = Winker(pinLeft, pcf);
+	this->winker[RIGHT].pin = Winker(pinRight, pcf);
 	//this->pin[LEFT] = IOPin(pinLeft, pcf);
 	//this->pin[RIGHT] = IOPin(pinRight, pcf);
 	//this->status[LEFT] = OFF;
