@@ -6,11 +6,17 @@
 	#include "CommonDefine.h"
 	#include "IOPin.h"            //IOピン自作クラス
 
+	struct Winker{
+		IOPin pin;
+		bool status;
+	};
+
 	// ウインカークラス
 	class Winkers{
 		private:
-			IOPin pin[2];
-			bool status[2];		// ウインカー状態
+			Winker winker[2];
+			//IOPin pin[2];
+			//bool status[2];		// ウインカー状態
 		public:
 			// コンストラクタ
 			Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf);
