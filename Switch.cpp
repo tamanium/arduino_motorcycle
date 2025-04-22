@@ -7,14 +7,14 @@
  * @param *pcf IOエキスパンダクラス
  */
 Switch::Switch(int pin, Adafruit_PCF8574 *pcf){
-	this->pin = IOPin(pin, pcf);			//読取ピンインスタンス化
-	this->status = KEY_UP;			//初期ステータス：キーアップ
-	this->pushFlag = false;			//プッシュフラグ
-	this->longPressFlag = false;	//長押しフラグ
+	this->ioPin = IOPin(pin, pcf); //読取ピンインスタンス化
+	this->status = KEY_UP;	         //初期ステータス：キーアップ
+	this->pushFlag = false;	        //プッシュフラグ
+	this->longPressFlag = false;   //長押しフラグ
 }
 
 /**
- * 【Getter】スイッチ状態を取得
+ * スイッチ状態を取得
  * @return スイッチがonの場合true
  */
 bool Switch::getStatus(){
@@ -28,9 +28,7 @@ bool Switch::getStatus(){
  */
 bool Switch::isPush(){
 	bool returnBool = this->pushFlag;
-	if(returnBool){
-		this->pushFlag = false;
-	}
+	this->pushFlag = false;
 	return returnBool;
 }
 
@@ -40,7 +38,7 @@ bool Switch::isPush(){
  * @return 長押しされている場合true
  */
 bool Switch::isLongPress(){
-    return this->longPressFlag;
+	return this->longPressFlag;
 }
 
 /**
@@ -52,7 +50,7 @@ void Switch::updateStatus(){
 	// 前回状態
 	static bool beforeStatus = KEY_UP;
 	// 現在状態
-	bool newStatus = (this->pin.isLow());
+	bool newStatus = (this->ioPin.isLow());
 
 	// 前回状態と現在状態が異なる場合
 	if(beforeStatus != newStatus) {
