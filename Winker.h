@@ -7,7 +7,7 @@
 	#include "IOPin.h"            //IOピン自作クラス
 
 	struct Winker{
-		IOPin pin;
+		IOPin ioPin;
 		bool status = false;
 		bool before = false;
 		int count = 0;
