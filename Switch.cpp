@@ -8,8 +8,8 @@
  */
 Switch::Switch(int pin, Adafruit_PCF8574 *pcf){
 	this->ioPin = IOPin(pin, pcf); //読取ピンインスタンス化
-	this->status = KEY_UP;	         //初期ステータス：キーアップ
-	this->pushFlag = false;	        //プッシュフラグ
+	this->status = KEY_UP;         //初期ステータス：キーアップ
+	this->pushFlag = false;        //プッシュフラグ
 	this->longPressFlag = false;   //長押しフラグ
 }
 
