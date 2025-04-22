@@ -17,16 +17,12 @@
 	class Winkers{
 		private:
 			Winker winker[2];
-			//IOPin pin[2];
-			//bool status[2];		// ウインカー状態
 		public:
 			// コンストラクタ
 			Winkers(int pinLeft, int pinRight, Adafruit_PCF8574 *pcf);
-			void begin();
-			// ウインカー状態取得
-			bool getStatus(int i);
-			// ウインカー状態更新
-			void updateStatus();
+			void begin();          // 動作開始
+			bool getStatus(int i); // 状態取得
+			void updateStatus();   // 状態更新
 	};
 
 #endif
