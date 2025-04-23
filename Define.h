@@ -54,7 +54,7 @@
 			const int SCLK = 2;
 			const int MOSI = 3;
 			const int MISO = -1;
-			const int DC = -1;
+			const int DC = 7;
 			const int CS = 6;
 			const int RST = 8;
 			const int BL = 5;
@@ -78,11 +78,12 @@
 	
 	// 表示設定
 	struct PrintProperty {
+		Font fontSize = {6,8};          // フォントサイズ
+		int size = 1;               // フォント倍率
 		int x = 0;                  // x座標
 		int y = 0;                  // y座標
-		int size = 1;               // フォント倍率
 		uint16_t color = TFT_WHITE; // 色
-		const GFXfont* font = NULL; // フォント
+		const lgfx::v1::IFont* font = NULL; // フォント
 	};
 
 	/**

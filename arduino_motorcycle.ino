@@ -126,6 +126,7 @@ void setDisplay(PrintProperty* p, bool isTrans=false){
 	else{
 		display.setTextColor(p->color, TFT_BLACK); //色
 	}
+	display.setFont(p->font);
 }
 
 // ------------------------------初期設定------------------------------
@@ -150,62 +151,77 @@ void setup(void) {
 	int dateSize = 2;
 	// 月
 	PRINT_PROP.Month = {
+		{6,8},
+		dateSize,
 		int(FONT.WIDTH * dateSize * 2.5),
 		fromBottom(FONT.HEIGHT * 2 + FONT.HEIGHT * dateSize + FONT.HEIGHT * dateSize),
-		dateSize
+		TFT_WHITE
 	};
 	// 日
 	PRINT_PROP.Day = {
-		int(FONT.WIDTH * dateSize * 5.5),
+		{6,8},
+		dateSize,
+		int(PRINT_PROP.Day.fontSize.WIDTH * dateSize * 5.5),
 		PRINT_PROP.Month.y,
-		dateSize
+		TFT_WHITE
 	};
 	int timeSize = 3;
 	// 時間
 	PRINT_PROP.Hour = {
+		{6,8},
+		timeSize,
 		0,
-		fromBottom(FONT.HEIGHT * timeSize),
-		timeSize
+		fromBottom(PRINT_PROP.Hour.fontSize.HEIGHT * timeSize),
+		TFT_WHITE
 	};
 	// 分
 	PRINT_PROP.Min = {
-		FONT.WIDTH * timeSize * 3,
+		{6,8},
+		timeSize,
+		PRINT_PROP.Hour.fontSize.WIDTH * timeSize * 3,
 		PRINT_PROP.Hour.y,
-		timeSize
+		TFT_WHITE
 	};
 	// 秒
 	PRINT_PROP.Sec = {
-		FONT.WIDTH * timeSize * 6,
+		{6,8},
+		timeSize,
+		PRINT_PROP.Hour.fontSize.WIDTH * timeSize * 6,
 		PRINT_PROP.Hour.y,
-		timeSize
+		TFT_WHITE
 	};
 	// 温度
 	PRINT_PROP.Temp = {
-		fromRight(FONT.WIDTH * timeSize * 5), 
-		fromBottom(FONT.HEIGHT * timeSize), 
-		timeSize
+		{6,8},
+		timeSize,
+		fromRight(PRINT_PROP.Hour.fontSize.WIDTH * timeSize * 5), 
+		fromBottom(PRINT_PROP.Hour.fontSize.HEIGHT * timeSize)
 	};
 	// ギア
 	PRINT_PROP.Gear = {
+		{6,8},
+		6,
 		centerHorizontal(6, 1),
-		140,
-		6
+		140
 	};
 	// 速度
 	PRINT_PROP.Speed = {
+		{6,8},
+		10,
 		centerHorizontal(10, 2),
-		30,
-		10
+		30
 	};
 	// 速度単位
 	PRINT_PROP.SpUnit = {
+		{6,8},
+		2,
 		centerHorizontal(2, 4),
-		110,
-		2
+		110
 	};
 	// 初期表示メッセージ
 	PRINT_PROP.InitMsg = {
-		0, 0, 2
+		{6,8},
+		2, 0, 0
 	};
 	// 初期情報表示
 
