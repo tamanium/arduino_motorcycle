@@ -7,10 +7,10 @@
 	#include "IOPin.h"            //IOピン自作クラス
 
 	struct Winker{
-		IOPin ioPin;
-		bool status = false;
-		bool before = false;
-		int count = 0;
+		IOPin ioPin;         // IOピンクラス
+		bool status = false; // ステータス（ON, OFF）
+		bool before = false; // 前回ステータス（ON, OFF）
+		int count = 0;       // チャタリング対策用カウンタ
 	};
 
 	// ウインカークラス

@@ -37,7 +37,7 @@
 	struct Display{
 		const int WIDTH = 320;
 		const int HEIGHT = 240;
-	} OLED;
+	}OLED;
 
 	/**
 	 * IOピン定義
@@ -50,6 +50,16 @@
 			const int scl = 15;
 			const int sda = 14;
 		} I2C;
+		struct Spi{
+			const int SCLK = 2;
+			const int MOSI = 3;
+			const int MISO = -1;
+			const int DC = -1;
+			const int CS = 6;
+			const int RST = 8;
+			const int BL = 5;
+
+		} SPI;
 		struct IoExp{              // IOエキスパンダのピン定義
 			const int sw = 3;      // スイッチ
 			struct Pos{            //  ギアポジ
