@@ -102,11 +102,12 @@
 	/**
 	 * x座標中央揃え
 	 *
-	 * @param ratio フォント倍率
+	 * @param fontWidth フォント横幅
 	 * @param size 文字数
 	 */
-	int centerHorizontal(int ratio, int size){
-		return OLED.WIDTH/2-FONT.WIDTH*ratio*size/2;
+	int centerHorizontal(int fontWidth, int size){
+		return OLED.WIDTH/2 - fontWidth*size/2;
 	}
+
 
 #endif

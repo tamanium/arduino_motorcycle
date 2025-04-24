@@ -96,7 +96,7 @@ struct PrintProperties{
 	PrintProperty InitMsg;	// 初期表示：「hello」
 };
 // 表示設定宣言
-PrintProperties PRINT_PROP;
+PrintProperties PROP;
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
 // RTC
@@ -150,7 +150,7 @@ void setup(void) {
 	// 表示文字情報
 	int dateSize = 2;
 	// 月
-	PRINT_PROP.Month = {
+	PROP.Month = {
 		{6,8},
 		dateSize,
 		int(FONT.WIDTH * dateSize * 2.5),
@@ -158,68 +158,74 @@ void setup(void) {
 		TFT_WHITE
 	};
 	// 日
-	PRINT_PROP.Day = {
+	PROP.Day = {
 		{6,8},
 		dateSize,
-		int(PRINT_PROP.Day.fontSize.WIDTH * dateSize * 5.5),
-		PRINT_PROP.Month.y,
+		int(PROP.Day.fontSize.WIDTH * dateSize * 5.5),
+		PROP.Month.y,
 		TFT_WHITE
 	};
 	int timeSize = 3;
 	// 時間
-	PRINT_PROP.Hour = {
+	PROP.Hour = {
 		{6,8},
 		timeSize,
 		0,
-		fromBottom(PRINT_PROP.Hour.fontSize.HEIGHT * timeSize),
+		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize),
 		TFT_WHITE
 	};
 	// 分
-	PRINT_PROP.Min = {
+	PROP.Min = {
 		{6,8},
 		timeSize,
-		PRINT_PROP.Hour.fontSize.WIDTH * timeSize * 3,
-		PRINT_PROP.Hour.y,
+		PROP.Hour.fontSize.WIDTH * timeSize * 3,
+		PROP.Hour.y,
 		TFT_WHITE
 	};
 	// 秒
-	PRINT_PROP.Sec = {
+	PROP.Sec = {
 		{6,8},
 		timeSize,
-		PRINT_PROP.Hour.fontSize.WIDTH * timeSize * 6,
-		PRINT_PROP.Hour.y,
+		PROP.Hour.fontSize.WIDTH * timeSize * 6,
+		PROP.Hour.y,
 		TFT_WHITE
 	};
 	// 温度
-	PRINT_PROP.Temp = {
+	PROP.Temp = {
 		{6,8},
 		timeSize,
-		fromRight(PRINT_PROP.Hour.fontSize.WIDTH * timeSize * 5), 
-		fromBottom(PRINT_PROP.Hour.fontSize.HEIGHT * timeSize)
+		fromRight(PROP.Hour.fontSize.WIDTH * timeSize * 5), 
+		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize)
 	};
 	// ギア
-	PRINT_PROP.Gear = {
-		{6,8},
-		6,
-		centerHorizontal(6, 1),
-		140
+	PROP.Gear = {
+		{20,40},
+		1,
+		centerHorizontal(20, 1),
+		140,
+		TFT_WHITE,
+		&fonts::lgfxJapanGothic_40
 	};
 	// 速度
-	PRINT_PROP.Speed = {
-		{6,8},
-		10,
-		centerHorizontal(10, 2),
-		30
+	PROP.Speed = {
+		{55,75},
+		1,
+		centerHorizontal(55, 2),
+		30,
+		TFT_WHITE,
+		&fonts::Font8
 	};
 	// 速度単位
-	PRINT_PROP.SpUnit = {
-		{6,8},
-		2,
-		centerHorizontal(2, 4),
-		110
+	PROP.SpUnit = {
+		{14,26},
+		1,
+		centerHorizontal(14, 4),
+		110,
+		TFT_WHITE,
+		&fonts::Font4
 	};
 	// 初期表示メッセージ
-	PRINT_PROP.InitMsg = {
+	PROP.InitMsg = {
 		{6,8},
 		2, 0, 0
 	};
@@ -236,7 +242,7 @@ void setup(void) {
 	// 明るさ
 	display.setBrightness(30);
 	// 初期表示メッセージ
-	setDisplay(&PRINT_PROP.InitMsg);
+	setDisplay(&PROP.InitMsg);
 	display.println("Hello");
 	display.println("");
 	delay(2000);
@@ -289,22 +295,22 @@ void setup(void) {
 	//tft.print("gear");
 
 	// ギアポジション表示開始
-	setDisplay(&PRINT_PROP.Gear);
+	setDisplay(&PROP.Gear);
 	display.print('-');
 	// 速度
-	setDisplay(&PRINT_PROP.Speed);
+	setDisplay(&PROP.Speed);
 	display.print("00");
 	// 速度単位
-	setDisplay(&PRINT_PROP.SpUnit);
+	setDisplay(&PROP.SpUnit);
 	display.print("km/h");
 	// 時間
-	setDisplay(&PRINT_PROP.Hour);
-	display.print("HH:mm:ss");
+	setDisplay(&PROP.Hour);
+	display.print("00:00:00");
 	// 日付
-	setDisplay(&PRINT_PROP.Month);
-	display.print("MM/dd");
+	setDisplay(&PROP.Month);
+	display.print("00/00");
 	// 温度の値
-	setDisplay(&PRINT_PROP.Temp);
+	setDisplay(&PROP.Temp);
 	display.print("00.0");
 	// 温度の単位
 	display.setTextSize(2);
@@ -315,6 +321,14 @@ void setup(void) {
 	display.print('o');
 	//displayTriangle(triCoords[0]);
 	//displayTriangle(triCoords[1]);
+
+	int x = PROP.Speed.x + PROP.Speed.fontSize.WIDTH;
+	int y = PROP.Speed.y + PROP.Speed.fontSize.HEIGHT/2+ 10;
+	int r0 = PROP.Speed.y + 60;
+	int r1 = PROP.Speed.y + 50;
+	int angle1 = 60;
+	int angle0 = 120;
+	display.fillArc(x,y,r0,r1,angle0,angle1, TFT_GREEN);
 
 }
 
@@ -404,7 +418,7 @@ void gearDisplay(char newGear){
 		return;
 	}
 	// ディスプレイ設定
-	setDisplay(&PRINT_PROP.Gear);
+	setDisplay(&PROP.Gear);
 	// ギア表示更新
 	display.print(newGear);
 	// バッファ文字列を上書き
@@ -528,7 +542,7 @@ void tempDisplay(){
 	if(beforeTempx10 == newTempx10){
 		return;
 	}
-	setDisplay(&PRINT_PROP.Temp);
+	setDisplay(&PROP.Temp);
 	display.setTextColor(TFT_WHITE, TFT_BLACK);
 	// 温度が一桁以下の場合、十の位にスペース
 	if(10 <= newTempx10 && newTempx10 < 100){
@@ -553,11 +567,11 @@ void realTimeDisplay(){
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
 	// 表示情報配列
 	static PrintProperty* printPropArr[5] = {
-		&PRINT_PROP.Month,
-		&PRINT_PROP.Day,
-		&PRINT_PROP.Hour,
-		&PRINT_PROP.Min,
-		&PRINT_PROP.Sec,
+		&PROP.Month,
+		&PROP.Day,
+		&PROP.Hour,
+		&PROP.Min,
+		&PROP.Sec,
 	};
 	static int itemLen = 5;
 	// 時刻用変数
