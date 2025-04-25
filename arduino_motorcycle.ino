@@ -290,6 +290,8 @@ void setup(void) {
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("done");
+	display.println(PROP.Speed.width);
+	display.println(PROP.Speed.x);
 	delay(5000);
 	
 	// 各モジュール動作開始
