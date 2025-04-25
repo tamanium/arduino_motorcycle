@@ -82,6 +82,8 @@
 		int y = 0;                  // y座標
 		int size =1;                // フォント倍率
 		const lgfx::v1::IFont* font = NULL; // フォント
+		int width = 6;
+		int height = 8;
 		Font fontSize = {6,8};      // フォントの横縦
 		   
 	};
@@ -104,8 +106,8 @@
 	 * @param fontWidth フォント横幅
 	 * @param size 文字数
 	 */
-	int centerHorizontal(int fontWidth){
-		return OLED.WIDTH/2 - fontWidth/2;
+	int centerHorizontal(int width){
+		return OLED.WIDTH>>1 - width>>1;
 	}
 
 
