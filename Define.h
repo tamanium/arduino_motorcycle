@@ -78,14 +78,13 @@
 	
 	// 表示設定
 	struct PrintProperty {
-		Font fontSize = {6,8};          // フォントサイズ
-		int size = 1;               // フォント倍率
 		int x = 0;                  // x座標
 		int y = 0;                  // y座標
-		uint16_t color = TFT_WHITE; // 色
+		int size =1;                // フォント倍率
 		const lgfx::v1::IFont* font = NULL; // フォント
+		Font fontSize = {6,8};      // フォントの横縦
+		   
 	};
-
 	/**
 	 * x座標出力（画面右端原点、左向き）
 	 */
@@ -105,8 +104,8 @@
 	 * @param fontWidth フォント横幅
 	 * @param size 文字数
 	 */
-	int centerHorizontal(int fontWidth, int size){
-		return OLED.WIDTH/2 - fontWidth*size/2;
+	int centerHorizontal(int fontWidth){
+		return OLED.WIDTH/2 - fontWidth/2;
 	}
 
 

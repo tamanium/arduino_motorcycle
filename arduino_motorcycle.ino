@@ -117,17 +117,33 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
 
 /**
  * ディスプレイ表示設定
+ *
+ * @param p 表示設定
+ * @param isTrans 透過させるか
  */
 void setDisplay(PrintProperty* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);   //描画位置
 	display.setTextSize(p->size);   //テキスト倍率
 	if(isTrans){
-		display.setTextColor(p->color);
+		display.setTextColor(TFT_WHITE);
 	}
 	else{
-		display.setTextColor(p->color, TFT_BLACK); //色
+		display.setTextColor(TFT_WHITE, TFT_BLACK); //色
 	}
 	display.setFont(p->font);
+}
+
+/**
+ * フォントの縦横を設定
+ *
+ * @param p 表示設定
+ * @param size フォント倍率
+ */
+void setFontWH(PrintProperty* p){
+	display.setFont(p->font);
+	display.setTextSize(p->size);
+	p->fontSize.WIDTH = display.textWidth("0");
+	p->fontSize.HEIGHT = display.fontHeight();
 }
 
 // ------------------------------初期設定------------------------------
@@ -148,100 +164,96 @@ void setup(void) {
 		MODULES.rtcIC
 	};
 
+	int offsetY = 15;
+	int timeSize = 3;
+	// 時間
+	PROP.Hour = {
+		0,
+		0,
+		timeSize
+	};
+	setFontWH(&PROP.Hour);
+
+	// 分
+	PROP.Min = {
+		PROP.Hour.fontSize.WIDTH * 3,
+		PROP.Hour.y,
+		timeSize
+	};
+
+	// 秒
+	PROP.Sec = {
+		PROP.Hour.fontSize.WIDTH * 6,
+		PROP.Hour.y,
+		timeSize,
+	};
+
 	// 表示文字情報
 	int dateSize = 2;
 	// 月
 	PROP.Month = {
-		{6,8},
-		dateSize,
-		int(FONT.WIDTH * dateSize * 2.5),
-		fromBottom(FONT.HEIGHT * 2 + FONT.HEIGHT * dateSize + FONT.HEIGHT * dateSize),
-		TFT_WHITE
+		0, 0, dateSize
 	};
+	setFontWH(&PROP.Month);
+	PROP.Month.y=fromBottom(PROP.Month.fontSize.HEIGHT);
+
 	// 日
 	PROP.Day = {
-		{6,8},
-		dateSize,
-		int(PROP.Day.fontSize.WIDTH * dateSize * 5.5),
+		int(PROP.Month.fontSize.WIDTH * 3),
 		PROP.Month.y,
-		TFT_WHITE
+		dateSize
 	};
-	int timeSize = 3;
-	// 時間
-	PROP.Hour = {
-		{6,8},
-		timeSize,
-		0,
-		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize),
-		TFT_WHITE
-	};
-	// 分
-	PROP.Min = {
-		{6,8},
-		timeSize,
-		PROP.Hour.fontSize.WIDTH * timeSize * 3,
-		PROP.Hour.y,
-		TFT_WHITE
-	};
-	// 秒
-	PROP.Sec = {
-		{6,8},
-		timeSize,
-		PROP.Hour.fontSize.WIDTH * timeSize * 6,
-		PROP.Hour.y,
-		TFT_WHITE
-	};
+	PROP.Day.fontSize= PROP.Month.fontSize;
+
 	// 温度
 	PROP.Temp = {
-		{6,8},
-		timeSize,
 		fromRight(PROP.Hour.fontSize.WIDTH * timeSize * 5), 
-		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize)
+		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize),
+		timeSize
 	};
+	setFontWH(&PROP.Month);
+	PROP.Temp.y=fromRight(PROP.Temp.fontSize.WIDTH * 5);
+	PROP.Temp.y=fromBottom(PROP.Temp.fontSize.HEIGHT);
+
 	// ギア
 	PROP.Gear = {
-		{20,40},
+		0,
+		140+offsetY,
 		1,
-		centerHorizontal(20, 1),
-		140,
-		TFT_WHITE,
 		&fonts::lgfxJapanGothic_40
 	};
+	setFontWH(&PROP.Gear);
+	PROP.Gear.x = centerHorizontal(PROP.Gear.fontSize.WIDTH);
+
 	// 速度
 	PROP.Speed = {
-		{55,75},
+		0,
+		30+offsetY,
 		1,
-		centerHorizontal(55, 2),
-		30,
-		TFT_WHITE,
 		&fonts::Font8
 	};
+	setFontWH(&PROP.Speed);
+	PROP.Speed.x = centerHorizontal(PROP.Speed.fontSize.WIDTH);
+
 	// 速度単位
 	PROP.SpUnit = {
-		{14,26},
+		0,
+		110+offsetY,
 		1,
-		centerHorizontal(14, 4),
-		110,
-		TFT_WHITE,
 		&fonts::Font4
 	};
+	setFontWH(&PROP.SpUnit);
+	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.fontSize.WIDTH);
+
 	// 初期表示メッセージ
 	PROP.InitMsg = {
-		{6,8},
-		2, 0, 0
+		0, 0, 2
 	};
 	// 初期情報表示
-
 	// ディスプレイの初期化
 	display.init();
-	// テキストサイズ
-	display.setTextSize(1);
-	// 画面全体黒塗り
-	display.fillScreen(TFT_BLACK);
-	// フォント
-	display.setFont(&fonts::Font0);
 	// 明るさ
-	display.setBrightness(30);
+	display.setBrightness(brightLevel[0]);
 	// 初期表示メッセージ
 	setDisplay(&PROP.InitMsg);
 	display.println("Hello");
@@ -320,27 +332,10 @@ void setup(void) {
 	display.setTextSize(1);
 	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
 	display.print('o');
-	//displayTriangle(triCoords[0]);
-	//displayTriangle(triCoords[1]);
-
-	// 円弧の中心x座標
-	int x = PROP.Speed.x + PROP.Speed.fontSize.WIDTH;
-	// 円弧の中心y座標
-	int y = PROP.Speed.y + PROP.Speed.fontSize.HEIGHT/2+ 10;
-	// 円弧の外側半径
-	int r0 = PROP.Speed.y + 60;
-	// 円弧の内側半径
-	int r1 = PROP.Speed.y + 50;
-	// 中心右を0度とした場合の切り欠き角度1
-	int angle0 = 120;
-	// 中心右を0度とした場合の切り欠き角度2
-	int angle1 = 60;
-	// 通常描画
-	//display.fillArc(x,y,r0,r1,angle0,angle1, TFT_GREEN);
 
 	// スプライト設定
 	// 横縦
-	int w = PROP.Speed.y + 60;
+	int w = (PROP.Speed.y + 60 -offsetY)*2;
 	int h = w;
 	// 中心座標
 	int x0 = w >> 1;
@@ -352,12 +347,15 @@ void setup(void) {
 	int rIN = rOUT - d;
 	// 大きさ
 	sprite.createSprite(w,h);
+	// 角度
+	int angle0 = 120;
+	int angle1 = 60;
 	// 描画
 	sprite.fillArc(x0,y0,rOUT,rIN,angle0,angle1, TFT_GREEN);
 	// 出力
-	int pushX = x - x0;
-	int pushY = y - y0;
-	sprite.pushSprite(pushX, pushY);
+	int pushX = OLED.WIDTH>>1 - x0;
+	int pushY = OLED.HEIGHT>>1 - y0;
+	sprite.pushSprite(pushX, pushY, 0);
 }
 
 // ------------------------------ループ------------------------------
