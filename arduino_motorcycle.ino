@@ -216,7 +216,7 @@ void setup(void) {
 		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize),
 		timeSize
 	};
-	setFontWH(&PROP.Temp);
+	setPropWH(&PROP.Temp);
 	PROP.Temp.x=fromRight(PROP.Temp.fontSize.WIDTH * 5);
 	PROP.Temp.y=fromBottom(PROP.Temp.height);
 
@@ -227,7 +227,7 @@ void setup(void) {
 		1,
 		&fonts::lgfxJapanGothic_40
 	};
-	setFontWH(&PROP.Gear);
+	setPropWH(&PROP.Gear);
 	PROP.Gear.x = centerHorizontal(PROP.Gear.width);
 
 	// 速度
@@ -237,7 +237,7 @@ void setup(void) {
 		1,
 		&fonts::Font8
 	};
-	setFontWH(&PROP.Speed, "00");
+	setPropWH(&PROP.Speed, "00");
 	PROP.Speed.x = centerHorizontal(PROP.Speed.width);
 
 	// 速度単位
@@ -247,7 +247,7 @@ void setup(void) {
 		1,
 		&fonts::Font4
 	};
-	setFontWH(&PROP.SpUnit, "km/h");
+	setPropWH(&PROP.SpUnit, "km/h");
 	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.width);
 
 	// 初期表示メッセージ
