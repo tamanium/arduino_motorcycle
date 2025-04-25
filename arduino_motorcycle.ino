@@ -139,10 +139,10 @@ void setDisplay(PrintProperty* p, bool isTrans=false){
  * @param p 表示設定
  * @param size フォント倍率
  */
-void setFontWH(PrintProperty* p){
+void setFontWH(PrintProperty* p, String str = "0"){
 	display.setFont(p->font);
 	display.setTextSize(p->size);
-	p->fontSize.WIDTH = display.textWidth("0");
+	p->fontSize.WIDTH = display.textWidth(str);
 	p->fontSize.HEIGHT = display.fontHeight();
 }
 
@@ -211,8 +211,8 @@ void setup(void) {
 		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize),
 		timeSize
 	};
-	setFontWH(&PROP.Month);
-	PROP.Temp.y=fromRight(PROP.Temp.fontSize.WIDTH * 5);
+	setFontWH(&PROP.Temp);
+	PROP.Temp.x=fromRight(PROP.Temp.fontSize.WIDTH * 5);
 	PROP.Temp.y=fromBottom(PROP.Temp.fontSize.HEIGHT);
 
 	// ギア
@@ -232,7 +232,7 @@ void setup(void) {
 		1,
 		&fonts::Font8
 	};
-	setFontWH(&PROP.Speed);
+	setFontWH(&PROP.Speed, "00");
 	PROP.Speed.x = centerHorizontal(PROP.Speed.fontSize.WIDTH);
 
 	// 速度単位
@@ -242,7 +242,7 @@ void setup(void) {
 		1,
 		&fonts::Font4
 	};
-	setFontWH(&PROP.SpUnit);
+	setFontWH(&PROP.SpUnit, "km/h");
 	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.fontSize.WIDTH);
 
 	// 初期表示メッセージ
