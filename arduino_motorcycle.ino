@@ -139,9 +139,11 @@ void setDisplay(PrintProperty* p, bool isTrans=false){
  * @param p 表示設定
  * @param size フォント倍率
  */
-void setFontWH(PrintProperty* p, String str = "0"){
+void setPropWH(PrintProperty* p, String str = "0"){
 	display.setFont(p->font);
 	display.setTextSize(p->size);
+	p->width = display.textWidth(str);
+	p->height = display.fontHeight();
 	p->fontSize.WIDTH = display.textWidth(str);
 	p->fontSize.HEIGHT = display.fontHeight();
 }
@@ -172,7 +174,7 @@ void setup(void) {
 		0,
 		timeSize
 	};
-	setFontWH(&PROP.Hour);
+	setPropWH(&PROP.Hour);
 
 	// 分
 	PROP.Min = {
@@ -180,6 +182,7 @@ void setup(void) {
 		PROP.Hour.y,
 		timeSize
 	};
+	setPropWH(&PROP.Min);
 
 	// 秒
 	PROP.Sec = {
@@ -187,6 +190,7 @@ void setup(void) {
 		PROP.Hour.y,
 		timeSize,
 	};
+	setPropWH(&PROP.Sec);
 
 	// 表示文字情報
 	int dateSize = 2;
@@ -194,8 +198,8 @@ void setup(void) {
 	PROP.Month = {
 		0, 0, dateSize
 	};
-	setFontWH(&PROP.Month);
-	PROP.Month.y=fromBottom(PROP.Month.fontSize.HEIGHT);
+	setPropWH(&PROP.Month);
+	PROP.Month.y=fromBottom(PROP.Month.height);
 
 	// 日
 	PROP.Day = {
@@ -203,7 +207,8 @@ void setup(void) {
 		PROP.Month.y,
 		dateSize
 	};
-	PROP.Day.fontSize= PROP.Month.fontSize;
+	PROP.Day.width = PROP.Month.width;
+	PROP.Day.height = PROP.Month.height;
 
 	// 温度
 	PROP.Temp = {
@@ -213,7 +218,7 @@ void setup(void) {
 	};
 	setFontWH(&PROP.Temp);
 	PROP.Temp.x=fromRight(PROP.Temp.fontSize.WIDTH * 5);
-	PROP.Temp.y=fromBottom(PROP.Temp.fontSize.HEIGHT);
+	PROP.Temp.y=fromBottom(PROP.Temp.height);
 
 	// ギア
 	PROP.Gear = {
@@ -223,7 +228,7 @@ void setup(void) {
 		&fonts::lgfxJapanGothic_40
 	};
 	setFontWH(&PROP.Gear);
-	PROP.Gear.x = centerHorizontal(PROP.Gear.fontSize.WIDTH);
+	PROP.Gear.x = centerHorizontal(PROP.Gear.width);
 
 	// 速度
 	PROP.Speed = {
@@ -233,7 +238,7 @@ void setup(void) {
 		&fonts::Font8
 	};
 	setFontWH(&PROP.Speed, "00");
-	PROP.Speed.x = centerHorizontal(PROP.Speed.fontSize.WIDTH);
+	PROP.Speed.x = centerHorizontal(PROP.Speed.width);
 
 	// 速度単位
 	PROP.SpUnit = {
@@ -243,7 +248,7 @@ void setup(void) {
 		&fonts::Font4
 	};
 	setFontWH(&PROP.SpUnit, "km/h");
-	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.fontSize.WIDTH);
+	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.width);
 
 	// 初期表示メッセージ
 	PROP.InitMsg = {
