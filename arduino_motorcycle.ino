@@ -15,9 +15,6 @@
 #include "Switch.h"			// スイッチクラス
 #include "MyLovyanGFX.h"	// ディスプレイ設定
 
-// 準備したクラスのインスタンスを作成します。
-LGFX display;
-
 // --------------------定数--------------------
 const int MONITOR_INTERVAL = 5;		//ms
 const int DISPLAY_INTERVAL = 30;	//ms
@@ -47,8 +44,8 @@ int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.top};
 // 明るさレベル
 byte brightLevel[] = {0x20,
-                     0x40,
-                     0x60,
+                      0x40,
+                      0x60,
                       0x80,
                       0xA0,
                       0xC0,
@@ -84,19 +81,23 @@ TriangleLocation triCoords[2] = {
 };
 // 表示設定まとめ
 struct PrintProperties{
-	PrintProperty Month;	// 月
-	PrintProperty Day;		// 日
-	PrintProperty Hour;		// 時
-	PrintProperty Min;		// 分
-	PrintProperty Sec;		// 秒
-	PrintProperty Temp;		// 温度
-	PrintProperty Gear;		// ギア
-	PrintProperty Speed;	// 速度
-	PrintProperty SpUnit;	// 速度単位
-	PrintProperty InitMsg;	// 初期表示：「hello」
-};
-// 表示設定宣言
-PrintProperties PROP;
+	PrintProperty Month;    // 月
+	PrintProperty Day;      // 日
+	PrintProperty Hour;     // 時
+	PrintProperty Min;      // 分
+	PrintProperty Sec;      // 秒
+	PrintProperty Temp;     // 温度
+	PrintProperty Gear;     // ギア
+	PrintProperty Speed;    // 速度
+	PrintProperty SpUnit;   // 速度単位
+	PrintProperty InitMsg;  // 初期表示：「hello」
+} PROP;
+
+// ディスプレイ
+LGFX display;
+// スプライト
+LGFX_Sprite sprite(&display);
+
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
 // RTC
@@ -322,14 +323,41 @@ void setup(void) {
 	//displayTriangle(triCoords[0]);
 	//displayTriangle(triCoords[1]);
 
+	// 円弧の中心x座標
 	int x = PROP.Speed.x + PROP.Speed.fontSize.WIDTH;
+	// 円弧の中心y座標
 	int y = PROP.Speed.y + PROP.Speed.fontSize.HEIGHT/2+ 10;
+	// 円弧の外側半径
 	int r0 = PROP.Speed.y + 60;
+	// 円弧の内側半径
 	int r1 = PROP.Speed.y + 50;
-	int angle1 = 60;
+	// 中心右を0度とした場合の切り欠き角度1
 	int angle0 = 120;
-	display.fillArc(x,y,r0,r1,angle0,angle1, TFT_GREEN);
+	// 中心右を0度とした場合の切り欠き角度2
+	int angle1 = 60;
+	// 通常描画
+	//display.fillArc(x,y,r0,r1,angle0,angle1, TFT_GREEN);
 
+	// スプライト設定
+	// 横縦
+	int w = PROP.Speed.y + 60;
+	int h = w;
+	// 中心座標
+	int x0 = w >> 1;
+	int y0 = h >> 1;
+	// 弧の幅
+	int d = 10;
+	// 弧の内外半径
+	int rOUT = (w-1) >> 1;
+	int rIN = rOUT - d;
+	// 大きさ
+	sprite.createSprite(w,h);
+	// 描画
+	sprite.fillArc(x0,y0,rOUT,rIN,angle0,angle1, TFT_GREEN);
+	// 出力
+	int pushX = x - x0;
+	int pushY = y - y0;
+	sprite.pushSprite(pushX, pushY);
 }
 
 // ------------------------------ループ------------------------------
