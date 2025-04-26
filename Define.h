@@ -107,7 +107,7 @@
 	 * @param size 文字数
 	 */
 	int centerHorizontal(int width){
-		return OLED.WIDTH>>1 - (width/2);
+		return (OLED.WIDTH>>1) - (width>>1);
 	}
 
 

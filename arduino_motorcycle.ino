@@ -25,6 +25,9 @@ const int WINKER_DURATION  = 380;	//ms
 
 // フォントの寸法
 const int GEAR_SIZE   = 24;
+// 中心座標
+const int centerX = (OLED.WIDTH-1)>>1;
+const int centerY = (OLED.HEIGHT-1)>>1;
 
 // --------------------変数--------------------
 unsigned long displayTime = 0; // 表示処理
@@ -97,6 +100,8 @@ struct PrintProperties{
 LGFX display;
 // スプライト
 LGFX_Sprite sprite(&display);
+LGFX_Sprite leftWinker(&display);
+LGFX_Sprite rightWinker(&display);
 
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
@@ -166,59 +171,63 @@ void setup(void) {
 		MODULES.rtcIC
 	};
 
-	int offsetY = 15;
+	int offsetY = 60;
 	int timeSize = 3;
 	// 時間
 	PROP.Hour = {
 		0,
 		0,
-		timeSize
+		1,
+		&fonts::Font4
 	};
-	setPropWH(&PROP.Hour);
+	setPropWH(&PROP.Hour,"00:");
 
 	// 分
 	PROP.Min = {
-		PROP.Hour.fontSize.WIDTH * 3,
+		PROP.Hour.width,
 		PROP.Hour.y,
-		timeSize
+		PROP.Hour.size,
+		PROP.Hour.font
 	};
-	setPropWH(&PROP.Min);
+	setPropWH(&PROP.Min,"00:");
 
 	// 秒
 	PROP.Sec = {
-		PROP.Hour.fontSize.WIDTH * 6,
+		PROP.Min.x + PROP.Min.width,
 		PROP.Hour.y,
-		timeSize,
+		PROP.Hour.size,
+		PROP.Hour.font
 	};
-	setPropWH(&PROP.Sec);
+	setPropWH(&PROP.Sec,"00");
 
 	// 表示文字情報
 	int dateSize = 2;
 	// 月
 	PROP.Month = {
-		0, 0, dateSize
+		PROP.Hour.x,
+		PROP.Hour.y + PROP.Hour.height + 8,
+		PROP.Hour.size,
+		PROP.Hour.font
 	};
-	setPropWH(&PROP.Month);
-	PROP.Month.y=fromBottom(PROP.Month.height);
+	setPropWH(&PROP.Month,"00/");
 
 	// 日
 	PROP.Day = {
-		int(PROP.Month.fontSize.WIDTH * 3),
+		PROP.Month.x + PROP.Month.width,
 		PROP.Month.y,
-		dateSize
+		PROP.Month.size,
+		PROP.Month.font
 	};
-	PROP.Day.width = PROP.Month.width;
-	PROP.Day.height = PROP.Month.height;
+	setPropWH(&PROP.Day, "00");
 
 	// 温度
 	PROP.Temp = {
 		fromRight(PROP.Hour.fontSize.WIDTH * timeSize * 5), 
-		fromBottom(PROP.Hour.fontSize.HEIGHT * timeSize),
+		0,
 		timeSize
 	};
 	setPropWH(&PROP.Temp);
 	PROP.Temp.x=fromRight(PROP.Temp.fontSize.WIDTH * 5);
-	PROP.Temp.y=fromBottom(PROP.Temp.height);
 
 	// ギア
 	PROP.Gear = {
@@ -247,7 +256,7 @@ void setup(void) {
 		1,
 		&fonts::Font4
 	};
-	setPropWH(&PROP.SpUnit, "km/h");
+	setPropWH(&PROP.SpUnit,"km/h");
 	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.width);
 
 	// 初期表示メッセージ
@@ -290,9 +299,7 @@ void setup(void) {
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("done");
-	display.println(PROP.Speed.width);
-	display.println(PROP.Speed.x);
-	delay(5000);
+	delay(3000);
 	
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
@@ -334,18 +341,19 @@ void setup(void) {
 	display.print("00.0");
 	// 温度の単位
 	display.setTextSize(2);
-	display.setCursor(fromRight(FONT.WIDTH * 2), fromBottom(FONT.HEIGHT * 2));
+	display.setCursor(fromRight(FONT.WIDTH * 2),     PROP.Temp.height - FONT.HEIGHT * 2);
 	display.print('C');
 	display.setTextSize(1);
-	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, fromBottom(FONT.HEIGHT * 2) - 8);
+	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, 0);
 	display.print('o');
 
 	// スプライト設定
 	// 横縦
-	int w = (PROP.Speed.y + 60 -offsetY)*2;
+	int w = (PROP.Speed.y + 60 - offsetY) * 2;
 	int h = w;
 	// 中心座標
 	int x0 = w >> 1;
+	int xL = (w+120)>>1;
 	int y0 = h >> 1;
 	// 弧の幅
 	int d = 10;
@@ -354,15 +362,27 @@ void setup(void) {
 	int rIN = rOUT - d;
 	// 大きさ
 	sprite.createSprite(w,h);
+	leftWinker.createSprite(w+120,h);
+	rightWinker.createSprite(w+120,h);
+
+	//leftWinker.setPivot(xL,y0);
 	// 角度
 	int angle0 = 120;
 	int angle1 = 60;
 	// 描画
 	sprite.fillArc(x0,y0,rOUT,rIN,angle0,angle1, TFT_GREEN);
+	leftWinker.fillArc(xL,y0,rOUT+15,rIN+15,132,232, TFT_YELLOW);
+	rightWinker.fillArc(xL,y0,rOUT+15,rIN+15,48,308, TFT_YELLOW);
+
 	// 出力
-	int pushX = OLED.WIDTH>>1 - x0;
-	int pushY = OLED.HEIGHT>>1 - y0;
+	int pushX = (OLED.WIDTH>>1) - (w>>1);
+	int pushXL = (OLED.WIDTH>>1) - ((w+120)>>1);
+	int pushY = (OLED.HEIGHT>>1) - (h>>1) + (offsetY>>1)-10;
 	sprite.pushSprite(pushX, pushY, 0);
+	leftWinker.pushSprite(pushXL, pushY, 0);
+	//rightWinker.pushSprite(pushXL, pushY, 0);
+	//leftWinker.pushRotateZoom(pushXL,pushY,180,1,1,0);
+
 }
 
 // ------------------------------ループ------------------------------
