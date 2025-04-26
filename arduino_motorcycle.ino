@@ -26,8 +26,8 @@ const int WINKER_DURATION  = 380;	//ms
 // フォントの寸法
 const int GEAR_SIZE   = 24;
 // 中心座標
-const int centerX = (OLED.WIDTH-1)>>1;
-const int centerY = (OLED.HEIGHT-1)>>1;
+const int centerX = OLED.WIDTH>>1;
+const int centerY = OLED.HEIGHT>>1;
 
 // --------------------変数--------------------
 unsigned long displayTime = 0; // 表示処理
@@ -380,7 +380,7 @@ void setup(void) {
 	int pushY = (OLED.HEIGHT>>1) - (h>>1) + (offsetY>>1)-10;
 	sprite.pushSprite(pushX, pushY, 0);
 	leftWinker.pushSprite(pushXL, pushY, 0);
-	//rightWinker.pushSprite(pushXL, pushY, 0);
+	rightWinker.pushSprite(centerX, centerY, 0);
 	//leftWinker.pushRotateZoom(pushXL,pushY,180,1,1,0);
 
 }
