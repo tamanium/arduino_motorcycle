@@ -365,7 +365,7 @@ void setup(void) {
 	leftWinker.createSprite(w+120,h);
 	rightWinker.createSprite(w+120,h);
 
-	//leftWinker.setPivot(xL,y0);
+	leftWinker.setPivot(xL,y0);
 	// 角度
 	int angle0 = 120;
 	int angle1 = 60;
@@ -380,8 +380,8 @@ void setup(void) {
 	int pushY = (OLED.HEIGHT>>1) - (h>>1) + (offsetY>>1)-10;
 	sprite.pushSprite(pushX, pushY, 0);
 	leftWinker.pushSprite(pushXL, pushY, 0);
-	rightWinker.pushSprite(centerX, centerY, 0);
-	//leftWinker.pushRotateZoom(pushXL,pushY,180,1,1,0);
+	//leftWinker.pushSprite(centerX, centerY, 0);
+	leftWinker.pushRotateZoom(centerX,centerY+20,180,1,1,0);
 
 }
 
