@@ -59,6 +59,20 @@ struct TriangleLocation {
 	int x1, y1, x2, y2, x3, y3;
 };
 
+struct arcInfo{
+	LGFX_Sprite sprite,
+	int x,
+	int y,
+	int r,
+	int d,
+	int angle0,
+	int angle1,
+	uint16_t color
+};
+
+arcInfo arcM;
+arcInfo arcL;
+
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
  *
@@ -99,9 +113,8 @@ struct PrintProperties{
 // ディスプレイ
 LGFX display;
 // スプライト
-LGFX_Sprite sprite(&display);
-LGFX_Sprite leftWinker(&display);
-LGFX_Sprite rightWinker(&display);
+arcM.sprite = new LGFX_Sprite(&display);
+arxL.sprite = new LGFX_Sprite(&display);
 
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
@@ -352,36 +365,35 @@ void setup(void) {
 	int w = (PROP.Speed.y + 60 - offsetY) * 2;
 	int h = w;
 	// 中心座標
-	int x0 = w >> 1;
-	int xL = (w+120)>>1;
-	int y0 = h >> 1;
+	arcM.x = w >> 1;
+	arcL.x = (w+120)>>1;
+	arcM.y = h >> 1;
+	arxL.y = arcM.y;
 	// 弧の幅
-	int d = 10;
+	arcM.d = 10;
+	arcL.d = arcM.d;
 	// 弧の内外半径
 	int rOUT = (w-1) >> 1;
-	int rIN = rOUT - d;
+	arcM.r = rOUT - arcM.d;
 	// 大きさ
-	sprite.createSprite(w,h);
-	leftWinker.createSprite(w+120,h);
-	rightWinker.createSprite(w+120,h);
-
-	leftWinker.setPivot(xL,y0);
+	arcM.sprite.createSprite(w,h);
+	arcL.sprite.createSprite(w+120,h);
+	arcL.sprite.setPivot(arcL.x,arcL.y);
 	// 角度
-	int angle0 = 120;
-	int angle1 = 60;
+	arxM.angle0 = 120;
+	arcM.angle1 = 60;
+	arcL.angle0 = 132;
+	arcL.angle1 = 232;
 	// 描画
-	sprite.fillArc(x0,y0,rOUT,rIN,angle0,angle1, TFT_GREEN);
-	leftWinker.fillArc(xL,y0,rOUT+15,rIN+15,132,232, TFT_YELLOW);
-	rightWinker.fillArc(xL,y0,rOUT+15,rIN+15,48,308, TFT_YELLOW);
+	arcM.sprite.fillArc(arcM.x,arcM.y,arxM.r+arcM.d,arcM.r,arcM.angle0,arcM.angle1,TFT_GREEN);
+	arcL.sprite.fillArc(arcL.x,arcL.y,arcL.r+arcL.d,arcL.r,arcL.angle0,arcM.angle1,TFT_YELLOW);
 
 	// 出力
-	int pushX = (OLED.WIDTH>>1) - (w>>1);
-	int pushXL = (OLED.WIDTH>>1) - ((w+120)>>1);
+	int pushX = (OLED.WIDTH >>1) - (w>>1);
 	int pushY = (OLED.HEIGHT>>1) - (h>>1) + (offsetY>>1)-10;
-	sprite.pushSprite(pushX, pushY, 0);
-	leftWinker.pushSprite(pushXL, pushY, 0);
-	//leftWinker.pushSprite(centerX, centerY, 0);
-	leftWinker.pushRotateZoom(centerX,centerY+20,180,1,1,0);
+	arcM.sprite.pushSprite(pushX, pushY, 0);
+	arcL.sprite.pushRotateZoom(centerX,centerY+20,  0,1,1,0);
+	arcL.sprite.pushRotateZoom(centerX,centerY+20,180,1,1,0);
 
 }
 
