@@ -59,19 +59,32 @@ struct TriangleLocation {
 	int x1, y1, x2, y2, x3, y3;
 };
 
-struct arcInfo{
-	LGFX_Sprite sprite,
-	int x,
-	int y,
-	int r,
-	int d,
-	int angle0,
-	int angle1,
-	uint16_t color
-};
+// ディスプレイ
+LGFX display;
 
-arcInfo arcM;
-arcInfo arcL;
+struct arcInfo{
+	LGFX_Sprite sprite;
+	int x;
+	int y;
+	int r;
+	int d;
+	int angle0;
+	int angle1;
+	uint16_t colorON;
+	uint16_t colorBG = TFT_BLUE;
+	// コンストラクタ
+	arcInfo(LGFX *display) : sprite(display){}
+	// 表示
+	void displayArc(int cX, int cY, bool onOff, int degree = 0){
+		sprite.fillScreen(TFT_BLUE);
+		// on,offで色変更
+		uint16_t color = onOff ? colorON : TFT_BLACK;
+		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
+		sprite.pushRotateZoom(cX,cY,degree,1,1,TFT_BLUE);
+	}
+};
+arcInfo arcM(&display);
+arcInfo arcW(&display);
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
@@ -110,11 +123,6 @@ struct PrintProperties{
 	PrintProperty InitMsg;  // 初期表示：「hello」
 } PROP;
 
-// ディスプレイ
-LGFX display;
-// スプライト
-arcM.sprite = new LGFX_Sprite(&display);
-arxL.sprite = new LGFX_Sprite(&display);
 
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
@@ -213,8 +221,6 @@ void setup(void) {
 	};
 	setPropWH(&PROP.Sec,"00");
 
-	// 表示文字情報
-	int dateSize = 2;
 	// 月
 	PROP.Month = {
 		PROP.Hour.x,
@@ -361,40 +367,40 @@ void setup(void) {
 	display.print('o');
 
 	// スプライト設定
+	// 塗りつぶし
+
 	// 横縦
 	int w = (PROP.Speed.y + 60 - offsetY) * 2;
 	int h = w;
 	// 中心座標
 	arcM.x = w >> 1;
-	arcL.x = (w+120)>>1;
+	arcW.x = (w+120)>>1;
 	arcM.y = h >> 1;
-	arxL.y = arcM.y;
+	arcW.y = arcM.y;
 	// 弧の幅
 	arcM.d = 10;
-	arcL.d = arcM.d;
+	arcW.d = arcM.d;
 	// 弧の内外半径
-	int rOUT = (w-1) >> 1;
+	int rOUT = w >> 1;
 	arcM.r = rOUT - arcM.d;
+	arcW.r = arcM.r + 15;
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
-	arcL.sprite.createSprite(w+120,h);
-	arcL.sprite.setPivot(arcL.x,arcL.y);
+	arcW.sprite.createSprite(w+120,h);
+	arcM.sprite.setPivot(arcM.x,arcM.y);
+	arcW.sprite.setPivot(arcW.x,arcW.y);
 	// 角度
-	arxM.angle0 = 120;
+	arcM.angle0 = 120;
 	arcM.angle1 = 60;
-	arcL.angle0 = 132;
-	arcL.angle1 = 232;
-	// 描画
-	arcM.sprite.fillArc(arcM.x,arcM.y,arxM.r+arcM.d,arcM.r,arcM.angle0,arcM.angle1,TFT_GREEN);
-	arcL.sprite.fillArc(arcL.x,arcL.y,arcL.r+arcL.d,arcL.r,arcL.angle0,arcM.angle1,TFT_YELLOW);
-
+	arcW.angle0 = 132;
+	arcW.angle1 = 232;
+	// 色
+	arcM.colorON=TFT_GREEN;
+	arcW.colorON=TFT_YELLOW;
 	// 出力
-	int pushX = (OLED.WIDTH >>1) - (w>>1);
-	int pushY = (OLED.HEIGHT>>1) - (h>>1) + (offsetY>>1)-10;
-	arcM.sprite.pushSprite(pushX, pushY, 0);
-	arcL.sprite.pushRotateZoom(centerX,centerY+20,  0,1,1,0);
-	arcL.sprite.pushRotateZoom(centerX,centerY+20,180,1,1,0);
-
+	arcM.displayArc(centerX,centerY+20,ON);
+	arcW.displayArc(centerX,centerY+20,ON);
+	arcW.displayArc(centerX,centerY+20,ON,180);
 }
 
 // ------------------------------ループ------------------------------
