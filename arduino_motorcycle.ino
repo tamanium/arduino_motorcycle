@@ -57,6 +57,7 @@ LGFX display;
 
 struct arcInfo{
 	LGFX_Sprite sprite;
+	int w;
 	int x;
 	int y;
 	int r;
@@ -72,13 +73,20 @@ struct arcInfo{
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
-		int degree = invert : 540 - angle0 - angle1 : 0;
+		//int degree = invert : 540 - angle0 - angle1 : 0;
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		sprite.pushRotateZoom(cX,cY,degree,1,1,TFT_BLUE);
+		if(!invert){
+			sprite.pushRotateZoom(cX,cY,degree,1,1,colorBG);
+		}
+		else{
+			float matrix [6]={-1.0, 0.0, w, 0.0, 1.0, 0.0};
+			sprite.pushAffine(&matrix, colorBG);
+		}
 	}
 };
 arcInfo arcM(&display);
 arcInfo arcW(&display);
+//arcInfo arcR(&display);
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
