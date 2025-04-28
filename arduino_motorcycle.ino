@@ -57,7 +57,6 @@ LGFX display;
 
 struct arcInfo{
 	LGFX_Sprite sprite;
-	int w;
 	int x;
 	int y;
 	int r;
@@ -69,24 +68,17 @@ struct arcInfo{
 	// コンストラクタ
 	arcInfo(LGFX *display) : sprite(display){}
 	// 表示
-	void displayArc(int cX, int cY, bool onOff, bool invert=false){
+	void displayArc(int cX, int cY, bool onOff){
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
-		//int degree = invert : 540 - angle0 - angle1 : 0;
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		if(!invert){
-			sprite.pushRotateZoom(cX,cY,degree,1,1,colorBG);
-		}
-		else{
-			float matrix [6]={-1.0, 0.0, w, 0.0, 1.0, 0.0};
-			sprite.pushAffine(&matrix, colorBG);
-		}
+		sprite.pushRotateZoom(cX,cY,0,1,1,colorBG);
 	}
 };
 arcInfo arcM(&display);
-arcInfo arcW(&display);
-//arcInfo arcR(&display);
+arcInfo arcL(&display);
+arcInfo arcR(&display);
 
 /**
  * i2cモジュールのアドレスから接続中モジュールの有無を取得
@@ -371,33 +363,42 @@ void setup(void) {
 	int h = w;
 	// 中心座標
 	arcM.x = w >> 1;
-	arcW.x = (w+120)>>1;
+	arcL.x = (w+120)>>1;
+	arcR.x = arcL.x;
 	arcM.y = h >> 1;
-	arcW.y = arcM.y;
+	arcL.y = arcM.y;
+	arcR.y = arcM.y;
 	// 弧の幅
 	arcM.d = 10;
-	arcW.d = arcM.d;
+	arcL.d = arcM.d;
+	arcR.d = arcM.d;
 	// 弧の内外半径
 	int rOUT = w >> 1;
 	arcM.r = rOUT - arcM.d;
-	arcW.r = arcM.r + 15;
+	arcL.r = arcM.r + 15;
+	arcR.r = arcL.r;
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
-	arcW.sprite.createSprite(w+120,h);
+	arcL.sprite.createSprite(w+120,h);
+	arcR.sprite.createSprite(w+120,h);
 	arcM.sprite.setPivot(arcM.x,arcM.y);
-	arcW.sprite.setPivot(arcW.x,arcW.y);
+	arcL.sprite.setPivot(arcL.x,arcL.y);
+	arcR.sprite.setPivot(arcR.x,arcR.y);
 	// 角度
 	arcM.angle0 = 120;
 	arcM.angle1 = 60;
-	arcW.angle0 = 132;
-	arcW.angle1 = 232;
+	arcL.angle0 = 132;
+	arcL.angle1 = 232;
+	arcR.angle0 = 90;
+	arcR.angle1 = 270;
 	// 色
 	arcM.colorON=TFT_GREEN;
-	arcW.colorON=TFT_YELLOW;
+	arcL.colorON=TFT_YELLOW;
+	arcR.colorON=TFT_YELLOW;
 	// 出力
 	arcM.displayArc(centerX,centerY+20,ON);
-	arcW.displayArc(centerX,centerY+20,ON);
-	arcW.displayArc(centerX,centerY+20,ON,true);
+	arcL.displayArc(centerX,centerY+20,ON);
+	arcR.displayArc(centerX,centerY+20,ON);
 }
 
 // ------------------------------ループ------------------------------
@@ -528,8 +529,12 @@ bool winkersDisplay(){
  * @param onOff bool型 true...点灯, false...消灯
  */
 void displayWinker(int side, bool onOff){
-	bool invert = (side == LEFT)
-	arcW.displayArc(centerX,centerY+20,onOff,invert);
+	if(side==RIGHT){
+		arcL.displayArc(centerX,centerY+20,onOff);
+	}
+	else{
+		arcR.displayArc(centerX,centerY+20,onOff);
+	}
 }
 
 /**
