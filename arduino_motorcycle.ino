@@ -68,10 +68,11 @@ struct arcInfo{
 	// コンストラクタ
 	arcInfo(LGFX *display) : sprite(display){}
 	// 表示
-	void displayArc(int cX, int cY, bool onOff, int degree = 0){
+	void displayArc(int cX, int cY, bool onOff, bool invert=false){
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
+		int degree = invert : 540 - angle0 - angle1 : 0;
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
 		sprite.pushRotateZoom(cX,cY,degree,1,1,TFT_BLUE);
 	}
@@ -388,7 +389,7 @@ void setup(void) {
 	// 出力
 	arcM.displayArc(centerX,centerY+20,ON);
 	arcW.displayArc(centerX,centerY+20,ON);
-	arcW.displayArc(centerX,centerY+20,ON,180);
+	arcW.displayArc(centerX,centerY+20,ON,true);
 }
 
 // ------------------------------ループ------------------------------
@@ -519,8 +520,8 @@ bool winkersDisplay(){
  * @param onOff bool型 true...点灯, false...消灯
  */
 void displayWinker(int side, bool onOff){
-	int degree = (side == LEFT) ? 0:180;
-	arcW.displayArc(centerX,centerY+20,onOff,degree);
+	bool invert = (side == LEFT)
+	arcW.displayArc(centerX,centerY+20,onOff,invert);
 }
 
 /**
