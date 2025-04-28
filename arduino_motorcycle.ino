@@ -37,8 +37,6 @@ unsigned long timeTime = 0;    // 時刻測定
 unsigned long bzzTime = 0;     // ブザー
 unsigned long debugWinkerTime  = 0;	//疑似ウインカー
 
-// 保持用char配列
-//uint16_t timeItems[4] = {0, 0, 0, 0};
 // シフトポジション配列
 int gears[] = {PIN.IOEXP.POS.nwt,
 				PIN.IOEXP.POS.low,
@@ -53,11 +51,6 @@ byte brightLevel[] = {0x20,
                       0xA0,
                       0xC0,
                       0xE0};
-
-// 三角形描画用座標
-struct TriangleLocation {
-	int x1, y1, x2, y2, x3, y3;
-};
 
 // ディスプレイ
 LGFX display;
@@ -104,11 +97,6 @@ int existsModule(byte adrs, Module* arr, int size){
 }
 
 // --------------------インスタンス--------------------
-// 表示座標
-TriangleLocation triCoords[2] = {
-	{50, 34, 50, 160+14, 0, 80+24},
-	{fromRight(50), 34, fromRight(50), 160+14, fromRight(0), 80+24}
-};
 // 表示設定まとめ
 struct PrintProperties{
 	PrintProperty Month;    // 月
@@ -122,7 +110,6 @@ struct PrintProperties{
 	PrintProperty SpUnit;   // 速度単位
 	PrintProperty InitMsg;  // 初期表示：「hello」
 } PROP;
-
 
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
@@ -193,7 +180,6 @@ void setup(void) {
 	};
 
 	int offsetY = 60;
-	int timeSize = 3;
 	// 時間
 	PROP.Hour = {
 		0,
@@ -224,7 +210,7 @@ void setup(void) {
 	// 月
 	PROP.Month = {
 		PROP.Hour.x,
-		PROP.Hour.y + PROP.Hour.height + 8,
+		PROP.Hour.y + PROP.Hour.height + 4,
 		PROP.Hour.size,
 		PROP.Hour.font
 	};
@@ -241,12 +227,13 @@ void setup(void) {
 
 	// 温度
 	PROP.Temp = {
-		fromRight(PROP.Hour.fontSize.WIDTH * timeSize * 5), 
+		0, 
 		0,
-		timeSize
+		PROP.Hour.size,
+		PROP.Hour.font
 	};
-	setPropWH(&PROP.Temp);
-	PROP.Temp.x=fromRight(PROP.Temp.fontSize.WIDTH * 5);
+	setPropWH(&PROP.Temp,"00.0c");
+ 	PROP.Temp.x=fromRight(PROP.Temp.width);
 
 	// ギア
 	PROP.Gear = {
@@ -357,15 +344,16 @@ void setup(void) {
 	display.print("00/00");
 	// 温度の値
 	setDisplay(&PROP.Temp);
-	display.print("00.0");
+	display.print("00.0c");
 	// 温度の単位
+	/*
 	display.setTextSize(2);
 	display.setCursor(fromRight(FONT.WIDTH * 2),     PROP.Temp.height - FONT.HEIGHT * 2);
 	display.print('C');
 	display.setTextSize(1);
 	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, 0);
 	display.print('o');
-
+	*/
 	// スプライト設定
 	// 塗りつぶし
 
@@ -516,27 +504,23 @@ bool winkersDisplay(){
 		// バッファ上書き
 		buffer[side] = winkers.getStatus(side);
 		// ディスプレイ表示処理
-		displayTriangle(triCoords[side], buffer[side]);
+		displayWinker(side,buffer[side]);
+		//displayTriangle(triCoords[side], buffer[side]);
 		// フラグ立てる
 		isSwitched = true;
 	}
 	return isSwitched;
 	return true;
 }
-/**
- * 三角形表示処理
- * @param coord TriangleLocation型 
- * @param status bool型 true...点灯, false...消灯
- */
-void displayTriangle(TriangleLocation coord, bool status){
-	// 文字色宣言（ONで黄、OFFで黒、デバッグ時は逆)
-	uint16_t color = !status ? TFT_YELLOW : TFT_BLACK;
 
-	// 図形表示（BLACKの場合は削除）
-	display.fillTriangle(coord.x1, coord.y1,
-					 coord.x2, coord.y2,
-					 coord.x3, coord.y3,
-					 color);
+/**
+ * ウインカー表示処理
+ * @param onOff bool型 true...点灯, false...消灯
+ * @param onOff bool型 true...点灯, false...消灯
+ */
+void displayWinker(int side, bool onOff){
+	int degree = (side == LEFT) ? 0:180;
+	arcW.displayArc(centerX,centerY+20,onOff,degree);
 }
 
 /**
