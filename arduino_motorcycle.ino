@@ -73,7 +73,7 @@ struct arcInfo{
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		sprite.pushRotateZoom(cX,cY,0,1,1,colorBG);
+		sprite.pushRotateZoom(cX,cY,0,1,1);
 	}
 };
 arcInfo arcM(&display);
@@ -279,7 +279,7 @@ void setup(void) {
 	setDisplay(&PROP.InitMsg);
 	display.println("Hello");
 	display.println("");
-	delay(2000);
+	delay(500);
 
 	// ブザー連動LED設定
 	pixels.begin();
@@ -306,7 +306,7 @@ void setup(void) {
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("done");
-	delay(3000);
+	delay(500);
 	
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
@@ -361,13 +361,6 @@ void setup(void) {
 	// 横縦
 	int w = (PROP.Speed.y + 60 - offsetY) * 2;
 	int h = w;
-	// 中心座標
-	arcM.x = w >> 1;
-	arcL.x = (w+120)>>1;
-	arcR.x = arcL.x;
-	arcM.y = h >> 1;
-	arcL.y = arcM.y;
-	arcR.y = arcM.y;
 	// 弧の幅
 	arcM.d = 10;
 	arcL.d = arcM.d;
@@ -376,28 +369,35 @@ void setup(void) {
 	int rOUT = w >> 1;
 	arcM.r = rOUT - arcM.d;
 	arcL.r = arcM.r + 15;
-	arcR.r = arcL.r;
+	arcR.r = arcM.r + 15;
+	// 中心座標
+	arcM.x = w >> 1;
+	arcL.x = (w+60)>>1;
+	arcR.x = (w+60)>>1;
+	arcM.y = h >> 1;
+	arcL.y = arcM.y;
+	arcR.y = arcM.y;
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
-	arcL.sprite.createSprite(w+120,h);
-	arcR.sprite.createSprite(w+120,h);
+	//arcL.sprite.createSprite(w+120,h);
+	arcR.sprite.createSprite(w+60,h);
 	arcM.sprite.setPivot(arcM.x,arcM.y);
 	arcL.sprite.setPivot(arcL.x,arcL.y);
 	arcR.sprite.setPivot(arcR.x,arcR.y);
 	// 角度
 	arcM.angle0 = 120;
 	arcM.angle1 = 60;
-	arcL.angle0 = 132;
-	arcL.angle1 = 232;
-	arcR.angle0 = 90;
-	arcR.angle1 = 270;
+	arcL.angle0 = 90 +42;
+	arcL.angle1 = 270-38;
+	arcR.angle0 = 270+38;
+	arcR.angle1 = 90 -42;
 	// 色
 	arcM.colorON=TFT_GREEN;
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
 	// 出力
 	arcM.displayArc(centerX,centerY+20,ON);
-	arcL.displayArc(centerX,centerY+20,ON);
+	//arcL.displayArc(centerX,centerY+20,ON);
 	arcR.displayArc(centerX,centerY+20,ON);
 }
 
@@ -529,12 +529,12 @@ bool winkersDisplay(){
  * @param onOff bool型 true...点灯, false...消灯
  */
 void displayWinker(int side, bool onOff){
-	if(side==RIGHT){
-		arcL.displayArc(centerX,centerY+20,onOff);
-	}
-	else{
+	//if(side==RIGHT){
+	//	arcL.displayArc(centerX,centerY+20,onOff);
+	//}
+	//else{
 		arcR.displayArc(centerX,centerY+20,onOff);
-	}
+	//}
 }
 
 /**
