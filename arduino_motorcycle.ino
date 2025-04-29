@@ -5,6 +5,7 @@
 #include <RTClib.h>                     // 時計機能
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
 #include <Temperature_LM75_Derived.h>   // 温度計
+#include <Adafruit_AHTX0.h>             // 温湿度計
 #include <Adafruit_ADS1X15.h>           // ADコンバータ
 #include <Adafruit_NeoPixel.h>          // オンボLED
 
@@ -129,7 +130,8 @@ Adafruit_PCF8574 pcf;
 // ADコンバータ
 Adafruit_ADS1X15 ads;
 // 温度計
-Generic_LM75 lm75(&Wire1, MODULES.therm.address);
+Generic_LM75 lm75(&Wire1, MODULES.thrm1.address);
+Adafruit_AHTX0 aht;
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
@@ -291,6 +293,7 @@ void setup(void) {
 	winkers.begin();                          // ウインカー
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
 	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
+	aht.begin(&Wire1,0,MODULES.thrm0.address);// 温度計
 	digitalWrite(PIN.buzzer, LOW);
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
@@ -314,6 +317,8 @@ void setup(void) {
 	// 温度の値
 	setDisplay(&PROP.Temp);
 	display.print("00.0 c");
+	display.fillCircle(306,6,3,TFT_WHITE);
+	display.fillCircle(306,6,1,TFT_BLACK);
 
 	// スプライト設定
 	// 横縦
@@ -343,8 +348,8 @@ void setup(void) {
 	arcM.angle0 = 120;
 	arcM.angle1 = 60;
 	arcL.angle0 = 90 +45;
-	arcL.angle1 = 270-38;
-	arcR.angle0 = 270+38;
+	arcL.angle1 = 270-37;
+	arcR.angle0 = 270+37;
 	arcR.angle1 = 90 -45;
 	// 色
 	arcM.colorON=TFT_GREEN;
@@ -354,6 +359,8 @@ void setup(void) {
 	arcL.displayArc(centerX,centerY+10,ON);
 	arcR.displayArc(centerX,centerY+10,ON);
 	arcM.displayArc(centerX,centerY+10,ON);
+	//display.drawFastHLine(0,centerY+rOUT,320,TFT_RED);
+	//display.drawFastHLine(0,centerY-rOUT+8,320,TFT_RED);
 }
 
 // ------------------------------ループ------------------------------
@@ -381,6 +388,12 @@ void loop() {
 	}
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
+		sensors_event_t humidity, temp;
+		aht.getEvent(&humidity,&temp);
+		Serial.print("Temperature:");
+		Serial.println(temp.temperature);
+		Serial.print("Humidity:");
+		Serial.println(humidity.relative_humidity);
 		tempDisplay();
 		uint16_t raw = ads.readADC_SingleEnded(3);
 		String voltage = String((raw * 0.0001875f), 2);
@@ -436,7 +449,8 @@ void scanModules(){
 	// モジュールの配列
 	Module moduleArr[] = {
 		MODULES.ioExp,
-		MODULES.therm,
+		MODULES.thrm0,
+		MODULES.thrm1,
 		MODULES.adCnv,
 		MODULES.rtcMm,
 		MODULES.rtcIC
@@ -447,7 +461,7 @@ void scanModules(){
 	display.println("Hello");
 	display.println("");
 	delay(500);
-	
+	// スキャン処理
 	display.println("I2C Module Scanning...");
 	for(byte adrs=1; adrs<0x7F; adrs++){
 		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
@@ -467,7 +481,7 @@ void scanModules(){
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("done");
-	delay(1000);
+	delay(2000);
 }
 
 /**
