@@ -372,24 +372,24 @@ void setup(void) {
 	int h = w;
 	// 弧の幅
 	arcM.d = 10;
-	arcL.d = arcM.d;
-	arcR.d = arcM.d;
+	arcL.d = 10;
+	arcR.d = 10;
 	// 弧の内外半径
-	int rOUT = w >> 1;
+	int rOUT = (w-1)>>1;
 	arcM.r = rOUT - arcM.d;
-	arcL.r = arcM.r + 15;
-	arcR.r = arcM.r + 15;
-	// 中心座標
-	arcM.x = (w-1)>>1;
-	arcL.x = (w+60)>>1;
-	arcR.x = (w+60)>>1;
-	arcM.y = h >> 1;
+	arcL.r = rOUT - arcL.d + 15;
+	arcR.r = rOUT - arcR.d + 15;
+	// 弧の中心座標
+	arcM.x = w>>1;
+	arcM.y = h>>1;
+	arcL.x = 0;
 	arcL.y = arcM.y;
+	arcR.x = w>>1;
 	arcR.y = arcM.y;
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
-	//arcL.sprite.createSprite(w+120,h);
-	arcR.sprite.createSprite(w+60,h);
+	arcL.sprite.createSprite(arcL.r+arcL.d+1,h);
+	arcR.sprite.createSprite(arcR.r+arcR.d+1,h);
 	arcM.sprite.setPivot(arcM.x,arcM.y);
 	//arcL.sprite.setPivot(arcL.x,arcL.y);
 	//arcR.sprite.setPivot(arcR.x,arcR.y);
