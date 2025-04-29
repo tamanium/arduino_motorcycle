@@ -380,7 +380,7 @@ void setup(void) {
 	arcL.r = arcM.r + 15;
 	arcR.r = arcM.r + 15;
 	// 中心座標
-	arcM.x = w >> 1;
+	arcM.x = (w-1)>>1;
 	arcL.x = (w+60)>>1;
 	arcR.x = (w+60)>>1;
 	arcM.y = h >> 1;
