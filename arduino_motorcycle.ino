@@ -65,24 +65,23 @@ struct arcInfo{
 	int angle1;         // 角度1
 	uint16_t colorON;   // 色
 	uint16_t colorBG = TFT_BLUE; // 透過色
-	// コンストラクタ
+	/**
+	 *  コンストラクタ
+	 */
 	arcInfo(LGFX *display) : sprite(display){}
-	// 表示
-	void displayArcCenter(int stdX, int stdY, bool onOff){
-		sprite.fillScreen(TFT_BLUE);
-		// on,offで色変更
-		uint16_t color = onOff ? colorON : TFT_BLACK;
-		sprite.setPivot(x,y);
-		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		sprite.pushRotateZoom(stdX,stdY,0,1,1);
-	}
+	/**
+	 * 表示
+	 */
 	void displayArc(int stdX, int stdY, bool onOff){
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
-		sprite.setPivot(0,0);
+		// 弧の中心軸
+		sprite.setPivot(x,y);
+		// 弧描画
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		sprite.pushRotateZoom(stdX,stdY,0,1,1);
+		// 出力
+		sprite.pushRotateZoom(stdX,stdY,0,1,1,colorBG);
 	}
 };
 arcInfo arcM(&display);
@@ -180,16 +179,7 @@ void setup(void) {
 	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
 
-	// モジュールの配列を作成
-	Module moduleArr[] = {
-		MODULES.ioExp,
-		MODULES.therm,
-		MODULES.adCnv,
-		MODULES.rtcMm,
-		MODULES.rtcIC
-	};
-
-	int offsetY = 60;
+	int offsetY = 50;
 	// 時間
 	PROP.Hour = {
 		0,
@@ -242,7 +232,7 @@ void setup(void) {
 		PROP.Hour.size,
 		PROP.Hour.font
 	};
-	setPropWH(&PROP.Temp,"00.0c");
+	setPropWH(&PROP.Temp,"00.0 c");
  	PROP.Temp.x=fromRight(PROP.Temp.width);
 
 	// ギア
@@ -303,16 +293,9 @@ void setup(void) {
 	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
 	digitalWrite(PIN.buzzer, LOW);
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
-	//pinMode(PIN.relay, OUTPUT);// 疑似ウインカーリレー
-	
+
 	// 画面リセット
 	display.fillScreen(TFT_BLACK);
-
-	// ギアポジション表示開始その1
-	//tft.setCursor(184, 8*8);
-	//tft.setTextSize(3);
-	//tft.print("gear");
-
 	// ギアポジション表示開始
 	setDisplay(&PROP.Gear);
 	display.print('-');
@@ -330,19 +313,9 @@ void setup(void) {
 	display.print("00/00");
 	// 温度の値
 	setDisplay(&PROP.Temp);
-	display.print("00.0c");
-	// 温度の単位
-	/*
-	display.setTextSize(2);
-	display.setCursor(fromRight(FONT.WIDTH * 2),     PROP.Temp.height - FONT.HEIGHT * 2);
-	display.print('C');
-	display.setTextSize(1);
-	display.setCursor(fromRight(FONT.WIDTH * 2) - 3, 0);
-	display.print('o');
-	*/
-	// スプライト設定
-	// 塗りつぶし
+	display.print("00.0 c");
 
+	// スプライト設定
 	// 横縦
 	int w = (PROP.Speed.y + 60 - offsetY) * 2;
 	int h = w;
@@ -353,37 +326,34 @@ void setup(void) {
 	// 弧の内外半径
 	int rOUT = (w-1)>>1;
 	arcM.r = rOUT - arcM.d;
-	arcL.r = rOUT - arcL.d + 15;
-	arcR.r = rOUT - arcR.d + 15;
+	arcL.r = rOUT - arcL.d + 20;
+	arcR.r = rOUT - arcR.d + 20;
 	// 弧の中心座標
 	arcM.x = w>>1;
 	arcM.y = h>>1;
-	arcL.x = 0;
+	arcL.x = arcL.r+arcL.d;
 	arcL.y = arcM.y;
-	arcR.x = w>>1;
+	arcR.x = 0;
 	arcR.y = arcM.y;
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
 	arcL.sprite.createSprite(arcL.r+arcL.d+1,h);
 	arcR.sprite.createSprite(arcR.r+arcR.d+1,h);
-	arcM.sprite.setPivot(arcM.x,arcM.y);
-	//arcL.sprite.setPivot(arcL.x,arcL.y);
-	//arcR.sprite.setPivot(arcR.x,arcR.y);
 	// 角度
 	arcM.angle0 = 120;
 	arcM.angle1 = 60;
-	arcL.angle0 = 90 +42;
+	arcL.angle0 = 90 +45;
 	arcL.angle1 = 270-38;
 	arcR.angle0 = 270+38;
-	arcR.angle1 = 90 -42;
+	arcR.angle1 = 90 -45;
 	// 色
 	arcM.colorON=TFT_GREEN;
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
 	// 出力
-	arcM.displayArcCenter(centerX,centerY+20,ON);
-	//arcL.displayArc(centerX,centerY+20,ON);
-	arcR.displayArc(0,centerY+20,ON);
+	arcL.displayArc(centerX,centerY+10,ON);
+	arcR.displayArc(centerX,centerY+10,ON);
+	arcM.displayArc(centerX,centerY+10,ON);
 }
 
 // ------------------------------ループ------------------------------
@@ -458,7 +428,20 @@ void loop() {
 // -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
+
+/**
+ * モジュール走査
+ */
 void scanModules(){
+	// モジュールの配列
+	Module moduleArr[] = {
+		MODULES.ioExp,
+		MODULES.therm,
+		MODULES.adCnv,
+		MODULES.rtcMm,
+		MODULES.rtcIC
+	};
+
 	// 初期表示メッセージ
 	setDisplay(&PROP.InitMsg);
 	display.println("Hello");
@@ -486,6 +469,7 @@ void scanModules(){
 	display.println("done");
 	delay(1000);
 }
+
 /**
  * ギアポジションの表示処理
  * @param dispChar char型 表示文字列
@@ -541,12 +525,12 @@ bool winkersDisplay(){
  * @param onOff bool型 true...点灯, false...消灯
  */
 void displayWinker(int side, bool onOff){
-	//if(side==RIGHT){
-	//	arcL.displayArc(centerX,centerY+20,onOff);
-	//}
-	//else{
-		arcR.displayArc(centerX,centerY+20,onOff);
-	//}
+	if(side==RIGHT){
+		arcL.displayArc(centerX,centerY+10,onOff);
+	}
+	else{
+		arcR.displayArc(centerX,centerY+10,onOff);
+	}
 }
 
 /**
