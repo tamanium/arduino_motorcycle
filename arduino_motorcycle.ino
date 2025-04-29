@@ -284,38 +284,14 @@ void setup(void) {
 	display.init();
 	// 明るさ
 	display.setBrightness(brightLevel[0]);
-	// 初期表示メッセージ
-	setDisplay(&PROP.InitMsg);
-	display.println("Hello");
-	display.println("");
-	delay(500);
 
 	// ブザー連動LED設定
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1,1,0));
 	pixels.show();
-	
-	// i2cモジュールの検索
-	display.println("I2C Module Scanning...");
-	for(byte adrs=1; adrs<0x7F; adrs++){
-		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
-		if(moduleIndex == -1){
-			continue;
-		}
-		Wire1.beginTransmission(adrs);
-		byte error = Wire1.endTransmission();
-		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		String nameColon = moduleArr[moduleIndex].name + ":";
-		display.print(nameColon);
-		uint16_t color = (error==0) ? TFT_GREEN : TFT_RED;
-		display.setTextColor(color, TFT_BLACK);
-		String msg = (error==0) ? "OK" : "NG";
-		display.println(msg);
-	}
-	display.setTextColor(TFT_WHITE);
-	display.println("");
-	display.println("done");
-	delay(500);
+
+	// I2C通信スキャン
+	scanModules();
 	
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
@@ -482,7 +458,34 @@ void loop() {
 // -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
-
+void scanModules(){
+	// 初期表示メッセージ
+	setDisplay(&PROP.InitMsg);
+	display.println("Hello");
+	display.println("");
+	delay(500);
+	
+	display.println("I2C Module Scanning...");
+	for(byte adrs=1; adrs<0x7F; adrs++){
+		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
+		if(moduleIndex == -1){
+			continue;
+		}
+		Wire1.beginTransmission(adrs);
+		byte error = Wire1.endTransmission();
+		display.setTextColor(TFT_WHITE, TFT_BLACK);
+		String nameColon = moduleArr[moduleIndex].name + ":";
+		display.print(nameColon);
+		uint16_t color = (error==0) ? TFT_GREEN : TFT_RED;
+		display.setTextColor(color, TFT_BLACK);
+		String msg = (error==0) ? "OK" : "NG";
+		display.println(msg);
+	}
+	display.setTextColor(TFT_WHITE);
+	display.println("");
+	display.println("done");
+	delay(1000);
+}
 /**
  * ギアポジションの表示処理
  * @param dispChar char型 表示文字列
