@@ -56,24 +56,33 @@ byte brightLevel[] = {0x20,
 LGFX display;
 
 struct arcInfo{
-	LGFX_Sprite sprite;
-	int x;
-	int y;
-	int r;
-	int d;
-	int angle0;
-	int angle1;
-	uint16_t colorON;
-	uint16_t colorBG = TFT_BLUE;
+	LGFX_Sprite sprite; // スプライト
+	int x;              // 円弧中心x座標
+	int y;              // 円弧中心y座標
+	int r;              // 内径
+	int d;              // 厚さ
+	int angle0;         // 角度0
+	int angle1;         // 角度1
+	uint16_t colorON;   // 色
+	uint16_t colorBG = TFT_BLUE; // 透過色
 	// コンストラクタ
 	arcInfo(LGFX *display) : sprite(display){}
 	// 表示
-	void displayArc(int cX, int cY, bool onOff){
+	void displayArcCenter(int stdX, int stdY, bool onOff){
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
+		sprite.setPivot(x,y);
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		sprite.pushRotateZoom(cX,cY,0,1,1);
+		sprite.pushRotateZoom(stdX,stdY,0,1,1);
+	}
+	void displayArc(int stdX, int stdY, bool onOff){
+		sprite.fillScreen(TFT_BLUE);
+		// on,offで色変更
+		uint16_t color = onOff ? colorON : TFT_BLACK;
+		sprite.setPivot(0,0);
+		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
+		sprite.pushRotateZoom(stdX,stdY,0,1,1);
 	}
 };
 arcInfo arcM(&display);
@@ -382,8 +391,8 @@ void setup(void) {
 	//arcL.sprite.createSprite(w+120,h);
 	arcR.sprite.createSprite(w+60,h);
 	arcM.sprite.setPivot(arcM.x,arcM.y);
-	arcL.sprite.setPivot(arcL.x,arcL.y);
-	arcR.sprite.setPivot(arcR.x,arcR.y);
+	//arcL.sprite.setPivot(arcL.x,arcL.y);
+	//arcR.sprite.setPivot(arcR.x,arcR.y);
 	// 角度
 	arcM.angle0 = 120;
 	arcM.angle1 = 60;
@@ -396,9 +405,9 @@ void setup(void) {
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
 	// 出力
-	arcM.displayArc(centerX,centerY+20,ON);
+	arcM.displayArcCenter(centerX,centerY+20,ON);
 	//arcL.displayArc(centerX,centerY+20,ON);
-	arcR.displayArc(centerX,centerY+20,ON);
+	arcR.displayArc(0,centerY+20,ON);
 }
 
 // ------------------------------ループ------------------------------
