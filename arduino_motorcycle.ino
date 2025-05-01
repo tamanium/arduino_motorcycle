@@ -491,13 +491,20 @@ void scanModules(){
  */
 void gearDisplay(char newGear){
 	// バッファ文字列
-	static char beforeGear = '-';
+	static char beforeGear = '0';
 	// バッファと引数が同じ場合スキップ
 	if(beforeGear == newGear){
 		return;
 	}
 	// ディスプレイ設定
 	setDisplay(&PROP.Gear);
+	// ギア抜けorペダル踏み込み中の場合
+	if(newGear == '0'){
+		// グレーで前回ギアを表示
+		display.setTextColor(TFT_DARKGREY);//TFT_DARKGREY, TFT_LIGHTGREY, TFT_SILVER
+		display.print(beforeGear);
+		return;
+	}
 	// ギア表示更新
 	display.print(newGear);
 	// バッファ文字列を上書き

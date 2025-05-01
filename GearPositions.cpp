@@ -39,7 +39,7 @@ char GearPositions::getGear(){
 void GearPositions::updateStatus(){
 	// カウンタ・直前ギア
 	static int counter = 0;
-	static char bufferGear = '-';
+	static char bufferGear = '0';
 	// 現在のギア表示値を宣言
 	char newGear = '-';
 	// ギア配列でループし、現在のギア表示値を取得
