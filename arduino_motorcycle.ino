@@ -64,6 +64,8 @@ struct arcInfo{
 	int d;              // 厚さ
 	int angle0;         // 角度0
 	int angle1;         // 角度1
+	int angle2;         // 角度2
+	int angle3;         // 角度3
 	uint16_t colorON;   // 色
 	uint16_t colorBG = TFT_BLUE; // 透過色
 	/**
@@ -73,7 +75,7 @@ struct arcInfo{
 	/**
 	 * 表示
 	 */
-	void displayArc(int stdX, int stdY, bool onOff){
+	void displayArc(int stdX, int stdY, bool onOff, bool isWinker = false){
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
@@ -81,6 +83,9 @@ struct arcInfo{
 		sprite.setPivot(x,y);
 		// 弧描画
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
+		if(isWinker){
+			sprite.fillArc(x,y,r+d+20,r+20,angle2,angle3,color);
+		}
 		// 出力
 		sprite.pushRotateZoom(stdX,stdY,0,1,1,colorBG);
 	}
@@ -182,18 +187,37 @@ void setup(void) {
 	Wire1.begin();// いらないけど明示しておく
 
 	int offsetY = 50;
-	// 時間
-	PROP.Hour = {
+	
+	// 月
+	PROP.Month = {
 		0,
 		0,
 		1,
 		&fonts::Font4
 	};
+	setPropWH(&PROP.Month,"00/");
+
+	// 日
+	PROP.Day = {
+		PROP.Month.x + PROP.Month.width,
+		PROP.Month.y,
+		PROP.Month.size,
+		PROP.Month.font
+	};
+	setPropWH(&PROP.Day, "00  ");
+
+	// 時間
+	PROP.Hour = {
+		PROP.Day.x + PROP.Day.width,
+		PROP.Month.y,
+		PROP.Month.size,
+		PROP.Month.font
+	};
 	setPropWH(&PROP.Hour,"00:");
 
 	// 分
 	PROP.Min = {
-		PROP.Hour.width,
+		PROP.Hour.x + PROP.Hour.width,
 		PROP.Hour.y,
 		PROP.Hour.size,
 		PROP.Hour.font
@@ -209,23 +233,6 @@ void setup(void) {
 	};
 	setPropWH(&PROP.Sec,"00");
 
-	// 月
-	PROP.Month = {
-		PROP.Hour.x,
-		PROP.Hour.y + PROP.Hour.height + 4,
-		PROP.Hour.size,
-		PROP.Hour.font
-	};
-	setPropWH(&PROP.Month,"00/");
-
-	// 日
-	PROP.Day = {
-		PROP.Month.x + PROP.Month.width,
-		PROP.Month.y,
-		PROP.Month.size,
-		PROP.Month.font
-	};
-	setPropWH(&PROP.Day, "00");
 
 	// 温度
 	PROP.Temp = {
@@ -301,7 +308,7 @@ void setup(void) {
 	display.fillScreen(TFT_BLACK);
 	// ギアポジション表示開始
 	setDisplay(&PROP.Gear);
-	display.print('-');
+	display.print('0');
 	// 速度
 	setDisplay(&PROP.Speed);
 	display.print("00");
@@ -336,29 +343,34 @@ void setup(void) {
 	// 弧の中心座標
 	arcM.x = w>>1;
 	arcM.y = h>>1;
-	arcL.x = arcL.r+arcL.d;
+	arcL.x = arcL.r+arcL.d+40+3*arcL.d;
 	arcL.y = arcM.y;
 	arcR.x = 0;
 	arcR.y = arcM.y;
-	// 大きさ
-	arcM.sprite.createSprite(w,h);
-	arcL.sprite.createSprite(arcL.r+arcL.d+1,h);
-	arcR.sprite.createSprite(arcR.r+arcR.d+1,h);
 	// 角度
 	arcM.angle0 = 120;
 	arcM.angle1 = 60;
 	arcL.angle0 = 90 +45;
 	arcL.angle1 = 270-37;
+	arcL.angle2 = arcL.angle0+9;
+	arcL.angle3 = arcL.angle1-10;
 	arcR.angle0 = 270+37;
 	arcR.angle1 = 90 -45;
+	arcR.angle2 = arcR.angle0+10;
+	arcR.angle3 = arcR.angle1-9;
+	// 大きさ
+	arcM.sprite.createSprite(w,h);
+	arcL.sprite.createSprite(arcL.r+40+3*arcL.d+1,h);
+	arcR.sprite.createSprite(arcR.r+40+3*arcR.d+1,h);
 	// 色
 	arcM.colorON=TFT_GREEN;
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
 	// 出力
-	arcL.displayArc(centerX,centerY+10,ON);
-	arcR.displayArc(centerX,centerY+10,ON);
+	arcL.displayArc(centerX,centerY+10,ON,true);
+	arcR.displayArc(centerX,centerY+10,ON,true);
 	arcM.displayArc(centerX,centerY+10,ON);
+	// 補助線
 	//display.drawFastHLine(0,centerY+rOUT,320,TFT_RED);
 	//display.drawFastHLine(0,centerY-rOUT+8,320,TFT_RED);
 }
@@ -547,10 +559,10 @@ bool winkersDisplay(){
  */
 void displayWinker(int side, bool onOff){
 	if(side==RIGHT){
-		arcL.displayArc(centerX,centerY+10,onOff);
+		arcL.displayArc(centerX,centerY+10,onOff,true);
 	}
 	else{
-		arcR.displayArc(centerX,centerY+10,onOff);
+		arcR.displayArc(centerX,centerY+10,onOff,true);
 	}
 }
 
