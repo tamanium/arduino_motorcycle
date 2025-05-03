@@ -78,16 +78,18 @@
 	} PIN;
 	
 	// 表示設定
-	struct PrintProperty {
+	struct Prop {
 		int x = 0;                  // x座標
 		int y = 0;                  // y座標
 		int size =1;                // フォント倍率
 		const lgfx::v1::IFont* font = NULL; // フォント
 		int width = 6;
 		int height = 8;
-		Font fontSize = {6,8};      // フォントの横縦
-		   
+		//Font fontSize = {6,8};      // フォントの横縦
+		//Prop(){}
+		//Prop(int x, int y, int size, lgfx::v1::IFont* font) : x(x), y(y), size(size), font(font){} 
 	};
+	
 	/**
 	 * x座標出力（画面右端原点、左向き）
 	 */

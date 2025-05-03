@@ -113,18 +113,18 @@ int existsModule(byte adrs, Module* arr, int size){
 
 // --------------------インスタンス--------------------
 // 表示設定まとめ
-struct PrintProperties{
-	PrintProperty Month;    // 月
-	PrintProperty Day;      // 日
-	PrintProperty Hour;     // 時
-	PrintProperty Min;      // 分
-	PrintProperty Sec;      // 秒
-	PrintProperty Temp;     // 温度
-	PrintProperty Gear;     // ギア
-	PrintProperty Speed;    // 速度
-	PrintProperty SpUnit;   // 速度単位
-	PrintProperty InitMsg;  // 初期表示：「hello」
-} PROP;
+struct Props{
+	Prop Month;    // 月
+	Prop Day;      // 日
+	Prop Hour;     // 時
+	Prop Min;      // 分
+	Prop Sec;      // 秒
+	Prop Temp;     // 温度
+	Prop Gear;     // ギア
+	Prop Speed;    // 速度
+	Prop SpUnit;   // 速度単位
+	Prop InitMsg;  // 初期表示：「hello」
+} props;
 
 // オンボLED
 Adafruit_NeoPixel pixels(1, PIN.LED);
@@ -150,7 +150,7 @@ Switch pushSw(PIN.IOEXP.sw, &pcf);
  * @param p 表示設定
  * @param isTrans 透過させるか
  */
-void setDisplay(PrintProperty* p, bool isTrans=false){
+void setDisplay(Prop* p, bool isTrans=false){
 	display.setCursor(p->x,p->y);   //描画位置
 	display.setTextSize(p->size);   //テキスト倍率
 	if(isTrans){
@@ -168,13 +168,13 @@ void setDisplay(PrintProperty* p, bool isTrans=false){
  * @param p 表示設定
  * @param size フォント倍率
  */
-void setPropWH(PrintProperty* p, String str = "0"){
+void setPropWH(Prop* p, String str = "0"){
 	display.setFont(p->font);
 	display.setTextSize(p->size);
 	p->width = display.textWidth(str);
 	p->height = display.fontHeight();
-	p->fontSize.WIDTH = display.textWidth(str);
-	p->fontSize.HEIGHT = display.fontHeight();
+	//p->fontSize.WIDTH = display.textWidth(str);
+	//p->fontSize.HEIGHT = display.fontHeight();
 }
 
 // ------------------------------初期設定------------------------------
@@ -189,93 +189,93 @@ void setup(void) {
 	int offsetY = 50;
 	
 	// 月
-	PROP.Month = {
+	props.Month = {
 		0,
 		0,
 		1,
 		&fonts::Font4
 	};
-	setPropWH(&PROP.Month,"00/");
+	setPropWH(&props.Month,"00/");
 
 	// 日
-	PROP.Day = {
-		PROP.Month.x + PROP.Month.width,
-		PROP.Month.y,
-		PROP.Month.size,
-		PROP.Month.font
+	props.Day = {
+		props.Month.x + props.Month.width,
+		props.Month.y,
+		props.Month.size,
+		props.Month.font
 	};
-	setPropWH(&PROP.Day, "00  ");
+	setPropWH(&props.Day, "00  ");
 
 	// 時間
-	PROP.Hour = {
-		PROP.Day.x + PROP.Day.width,
-		PROP.Month.y,
-		PROP.Month.size,
-		PROP.Month.font
+	props.Hour = {
+		props.Day.x + props.Day.width,
+		props.Month.y,
+		props.Month.size,
+		props.Month.font
 	};
-	setPropWH(&PROP.Hour,"00:");
+	setPropWH(&props.Hour,"00:");
 
 	// 分
-	PROP.Min = {
-		PROP.Hour.x + PROP.Hour.width,
-		PROP.Hour.y,
-		PROP.Hour.size,
-		PROP.Hour.font
+	props.Min = {
+		props.Hour.x + props.Hour.width,
+		props.Hour.y,
+		props.Hour.size,
+		props.Hour.font
 	};
-	setPropWH(&PROP.Min,"00:");
+	setPropWH(&props.Min,"00:");
 
 	// 秒
-	PROP.Sec = {
-		PROP.Min.x + PROP.Min.width,
-		PROP.Hour.y,
-		PROP.Hour.size,
-		PROP.Hour.font
+	props.Sec = {
+		props.Min.x + props.Min.width,
+		props.Hour.y,
+		props.Hour.size,
+		props.Hour.font
 	};
-	setPropWH(&PROP.Sec,"00");
+	setPropWH(&props.Sec,"00");
 
 
 	// 温度
-	PROP.Temp = {
+	props.Temp = {
 		0, 
 		0,
-		PROP.Hour.size,
-		PROP.Hour.font
+		props.Hour.size,
+		props.Hour.font
 	};
-	setPropWH(&PROP.Temp,"00.0 c");
- 	PROP.Temp.x=fromRight(PROP.Temp.width);
+	setPropWH(&props.Temp,"00.0 c");
+ 	props.Temp.x=fromRight(props.Temp.width);
 
 	// ギア
-	PROP.Gear = {
+	props.Gear = {
 		0,
 		140+offsetY,
 		1,
 		&fonts::lgfxJapanGothic_40
 	};
-	setPropWH(&PROP.Gear);
-	PROP.Gear.x = centerHorizontal(PROP.Gear.width);
+	setPropWH(&props.Gear);
+	props.Gear.x = centerHorizontal(props.Gear.width);
 
 	// 速度
-	PROP.Speed = {
+	props.Speed = {
 		0,
 		30+offsetY,
 		1,
 		&fonts::Font8
 	};
-	setPropWH(&PROP.Speed, "00");
-	PROP.Speed.x = centerHorizontal(PROP.Speed.width);
+	setPropWH(&props.Speed, "00");
+	props.Speed.x = centerHorizontal(props.Speed.width);
 
 	// 速度単位
-	PROP.SpUnit = {
+	props.SpUnit = {
 		0,
 		110+offsetY,
 		1,
 		&fonts::Font4
 	};
-	setPropWH(&PROP.SpUnit,"km/h");
-	PROP.SpUnit.x = centerHorizontal(PROP.SpUnit.width);
+	setPropWH(&props.SpUnit,"km/h");
+	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
 
 	// 初期表示メッセージ
-	PROP.InitMsg = {
+	props.InitMsg = {
 		0, 0, 2
 	};
 	// 初期情報表示
@@ -302,34 +302,34 @@ void setup(void) {
 	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
 	aht.begin(&Wire1,0,MODULES.thrm0.address);// 温度計
 	digitalWrite(PIN.buzzer, LOW);
-	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
+	rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
 	// 画面リセット
 	display.fillScreen(TFT_BLACK);
 	// ギアポジション表示開始
-	setDisplay(&PROP.Gear);
+	setDisplay(&props.Gear);
 	display.print('0');
 	// 速度
-	setDisplay(&PROP.Speed);
+	setDisplay(&props.Speed);
 	display.print("00");
 	// 速度単位
-	setDisplay(&PROP.SpUnit);
+	setDisplay(&props.SpUnit);
 	display.print("km/h");
 	// 時間
-	setDisplay(&PROP.Hour);
+	setDisplay(&props.Hour);
 	display.print("00:00:00");
 	// 日付
-	setDisplay(&PROP.Month);
+	setDisplay(&props.Month);
 	display.print("00/00");
 	// 温度の値
-	setDisplay(&PROP.Temp);
+	setDisplay(&props.Temp);
 	display.print("00.0 c");
 	display.fillCircle(306,6,3,TFT_WHITE);
 	display.fillCircle(306,6,1,TFT_BLACK);
 
 	// スプライト設定
 	// 横縦
-	int w = (PROP.Speed.y + 60 - offsetY) * 2;
+	int w = (props.Speed.y + 60 - offsetY) * 2;
 	int h = w;
 	// 弧の幅
 	arcM.d = 10;
@@ -469,7 +469,7 @@ void scanModules(){
 	};
 
 	// 初期表示メッセージ
-	setDisplay(&PROP.InitMsg);
+	setDisplay(&props.InitMsg);
 	display.println("Hello");
 	display.println("");
 	delay(500);
@@ -509,7 +509,7 @@ void gearDisplay(char newGear){
 		return;
 	}
 	// ディスプレイ設定
-	setDisplay(&PROP.Gear);
+	setDisplay(&props.Gear);
 	// ギア抜けorペダル踏み込み中の場合
 	if(newGear == '0'){
 		// グレーで前回ギアを表示
@@ -576,19 +576,19 @@ void displaySwitch(Switch *sw){
 	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
 	static int nowBrightLv = 0;
 	bool nowSw = sw->getStatus();
-	display.setTextSize(3);
-	display.setCursor(0, 0);
+	display.setFont(NULL);
+	display.setTextSize(2);
+	display.setCursor(0, fromBottom(8*2));
 
 	// キーダウンの場合
 	if(nowSw){
 		display.setTextColor(TFT_RED, TFT_BLACK);
 		if(beforeSw != nowSw){
-			display.print("ON ");
+			display.print("ON  ");
 			beforeSw = ON;
 		}
 		// 長押し
 		else if(beforeLong != sw->isLongPress()){
-			display.setCursor(200,0);
 			display.print("long");
 			beforeLong = sw->isLongPress();
 		}
@@ -597,20 +597,20 @@ void displaySwitch(Switch *sw){
 	else{
 		if(beforeSw != nowSw){
 			display.setTextColor(TFT_BLUE, TFT_BLACK);
-			display.print("OFF");
+			display.print("OFF ");
 			beforeSw = OFF;
 		}
 		// 長押し
 		if(beforeLong){
-			display.setTextColor(TFT_WHITE, TFT_BLACK);
-			display.setCursor(200,0);
-			display.print("    ");
+			//display.setTextColor(TFT_WHITE, TFT_BLACK);
+			//display.setCursor(0,fromBottom(8*2));
+			//display.print("    ");
 			beforeLong = false;
 		}
 		// プッシュ
 		else if(sw->isPush()){
 			display.setTextColor(TFT_BLUE, TFT_BLACK);
-			display.setCursor(100,0);
+			display.setCursor((6*2)*4,fromBottom(8*2));
 			nowBrightLv = (nowBrightLv+1) % brightLvMax;
 			display.setBrightness(brightLevel[nowBrightLv]);
 			display.print(nowBrightLv);
@@ -640,7 +640,7 @@ void tempDisplay(){
 	if(beforeTempx10 == newTempx10){
 		return;
 	}
-	setDisplay(&PROP.Temp);
+	setDisplay(&props.Temp);
 	display.setTextColor(TFT_WHITE, TFT_BLACK);
 	// 温度が一桁以下の場合、十の位にスペース
 	if(10 <= newTempx10 && newTempx10 < 100){
@@ -664,12 +664,12 @@ void realTimeDisplay(){
 	// 前回日時
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
 	// 表示情報配列
-	static PrintProperty* printPropArr[5] = {
-		&PROP.Month,
-		&PROP.Day,
-		&PROP.Hour,
-		&PROP.Min,
-		&PROP.Sec,
+	static Prop* printPropArr[5] = {
+		&props.Month,
+		&props.Day,
+		&props.Hour,
+		&props.Min,
+		&props.Sec,
 	};
 	static int itemLen = 5;
 	// 時刻用変数
