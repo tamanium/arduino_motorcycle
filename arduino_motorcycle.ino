@@ -37,6 +37,7 @@ unsigned long tempTime = 0;    // 温度測定にて使用
 unsigned long timeTime = 0;    // 時刻測定
 unsigned long bzzTime = 0;     // ブザー
 unsigned long debugWinkerTime  = 0;	//疑似ウインカー
+unsigned long counter = 0;     // 速度センサーカウンタ
 
 // シフトポジション配列
 int gears[] = {PIN.IOEXP.POS.nwt,
@@ -121,9 +122,12 @@ struct Props{
 	Prop Sec;      // 秒
 	Prop Temp;     // 温度
 	Prop Gear;     // ギア
+	Prop Newt;     // ギアニュートラル
 	Prop Speed;    // 速度
 	Prop SpUnit;   // 速度単位
 	Prop InitMsg;  // 初期表示：「hello」
+	Prop SpSensor; // 速度センサカウンタ
+	Prop SpHz;      // 速度センサ周波数
 } props;
 
 // オンボLED
@@ -173,8 +177,6 @@ void setPropWH(Prop* p, String str = "0"){
 	display.setTextSize(p->size);
 	p->width = display.textWidth(str);
 	p->height = display.fontHeight();
-	//p->fontSize.WIDTH = display.textWidth(str);
-	//p->fontSize.HEIGHT = display.fontHeight();
 }
 
 // ------------------------------初期設定------------------------------
@@ -185,6 +187,8 @@ void setup(void) {
 	Wire1.setSDA(PIN.I2C.sda);
 	Wire1.setSCL(PIN.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
+	// ここは外部でpulldownする
+	pinMode(PIN.intrpt, INPUT_PULLUP);
 
 	int offsetY = 50;
 	
@@ -242,7 +246,7 @@ void setup(void) {
 		props.Hour.font
 	};
 	setPropWH(&props.Temp,"00.0 c");
- 	props.Temp.x=fromRight(props.Temp.width);
+ 	props.Temp.x = fromRight(props.Temp.width);
 
 	// ギア
 	props.Gear = {
@@ -253,6 +257,15 @@ void setup(void) {
 	};
 	setPropWH(&props.Gear);
 	props.Gear.x = centerHorizontal(props.Gear.width);
+
+	// ギアニュートラル
+	props.Newt = {
+		props.Gear.x,
+		props.Gear.y + 5,
+		4,
+		&fonts::Font0
+	};
+	setPropWH(&props.Newt);
 
 	// 速度
 	props.Speed = {
@@ -273,6 +286,25 @@ void setup(void) {
 	};
 	setPropWH(&props.SpUnit,"km/h");
 	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
+
+	// 速度センサー値
+	props.SpSensor = {
+		0,
+		0,
+		props.Hour.size,
+		props.Hour.font
+	};
+	setPropWH(&props.SpSensor,"00000");
+	props.SpSensor.x = fromRight(props.SpSensor.width);
+	props.SpSensor.y = fromBottom(props.SpSensor.height);
+
+	props.SpHz = {
+		0,
+		props.SpSensor.y,
+		props.SpSensor.size,
+		props.SpSensor.font
+	};
+	setPropWH(&props.SpSensor,"0000Hz");
 
 	// 初期表示メッセージ
 	props.InitMsg = {
@@ -302,7 +334,7 @@ void setup(void) {
 	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
 	aht.begin(&Wire1,0,MODULES.thrm0.address);// 温度計
 	digitalWrite(PIN.buzzer, LOW);
-	rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
+	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
 	// 画面リセット
 	display.fillScreen(TFT_BLACK);
@@ -326,6 +358,12 @@ void setup(void) {
 	display.print("00.0 c");
 	display.fillCircle(306,6,3,TFT_WHITE);
 	display.fillCircle(306,6,1,TFT_BLACK);
+	// 速度センサカウンタ
+	setDisplay(&props.SpSensor);
+	display.print("00000");
+	// 速度センサ周波数
+	setDisplay(&props.SpHz);
+	display.print("0000Hz");
 
 	// スプライト設定
 	// 横縦
@@ -373,6 +411,8 @@ void setup(void) {
 	// 補助線
 	//display.drawFastHLine(0,centerY+rOUT,320,TFT_RED);
 	//display.drawFastHLine(0,centerY-rOUT+8,320,TFT_RED);
+
+	attachInterrupt(digitalPinToInterrupt(PIN.intrpt), method, RISING);
 }
 
 // ------------------------------ループ------------------------------
@@ -422,6 +462,8 @@ void loop() {
 	
 	// 各種表示処理
 	if(displayTime <= time){
+		// 速度カウンタ表示
+		speedDisplay()
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw);
 		// ギア表示
@@ -508,10 +550,21 @@ void gearDisplay(char newGear){
 	if(beforeGear == newGear){
 		return;
 	}
+	// ニュートラルの場合
+	if(newGear == 'N'){
+		setDisplay(&props.Newt);
+		display.setTextColor(TFT_GREEN, TFT_BLACK);
+	}
+	// 1～4の場合
+	else{
+		setDisplay(&props.Gear);
+	}
 	// ディスプレイ設定
-	setDisplay(&props.Gear);
 	// ギア抜けorペダル踏み込み中の場合
 	if(newGear == '0'){
+		if(beforeGear == 'N'){
+			setDisplay(&props.Newt);
+		}
 		// グレーで前回ギアを表示
 		display.setTextColor(TFT_DARKGREY);//TFT_DARKGREY, TFT_LIGHTGREY, TFT_SILVER
 		display.print(beforeGear);
@@ -706,4 +759,33 @@ void realTimeDisplay(){
 		// 前回日時を更新
 		beforeTime[i] = newTime[i];
 	}
+}
+/**
+ * 速度センサカウンタの表示
+ */
+void speedDisplay(){
+	static unsigned long before = 0;
+	if(counter == before){
+		return;
+	}
+	// 速度センサ
+	setDisplay(&props.SpSensor);
+	if(counter/10000==0){
+		display.print('0');
+	}
+	if(counter/1000==0){
+		display.print('0');
+	}
+	if(counter/100 == 0){
+		display.print('0');
+	}
+	if(counter/10 == 0){
+		display.print('0');
+	}
+	display.print(counter);
+
+}
+
+void method(){
+	counter++;
 }

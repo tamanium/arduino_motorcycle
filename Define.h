@@ -47,6 +47,7 @@
 		const int LED = 16;
 		const int buzzer = 26;     // ブザー
 		const int relay = 0;       // ダミーリレー
+		const int intrpt = 13;     // 割り込みピン
 		struct I2c{                // I2C通信
 			const int scl = 15;
 			const int sda = 14;
