@@ -23,9 +23,10 @@ const int TEMP_INTERVAL    = 2000;	//ms
 const int TIME_INTERVAL    = 30;	//ms
 const int BUZZER_DURATION  = 50;	//ms
 const int WINKER_DURATION  = 380;	//ms
+const int SP_DURATION = 500;  //ms
+int spPulseDuration = 1000;       //ms
 
-// フォントの寸法
-const int GEAR_SIZE   = 24;
+
 // 中心座標
 const int centerX = OLED.WIDTH>>1;
 const int centerY = OLED.HEIGHT>>1;
@@ -36,23 +37,41 @@ unsigned long monitorTime = 0; // 各種読み取り
 unsigned long tempTime = 0;    // 温度測定にて使用
 unsigned long timeTime = 0;    // 時刻測定
 unsigned long bzzTime = 0;     // ブザー
-unsigned long debugWinkerTime  = 0;	//疑似ウインカー
-unsigned long counter = 0;     // 速度センサーカウンタ
+unsigned long pulseTotalCounter = 0;     // 速度センサーカウンタ
+unsigned long spTime = 0;      // 速度センサ時間 
+unsigned long spPulseSwitchTime = 0; // 速度パルスH/L切り替え
+unsigned long spPulseChangeTime = 0; // 速度パルス周波数切り替え
+
+unsigned int spPulseDurations[] = {
+	1000, // 0.5Hz
+	500,  // 1Hz
+	250,  // 2Hz
+	100,  // 5Hz
+	50,   // 10Hz
+	25,   // 20Hz
+	10,   // 50Hz
+	5     // 100Hz
+};
+unsigned int spPulseSize = 8;
 
 // シフトポジション配列
-int gears[] = {PIN.IOEXP.POS.nwt,
-				PIN.IOEXP.POS.low,
-				PIN.IOEXP.POS.sec,
-				PIN.IOEXP.POS.thi,
-				PIN.IOEXP.POS.top};
+int gears[] = {
+	PIN.IOEXP.POS.nwt,
+	PIN.IOEXP.POS.low,
+	PIN.IOEXP.POS.sec,
+	PIN.IOEXP.POS.thi,
+	PIN.IOEXP.POS.top
+};
 // 明るさレベル
-byte brightLevel[] = {0x20,
-                      0x40,
-                      0x60,
-                      0x80,
-                      0xA0,
-                      0xC0,
-                      0xE0};
+byte brightLevel[] = {
+	0x20,
+	0x40,
+	0x60,
+	0x80,
+	0xA0,
+	0xC0,
+	0xE0
+};
 
 // ディスプレイ
 LGFX display;
@@ -411,7 +430,9 @@ void setup(void) {
 	// 補助線
 	//display.drawFastHLine(0,centerY+rOUT,320,TFT_RED);
 	//display.drawFastHLine(0,centerY-rOUT+8,320,TFT_RED);
-
+	// 速度パルス
+	pinMode(PIN.spPulse, OUTPUT);
+	// 割り込み処理
 	attachInterrupt(digitalPinToInterrupt(PIN.intrpt), method, RISING);
 }
 
@@ -421,13 +442,26 @@ void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 
-	// 疑似ウインカーリレー
-	if(debugWinkerTime <= time){
-		// 出力反転
-		digitalWrite(PIN.relay, !digitalRead(PIN.relay));
-		debugWinkerTime = debugWinkerTime + WINKER_DURATION;
+
+	static int pulseIndex = 0;
+	// 速度パルスH/L切り替え
+	if(spPulseDuration <= time){
+		digitalWrite(PIN.spPulse, !digitalRead(PIN.spPulse));
+		spPulseDuration = time + spPulseDurations[pulseIndex]; 
 	}
-	
+	// 速度パルス切り替え
+	if(spPulseChangeTime <= time){
+		pulseIndex = (++pulseIndex) % spPulseSize; 
+		spPulseChangeTime = time + 5000;
+	}
+
+
+	// 速度計算・表示
+	if(spTime <= time){
+		speedFreqDisplay();
+		spTime = time + SP_DURATION;
+	}
+
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
 		// 現在のギアポジを取得
@@ -463,7 +497,7 @@ void loop() {
 	// 各種表示処理
 	if(displayTime <= time){
 		// 速度カウンタ表示
-		speedDisplay()
+		speedDisplay();
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw);
 		// ギア表示
@@ -533,7 +567,7 @@ void scanModules(){
 		display.println(msg);
 	}
 	display.setTextColor(TFT_WHITE);
-	display.println("");
+	display.println(""); 
 	display.println("done");
 	delay(2000);
 }
@@ -765,27 +799,52 @@ void realTimeDisplay(){
  */
 void speedDisplay(){
 	static unsigned long before = 0;
-	if(counter == before){
+	if(pulseTotalCounter == before){
 		return;
 	}
 	// 速度センサ
 	setDisplay(&props.SpSensor);
-	if(counter/10000==0){
+	if(pulseTotalCounter/10000==0){
 		display.print('0');
 	}
-	if(counter/1000==0){
+	if(pulseTotalCounter/1000==0){
 		display.print('0');
 	}
-	if(counter/100 == 0){
+	if(pulseTotalCounter/100 == 0){
 		display.print('0');
 	}
-	if(counter/10 == 0){
+	if(pulseTotalCounter/10 == 0){
 		display.print('0');
 	}
-	display.print(counter);
+	display.print(pulseTotalCounter);
 
 }
 
+void speedFreqDisplay(){
+	// 前回単位時間当たりパルス数
+	static long beforeCounter = 0;
+	if(beforeCounter != 0){
+		// 前回単位時間当たりパルス数取得
+		long pulseCounter = pulseTotalCounter - beforeCounter;
+		// 周波数取得
+		long pulseFreq = pulseCounter;
+
+		// 速度周波数
+		setDisplay(&props.SpHz);
+		if(pulseFreq/1000==0){
+			display.print('0');
+		}
+		if(pulseFreq/100==0){
+			display.print('0');
+		}
+		if(pulseFreq/10 == 0){
+			display.print('0');
+		}
+		display.print(pulseFreq);
+	}
+	beforeCounter = pulseTotalCounter;
+}
+
 void method(){
-	counter++;
+	pulseTotalCounter++;
 }
