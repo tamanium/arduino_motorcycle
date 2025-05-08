@@ -43,7 +43,7 @@
 	/**
 	 * IOピン定義
 	 */
-	struct Pin{
+	struct Pins{
 		const int LED = 16;
 		const int buzzer = 26;     // ブザー
 		const int relay = 0;       // ダミーリレー
@@ -77,19 +77,16 @@
 				const int right = 6;
 			} WNK;
 		} IOEXP;
-	} PIN;
+	} PINS;
 	
 	// 表示設定
 	struct Prop {
 		int x = 0;                  // x座標
 		int y = 0;                  // y座標
-		int size =1;                // フォント倍率
-		const lgfx::v1::IFont* font = NULL; // フォント
+		int size = 1;               // フォント倍率
+		const lgfx::v1::IFont* font = &fonts::Font0; // フォント
 		int width = 6;
 		int height = 8;
-		//Font fontSize = {6,8};      // フォントの横縦
-		//Prop(){}
-		//Prop(int x, int y, int size, lgfx::v1::IFont* font) : x(x), y(y), size(size), font(font){} 
 	};
 	
 	/**

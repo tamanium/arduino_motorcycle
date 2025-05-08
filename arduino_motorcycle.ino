@@ -1,4 +1,3 @@
-
 // --------------------ライブラリ--------------------
 #include <Adafruit_GFX.h>               // 画面出力
 #include <SPI.h>                        // SPI通信
@@ -26,7 +25,6 @@ const int WINKER_DURATION  = 380;	//ms
 const int SP_DURATION = 500;  //ms
 int spPulseDuration = 1000;       //ms
 
-
 // 中心座標
 const int centerX = OLED.WIDTH>>1;
 const int centerY = OLED.HEIGHT>>1;
@@ -37,30 +35,33 @@ unsigned long monitorTime = 0; // 各種読み取り
 unsigned long tempTime = 0;    // 温度測定にて使用
 unsigned long timeTime = 0;    // 時刻測定
 unsigned long bzzTime = 0;     // ブザー
-unsigned long pulseTotalCounter = 0;     // 速度センサーカウンタ
+unsigned int pulseTotalCounter = 0;     // 速度センサーカウンタ
 unsigned long spTime = 0;      // 速度センサ時間 
 unsigned long spPulseSwitchTime = 0; // 速度パルスH/L切り替え
 unsigned long spPulseChangeTime = 0; // 速度パルス周波数切り替え
 
-unsigned int spPulseDurations[] = {
-	1000, // 0.5Hz
-	500,  // 1Hz
-	250,  // 2Hz
-	100,  // 5Hz
-	50,   // 10Hz
-	25,   // 20Hz
-	10,   // 50Hz
-	5     // 100Hz
+unsigned int spPulseFreq[] = {
+	10,  50,
+	100, 150,
+	200, 250,
+	300, 350,
+	400, 450,
+	500, 550,
+	600, 650,
+	700, 750,
+	800, 850,
+	900, 950,
+	1000
 };
-unsigned int spPulseSize = 8;
+unsigned int spPulseSize = 21;
 
 // シフトポジション配列
 int gears[] = {
-	PIN.IOEXP.POS.nwt,
-	PIN.IOEXP.POS.low,
-	PIN.IOEXP.POS.sec,
-	PIN.IOEXP.POS.thi,
-	PIN.IOEXP.POS.top
+	PINS.IOEXP.POS.nwt,
+	PINS.IOEXP.POS.low,
+	PINS.IOEXP.POS.sec,
+	PINS.IOEXP.POS.thi,
+	PINS.IOEXP.POS.top
 };
 // 明るさレベル
 byte brightLevel[] = {
@@ -146,11 +147,11 @@ struct Props{
 	Prop SpUnit;   // 速度単位
 	Prop InitMsg;  // 初期表示：「hello」
 	Prop SpSensor; // 速度センサカウンタ
-	Prop SpHz;      // 速度センサ周波数
+	Prop SpFreq;     // 速度センサ周波数
 } props;
 
 // オンボLED
-Adafruit_NeoPixel pixels(1, PIN.LED);
+Adafruit_NeoPixel pixels(1, PINS.LED);
 // RTC
 RTC_DS1307 rtc;
 // IOエキスパンダ
@@ -163,9 +164,9 @@ Adafruit_AHTX0 aht;
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
-Winkers winkers(PIN.IOEXP.WNK.left, PIN.IOEXP.WNK.right, &pcf);
+Winkers winkers(PINS.IOEXP.WNK.left, PINS.IOEXP.WNK.right, &pcf);
 // スイッチ
-Switch pushSw(PIN.IOEXP.sw, &pcf);
+Switch pushSw(PINS.IOEXP.sw, &pcf);
 
 /**
  * ディスプレイ表示設定
@@ -203,21 +204,16 @@ void setup(void) {
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
 	// I2C設定
-	Wire1.setSDA(PIN.I2C.sda);
-	Wire1.setSCL(PIN.I2C.scl);
+	Wire1.setSDA(PINS.I2C.sda);
+	Wire1.setSCL(PINS.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
 	// ここは外部でpulldownする
-	pinMode(PIN.intrpt, INPUT_PULLUP);
+	pinMode(PINS.intrpt, INPUT_PULLUP);
 
 	int offsetY = 50;
 	
 	// 月
-	props.Month = {
-		0,
-		0,
-		1,
-		&fonts::Font4
-	};
+	props.Month.font = &fonts::Font4;
 	setPropWH(&props.Month,"00/");
 
 	// 日
@@ -272,19 +268,20 @@ void setup(void) {
 		0,
 		140+offsetY,
 		1,
-		&fonts::lgfxJapanGothic_40
+		&fonts::Font6
 	};
 	setPropWH(&props.Gear);
 	props.Gear.x = centerHorizontal(props.Gear.width);
 
 	// ギアニュートラル
 	props.Newt = {
-		props.Gear.x,
-		props.Gear.y + 5,
-		4,
-		&fonts::Font0
+		0,
+		props.Gear.y,
+		2,
+		&fonts::Font4
 	};
-	setPropWH(&props.Newt);
+	setPropWH(&props.Newt, "N");
+	props.Newt.x = centerHorizontal(props.Newt.width)+1;
 
 	// 速度
 	props.Speed = {
@@ -306,24 +303,17 @@ void setup(void) {
 	setPropWH(&props.SpUnit,"km/h");
 	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
 
-	// 速度センサー値
-	props.SpSensor = {
-		0,
-		0,
-		props.Hour.size,
-		props.Hour.font
-	};
+	// 速度センサーパルス数
+	props.SpSensor.size=1;
 	setPropWH(&props.SpSensor,"00000");
 	props.SpSensor.x = fromRight(props.SpSensor.width);
 	props.SpSensor.y = fromBottom(props.SpSensor.height);
 
-	props.SpHz = {
-		0,
-		props.SpSensor.y,
-		props.SpSensor.size,
-		props.SpSensor.font
-	};
-	setPropWH(&props.SpSensor,"0000Hz");
+	// 速度センサー周波数
+	props.SpFreq.size = 2;
+	setPropWH(&props.SpFreq,"0000Hz");
+	props.SpFreq.x = fromRight(props.SpFreq.width);
+	props.SpFreq.y = props.SpSensor.y - props.SpFreq.height;
 
 	// 初期表示メッセージ
 	props.InitMsg = {
@@ -350,9 +340,9 @@ void setup(void) {
 	rtc.begin(&Wire1);                        // RTC
 	winkers.begin();                          // ウインカー
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
-	pinMode(PIN.buzzer, OUTPUT);              // ウインカー音
+	pinMode(PINS.buzzer, OUTPUT);              // ウインカー音
 	aht.begin(&Wire1,0,MODULES.thrm0.address);// 温度計
-	digitalWrite(PIN.buzzer, LOW);
+	digitalWrite(PINS.buzzer, LOW);
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
 	// 画面リセット
@@ -381,7 +371,7 @@ void setup(void) {
 	setDisplay(&props.SpSensor);
 	display.print("00000");
 	// 速度センサ周波数
-	setDisplay(&props.SpHz);
+	setDisplay(&props.SpFreq);
 	display.print("0000Hz");
 
 	// スプライト設定
@@ -431,9 +421,10 @@ void setup(void) {
 	//display.drawFastHLine(0,centerY+rOUT,320,TFT_RED);
 	//display.drawFastHLine(0,centerY-rOUT+8,320,TFT_RED);
 	// 速度パルス
-	pinMode(PIN.spPulse, OUTPUT);
+	//pinMode(PINS.spPulse, OUTPUT);
+	tone(PINS.spPulse, spPulseFreq[0]);
 	// 割り込み処理
-	attachInterrupt(digitalPinToInterrupt(PIN.intrpt), method, RISING);
+	attachInterrupt(digitalPinToInterrupt(PINS.intrpt), interruptMethod, RISING);
 }
 
 // ------------------------------ループ------------------------------
@@ -441,24 +432,18 @@ void loop() {
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-
-
 	static int pulseIndex = 0;
-	// 速度パルスH/L切り替え
-	if(spPulseDuration <= time){
-		digitalWrite(PIN.spPulse, !digitalRead(PIN.spPulse));
-		spPulseDuration = time + spPulseDurations[pulseIndex]; 
-	}
+
 	// 速度パルス切り替え
 	if(spPulseChangeTime <= time){
-		pulseIndex = (++pulseIndex) % spPulseSize; 
+		pulseIndex = (++pulseIndex) % spPulseSize;
+		tone(PINS.spPulse, spPulseFreq[pulseIndex]);
 		spPulseChangeTime = time + 5000;
 	}
 
-
 	// 速度計算・表示
 	if(spTime <= time){
-		speedFreqDisplay();
+		speedFreqDisplay(spTime);
 		spTime = time + SP_DURATION;
 	}
 
@@ -505,9 +490,9 @@ void loop() {
 		// ウインカー点灯状態が切り替わった場合
 		if(winkersDisplay() == true && bzzTime == 0 ){
 			// ブザーON
-			digitalWrite(PIN.buzzer, HIGH);
-			//digitalWrite(PIN.buzzer, LOW);
-			//analogWrite(PIN.buzzer, 153);
+			digitalWrite(PINS.buzzer, HIGH);
+			//digitalWrite(PINS.buzzer, LOW);
+			//analogWrite(PINS.buzzer, 153);
 			pixels.setPixelColor(0, pixels.Color(1,1,0));
 			pixels.show();
 			// 時間設定
@@ -517,9 +502,9 @@ void loop() {
 	}
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
-		digitalWrite(PIN.buzzer, LOW);
-		//digitalWrite(PIN.buzzer, HIGH);
-		//analogWrite(PIN.buzzer, 0);
+		digitalWrite(PINS.buzzer, LOW);
+		//digitalWrite(PINS.buzzer, HIGH);
+		//analogWrite(PINS.buzzer, 0);
 		pixels.clear();
 		pixels.show();
 		bzzTime = 0;
@@ -600,12 +585,13 @@ void gearDisplay(char newGear){
 			setDisplay(&props.Newt);
 		}
 		// グレーで前回ギアを表示
-		display.setTextColor(TFT_DARKGREY);//TFT_DARKGREY, TFT_LIGHTGREY, TFT_SILVER
+		display.setTextColor(TFT_DARKGREY);
 		display.print(beforeGear);
-		return;
 	}
-	// ギア表示更新
-	display.print(newGear);
+	else{
+		// ギア表示更新
+		display.print(newGear);
+	}
 	// バッファ文字列を上書き
 	beforeGear = newGear;
 }
@@ -631,7 +617,6 @@ bool winkersDisplay(){
 		buffer[side] = winkers.getStatus(side);
 		// ディスプレイ表示処理
 		displayWinker(side,buffer[side]);
-		//displayTriangle(triCoords[side], buffer[side]);
 		// フラグ立てる
 		isSwitched = true;
 	}
@@ -641,7 +626,7 @@ bool winkersDisplay(){
 
 /**
  * ウインカー表示処理
- * @param onOff bool型 true...点灯, false...消灯
+ * @param side int型 左右判定
  * @param onOff bool型 true...点灯, false...消灯
  */
 void displayWinker(int side, bool onOff){
@@ -687,11 +672,8 @@ void displaySwitch(Switch *sw){
 			display.print("OFF ");
 			beforeSw = OFF;
 		}
-		// 長押し
+		// 長押し判定だった場合
 		if(beforeLong){
-			//display.setTextColor(TFT_WHITE, TFT_BLACK);
-			//display.setCursor(0,fromBottom(8*2));
-			//display.print("    ");
 			beforeLong = false;
 		}
 		// プッシュ
@@ -798,53 +780,103 @@ void realTimeDisplay(){
  * 速度センサカウンタの表示
  */
 void speedDisplay(){
-	static unsigned long before = 0;
-	if(pulseTotalCounter == before){
-		return;
-	}
-	// 速度センサ
+	// 表示設定
 	setDisplay(&props.SpSensor);
-	if(pulseTotalCounter/10000==0){
-		display.print('0');
-	}
-	if(pulseTotalCounter/1000==0){
-		display.print('0');
-	}
-	if(pulseTotalCounter/100 == 0){
-		display.print('0');
-	}
-	if(pulseTotalCounter/10 == 0){
-		display.print('0');
-	}
-	display.print(pulseTotalCounter);
-
+	// 速度カウンタ表示
+	displayNumber(&props.SpSensor, pulseTotalCounter, 5);
 }
 
-void speedFreqDisplay(){
+/**
+ * 速度センサ周波数の表示
+ */
+void speedFreqDisplay(unsigned long spTime){
 	// 前回単位時間当たりパルス数
-	static long beforeCounter = 0;
-	if(beforeCounter != 0){
-		// 前回単位時間当たりパルス数取得
-		long pulseCounter = pulseTotalCounter - beforeCounter;
-		// 周波数取得
-		long pulseFreq = pulseCounter;
+	static unsigned int beforeCounter = 0;
+	// 前回システム時間
+	static unsigned long beforeSpTime;
+	// 前回速度周波数
+	static int beforeFreq = 0;
+	// 前回速度
+	static byte beforeSpeed = 0;
+	// 今回速度周波数
+	unsigned int freq = 0;
 
-		// 速度周波数
-		setDisplay(&props.SpHz);
-		if(pulseFreq/1000==0){
-			display.print('0');
+	if(beforeCounter != 0 && beforeSpTime != 0){
+		// 前回単位時間当たりパルス数取得
+		unsigned long pulseCounter = pulseTotalCounter - beforeCounter;
+		// 単位時間取得
+		unsigned long pulseTime = spTime - beforeSpTime;
+		// 周波数取得
+		freq = pulseCounter * 1000 / pulseTime;
+		// 表示設定
+		setDisplay(&props.SpFreq);
+		// 速度周波数表示
+		displayNumber(&props.SpFreq, freq, 4);
+
+		// 速度換算（100km/h超の場合でも3桁目非表示）
+		byte speed = (freq / 10) % 100;
+		// 前回速度と比較
+		if(speed != beforeSpeed){
+			// 速度表示
+			displayNumber(&props.Speed, speed, 2);
+			beforeSpeed = speed;
 		}
-		if(pulseFreq/100==0){
-			display.print('0');
-		}
-		if(pulseFreq/10 == 0){
-			display.print('0');
-		}
-		display.print(pulseFreq);
+		beforeFreq = freq;
 	}
+	// カウンタ
 	beforeCounter = pulseTotalCounter;
+	// システム時間
+	beforeSpTime = spTime;
 }
 
-void method(){
+/**
+ * 割り込み処理
+ */
+void interruptMethod(){
+	// カウンタインクリメント
 	pulseTotalCounter++;
+}
+
+/**
+ * 値の表示（右0埋め）
+ * 
+ * @param p Prop型 表示設定
+ * @param valueByte byte型 表示値
+ * @param digitNum int型 表示桁数
+ */
+void displayNumber(Prop* p, byte valueByte, int digitNum){
+	// 表示設定
+	setDisplay(p);
+	// 速度周波数表示
+	for(int digit = pow(10, digitNum-1); 1 < digit; digit /= 10 ){
+		if(valueByte / digit == 0){
+			display.print('0');
+		}
+		else{
+			break;
+		}
+	}
+	display.print(valueByte);
+}
+
+/**
+ * 値の表示（右0埋め）
+ * 
+ * @param p Prop型 表示設定
+ * @param valueLong long型 表示値
+ * @param digitNum int型 表示桁数
+ */
+void displayNumber(Prop* p, unsigned int valueInt, int digitNum){
+	// 表示設定
+	setDisplay(p);
+	// 速度周波数表示
+	for(int digit = pow(10, digitNum-1); 1 < digit; digit /= 10 ){
+		if(valueInt / digit == 0){
+			display.print('0');
+		}
+		else{
+			break;
+		}
+	}
+	display.print(valueInt);
 }
