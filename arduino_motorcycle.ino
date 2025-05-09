@@ -3,7 +3,6 @@
 #include <SPI.h>                        // SPI通信
 #include <RTClib.h>                     // 時計機能
 #include <Adafruit_PCF8574.h>           // IOエキスパンダ
-#include <Temperature_LM75_Derived.h>   // 温度計
 #include <Adafruit_AHTX0.h>             // 温湿度計
 #include <Adafruit_ADS1X15.h>           // ADコンバータ
 #include <Adafruit_NeoPixel.h>          // オンボLED
@@ -65,18 +64,17 @@ int gears[] = {
 };
 // 明るさレベル
 byte brightLevel[] = {
-	0x20,
-	0x40,
-	0x60,
-	0x80,
-	0xA0,
-	0xC0,
-	0xE0
+	0x01,
+	0x08,
+	0x18,
+	0x38,
+	0x80
 };
 
 // ディスプレイ
 LGFX display;
 
+// 円弧表示情報
 struct arcInfo{
 	LGFX_Sprite sprite; // スプライト
 	int x;              // 円弧中心x座標
@@ -141,6 +139,8 @@ struct Props{
 	Prop Min;      // 分
 	Prop Sec;      // 秒
 	Prop Temp;     // 温度
+	Prop TempUnit; // 温度単位
+	Prop Humid;    // 湿度
 	Prop Gear;     // ギア
 	Prop Newt;     // ギアニュートラル
 	Prop Speed;    // 速度
@@ -158,8 +158,7 @@ RTC_DS1307 rtc;
 Adafruit_PCF8574 pcf;
 // ADコンバータ
 Adafruit_ADS1X15 ads;
-// 温度計
-Generic_LM75 lm75(&Wire1, MODULES.thrm1.address);
+// 温湿度計
 Adafruit_AHTX0 aht;
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
@@ -174,16 +173,14 @@ Switch pushSw(PINS.IOEXP.sw, &pcf);
  * @param p 表示設定
  * @param isTrans 透過させるか
  */
-void setDisplay(Prop* p, bool isTrans=false){
+void setDisplay(Prop* p, String value =""){
 	display.setCursor(p->x,p->y);   //描画位置
 	display.setTextSize(p->size);   //テキスト倍率
-	if(isTrans){
-		display.setTextColor(TFT_WHITE);
-	}
-	else{
-		display.setTextColor(TFT_WHITE, TFT_BLACK); //色
-	}
+	display.setTextColor(TFT_WHITE, TFT_BLACK); //フォント色...白
 	display.setFont(p->font);
+	if(value != ""){
+		display.print(value);
+	}
 }
 
 /**
@@ -252,7 +249,6 @@ void setup(void) {
 	};
 	setPropWH(&props.Sec,"00");
 
-
 	// 温度
 	props.Temp = {
 		0, 
@@ -261,14 +257,34 @@ void setup(void) {
 		props.Hour.font
 	};
 	setPropWH(&props.Temp,"00.0 c");
- 	props.Temp.x = fromRight(props.Temp.width);
+ 	props.Temp.x = fromRight(props.Temp.width)-3;
+
+	// 温度単位
+	props.TempUnit = {
+		0,
+		0,
+		props.Temp.size,
+		props.Temp.font
+	};
+	setPropWH(&props.TempUnit, "c");
+	props.TempUnit.x = fromRight(props.TempUnit.width);
+
+	// 湿度
+	props.Humid = {
+		props.Temp.x,
+		props.Temp.height,
+		1,
+		&fonts::Font4
+	};
+	setPropWH(&props.Humid, "00%");
+	props.Humid.x = fromRight(props.Humid.width);
 
 	// ギア
 	props.Gear = {
 		0,
-		140+offsetY,
+		150+offsetY,
 		1,
-		&fonts::Font6
+		&fonts::DejaVu56
 	};
 	setPropWH(&props.Gear);
 	props.Gear.x = centerHorizontal(props.Gear.width);
@@ -277,11 +293,11 @@ void setup(void) {
 	props.Newt = {
 		0,
 		props.Gear.y,
-		2,
-		&fonts::Font4
+		1,
+		&fonts::DejaVu56
 	};
 	setPropWH(&props.Newt, "N");
-	props.Newt.x = centerHorizontal(props.Newt.width)+1;
+	props.Newt.x = centerHorizontal(props.Newt.width);
 
 	// 速度
 	props.Speed = {
@@ -307,10 +323,10 @@ void setup(void) {
 	props.SpSensor.size=1;
 	setPropWH(&props.SpSensor,"00000");
 	props.SpSensor.x = fromRight(props.SpSensor.width);
-	props.SpSensor.y = fromBottom(props.SpSensor.height);
+	props.SpSensor.y = fromBottom(props.SpSensor.height)-1;
 
 	// 速度センサー周波数
-	props.SpFreq.size = 2;
+	props.SpFreq.size = 1;
 	setPropWH(&props.SpFreq,"0000Hz");
 	props.SpFreq.x = fromRight(props.SpFreq.width);
 	props.SpFreq.y = props.SpSensor.y - props.SpFreq.height;
@@ -341,42 +357,38 @@ void setup(void) {
 	winkers.begin();                          // ウインカー
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
 	pinMode(PINS.buzzer, OUTPUT);              // ウインカー音
-	aht.begin(&Wire1,0,MODULES.thrm0.address);// 温度計
+	aht.begin(&Wire1,0,MODULES.thmst.address);// 温度計
 	digitalWrite(PINS.buzzer, LOW);
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
 	// 画面リセット
 	display.fillScreen(TFT_BLACK);
 	// ギアポジション表示開始
-	setDisplay(&props.Gear);
-	display.print('0');
+	setDisplay(&props.Gear, "0");
 	// 速度
-	setDisplay(&props.Speed);
-	display.print("00");
+	setDisplay(&props.Speed, "00");
 	// 速度単位
-	setDisplay(&props.SpUnit);
-	display.print("km/h");
+	setDisplay(&props.SpUnit, "km/h");
 	// 時間
-	setDisplay(&props.Hour);
-	display.print("00:00:00");
+	setDisplay(&props.Hour, "00:00:00");
 	// 日付
-	setDisplay(&props.Month);
-	display.print("00/00");
-	// 温度の値
-	setDisplay(&props.Temp);
-	display.print("00.0 c");
+	setDisplay(&props.Month, "00/00");
+	// 温度
+	setDisplay(&props.Temp, "00.0");
+	// 温度単位
+	setDisplay(&props.TempUnit, "c");
 	display.fillCircle(306,6,3,TFT_WHITE);
 	display.fillCircle(306,6,1,TFT_BLACK);
+	// 湿度
+	setDisplay(&props.Humid, "00%");
 	// 速度センサカウンタ
-	setDisplay(&props.SpSensor);
-	display.print("00000");
+	setDisplay(&props.SpSensor, "00000");
 	// 速度センサ周波数
-	setDisplay(&props.SpFreq);
-	display.print("0000Hz");
+	setDisplay(&props.SpFreq, "0000Hz");
 
 	// スプライト設定
 	// 横縦
-	int w = (props.Speed.y + 60 - offsetY) * 2;
+	int w = (props.Speed.y + 60 - offsetY+10) * 2;
 	int h = w;
 	// 弧の幅
 	arcM.d = 10;
@@ -395,16 +407,25 @@ void setup(void) {
 	arcR.x = 0;
 	arcR.y = arcM.y;
 	// 角度
-	arcM.angle0 = 120;
-	arcM.angle1 = 60;
-	arcL.angle0 = 90 +45;
-	arcL.angle1 = 270-37;
-	arcL.angle2 = arcL.angle0+9;
-	arcL.angle3 = arcL.angle1-10;
-	arcR.angle0 = 270+37;
-	arcR.angle1 = 90 -45;
-	arcR.angle2 = arcR.angle0+10;
-	arcR.angle3 = arcR.angle1-9;
+	int a0btm = 20;
+	int a1top = 34;
+	int a1btm = 38;
+	int a2top = 44;
+	int a2btm = 47;
+	arcM.angle0 = 90  + a0btm;
+	arcM.angle1 = 90  - a0btm;
+
+	arcL.angle0 = 90  + a1btm;
+	arcL.angle1 = 270 - a1top;
+
+	arcL.angle2 = 90  + a2btm;
+	arcL.angle3 = 270 - a2top;
+
+	arcR.angle0 = 270 + a1top;
+	arcR.angle1 = 90  - a1btm;
+
+	arcR.angle2 = 270 + a2top;
+	arcR.angle3 = 90  - a2btm;
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
 	arcL.sprite.createSprite(arcL.r+40+3*arcL.d+1,h);
@@ -414,15 +435,12 @@ void setup(void) {
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
 	// 出力
-	arcL.displayArc(centerX,centerY+10,ON,true);
-	arcR.displayArc(centerX,centerY+10,ON,true);
 	arcM.displayArc(centerX,centerY+10,ON);
 	// 補助線
-	//display.drawFastHLine(0,centerY+rOUT,320,TFT_RED);
-	//display.drawFastHLine(0,centerY-rOUT+8,320,TFT_RED);
+	//display.drawFastHLine(0,centerY-rOUT+7,320,TFT_RED);
+	//display.drawFastHLine(0,centerY+rOUT+6,320,TFT_RED);
 	// 速度パルス
-	//pinMode(PINS.spPulse, OUTPUT);
-	tone(PINS.spPulse, spPulseFreq[0]);
+	tone(PINS.spPulse, spPulseFreq[2]);
 	// 割り込み処理
 	attachInterrupt(digitalPinToInterrupt(PINS.intrpt), interruptMethod, RISING);
 }
@@ -443,7 +461,7 @@ void loop() {
 
 	// 速度計算・表示
 	if(spTime <= time){
-		speedFreqDisplay(spTime);
+		displayFreq(spTime);
 		spTime = time + SP_DURATION;
 	}
 
@@ -459,13 +477,7 @@ void loop() {
 	}
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
-		sensors_event_t humidity, temp;
-		aht.getEvent(&humidity,&temp);
-		Serial.print("Temperature:");
-		Serial.println(temp.temperature);
-		Serial.print("Humidity:");
-		Serial.println(humidity.relative_humidity);
-		tempDisplay();
+		displayTemp();
 		uint16_t raw = ads.readADC_SingleEnded(3);
 		String voltage = String((raw * 0.0001875f), 2);
 		Serial.print("Voltage:");
@@ -475,20 +487,20 @@ void loop() {
 
 	// 時刻表示
 	if(timeTime <= time){
-		realTimeDisplay();
+		displayRealTime();
 		timeTime = time + TIME_INTERVAL;
 	}
 	
 	// 各種表示処理
 	if(displayTime <= time){
 		// 速度カウンタ表示
-		speedDisplay();
+		displaySpeed();
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw);
 		// ギア表示
 		gearDisplay(gearPositions.getGear());
 		// ウインカー点灯状態が切り替わった場合
-		if(winkersDisplay() == true && bzzTime == 0 ){
+		if(displayWinkers() == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PINS.buzzer, HIGH);
 			//digitalWrite(PINS.buzzer, LOW);
@@ -522,8 +534,7 @@ void scanModules(){
 	// モジュールの配列
 	Module moduleArr[] = {
 		MODULES.ioExp,
-		MODULES.thrm0,
-		MODULES.thrm1,
+		MODULES.thmst,
 		MODULES.adCnv,
 		MODULES.rtcMm,
 		MODULES.rtcIC
@@ -602,11 +613,13 @@ void gearDisplay(char newGear){
  * @param winkers Winkers型 ウインカークラス
  * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
-bool winkersDisplay(){
+bool displayWinkers(){
 	// バッファ状態
 	static bool buffer[2] = {OFF, OFF};
 	// 返却用フラグ
 	bool isSwitched = false;
+
+	arcInfo* arcArr[2] = {&arcL, &arcR};
 
 	for(int side=LEFT; side<=RIGHT; side++){
 		// 左右ウインカー状態を判定
@@ -616,36 +629,21 @@ bool winkersDisplay(){
 		// バッファ上書き
 		buffer[side] = winkers.getStatus(side);
 		// ディスプレイ表示処理
-		displayWinker(side,buffer[side]);
+		arcArr[side]->displayArc(centerX,centerY+10,!buffer[side],true);
 		// フラグ立てる
 		isSwitched = true;
 	}
 	return isSwitched;
-	return true;
-}
-
-/**
- * ウインカー表示処理
- * @param side int型 左右判定
- * @param onOff bool型 true...点灯, false...消灯
- */
-void displayWinker(int side, bool onOff){
-	if(side==RIGHT){
-		arcL.displayArc(centerX,centerY+10,onOff,true);
-	}
-	else{
-		arcR.displayArc(centerX,centerY+10,onOff,true);
-	}
 }
 
 /**
  * スイッチ動作表示
- * @param Switch スイッチクラス
+ * @param sw スイッチクラス
  */
 void displaySwitch(Switch *sw){
 	static bool beforeSw = false;
 	static bool beforeLong = false;
-	static int brightLvMax = sizeof(brightLevel) / sizeof(byte) - 1;
+	static int brightLvMax = sizeof(brightLevel) / sizeof(byte);
 	static int nowBrightLv = 0;
 	bool nowSw = sw->getStatus();
 	display.setFont(NULL);
@@ -680,7 +678,7 @@ void displaySwitch(Switch *sw){
 		else if(sw->isPush()){
 			display.setTextColor(TFT_BLUE, TFT_BLACK);
 			display.setCursor((6*2)*4,fromBottom(8*2));
-			nowBrightLv = (nowBrightLv+1) % brightLvMax;
+			nowBrightLv = (++nowBrightLv) % brightLvMax;
 			display.setBrightness(brightLevel[nowBrightLv]);
 			display.print(nowBrightLv);
 			beforeSw = OFF;
@@ -691,13 +689,14 @@ void displaySwitch(Switch *sw){
 /**
  * 温度表示
  * 
- * @param *tft IOエキスパンダ
- * @param *lm75 温度計モジュール
-*/
-void tempDisplay(){
+ */
+void displayTemp(){
 	static int beforeTempx10 = 0;
-	// 温度取得(10倍)
-	int newTempx10 = lm75.readTemperatureC() * 10;
+	static int beforeHumid = 0;
+	// 温度取得
+	sensors_event_t humidity, temp;
+	aht.getEvent(&humidity,&temp);
+	int newTempx10 = temp.temperature * 10;
 	// 100度以上の場合は99.9度(変数では999)に修正
 	if(1000 <= newTempx10){
 		newTempx10 = 999;
@@ -706,20 +705,38 @@ void tempDisplay(){
 		newTempx10 = 0;
 	}
 	// 前回温度と同じ場合、スキップ
-	if(beforeTempx10 == newTempx10){
-		return;
+	if(beforeTempx10 != newTempx10){
+		setDisplay(&props.Temp);
+		display.setTextColor(TFT_WHITE, TFT_BLACK);
+		// 温度が一桁以下の場合、十の位にスペース
+		if(10 <= newTempx10 && newTempx10 < 100){
+			display.print(' ');
+		}
+		display.print(int(newTempx10/10));
+		display.print('.');
+		display.print(int(newTempx10)%10);
+		// 保持変数を更新
+		beforeTempx10 = newTempx10;
 	}
-	setDisplay(&props.Temp);
-	display.setTextColor(TFT_WHITE, TFT_BLACK);
-	// 温度が一桁以下の場合、十の位にスペース
-	if(10 <= newTempx10 && newTempx10 < 100){
-		display.print(' ');
+	int newHumid = humidity.relative_humidity;
+	if(100 <= newHumid){
+		newHumid = 99;
 	}
-	display.print(int(newTempx10/10));
-	display.print('.');
-	display.print(int(newTempx10)%10);
-	// 保持変数を更新
-	beforeTempx10 = newTempx10;
+	else if(newHumid <= 0){
+		newHumid = 0;
+	}
+	// 前回温度と同じ場合、スキップ
+	if(beforeHumid != newHumid){
+		setDisplay(&props.Humid);
+		display.setTextColor(TFT_WHITE, TFT_BLACK);
+		// 温度が一桁以下の場合、十の位にスペース
+		if(1 <= newHumid && newHumid < 10){
+			display.print(' ');
+		}
+		display.print(int(newHumid));
+		// 保持変数を更新
+		beforeHumid = newHumid;
+	}
 }
 
 /**
@@ -729,7 +746,7 @@ void tempDisplay(){
  * @param tft Adafruit_ST7735クラス ディスプレイ設定
  * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
-void realTimeDisplay(){
+void displayRealTime(){
 	// 前回日時
 	static uint8_t beforeTime[5] = {13,32,25,60,60};
 	// 表示情報配列
@@ -776,10 +793,11 @@ void realTimeDisplay(){
 		beforeTime[i] = newTime[i];
 	}
 }
+
 /**
  * 速度センサカウンタの表示
  */
-void speedDisplay(){
+void displaySpeed(){
 	// 表示設定
 	setDisplay(&props.SpSensor);
 	// 速度カウンタ表示
@@ -789,7 +807,7 @@ void speedDisplay(){
 /**
  * 速度センサ周波数の表示
  */
-void speedFreqDisplay(unsigned long spTime){
+void displayFreq(unsigned long spTime){
 	// 前回単位時間当たりパルス数
 	static unsigned int beforeCounter = 0;
 	// 前回システム時間
@@ -835,6 +853,9 @@ void speedFreqDisplay(unsigned long spTime){
 void interruptMethod(){
 	// カウンタインクリメント
 	pulseTotalCounter++;
+	if(100000 <= pulseTotalCounter){
+		pulseTotalCounter = 0;
+	}
 }
 
 /**

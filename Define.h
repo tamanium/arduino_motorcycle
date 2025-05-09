@@ -25,8 +25,7 @@
 	struct Modules{
 		int size = 5;
 		Module ioExp = {"IO Expander ", 0x27};
-		Module thrm0 = {"Thermometer0", 0x38};
-		Module thrm1 = {"Thermometer1", 0x48};
+		Module thmst = {"Thermometer ", 0x38};
 		Module adCnv = {"AD Converter", 0x4A};
 		Module rtcMm = {"RTC memory  ", 0x50};
 		Module rtcIC = {"RTC IC      ", 0x68};
@@ -73,8 +72,8 @@
 				const int top = 5;
 			} POS;
 			struct Wnk{             // ウインカー
-				const int left = 7;
-				const int right = 6;
+				const int left = 6;
+				const int right = 7;
 			} WNK;
 		} IOEXP;
 	} PINS;
