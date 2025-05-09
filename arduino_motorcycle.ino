@@ -282,7 +282,7 @@ void setup(void) {
 	// ギア
 	props.Gear = {
 		0,
-		150+offsetY,
+		140+offsetY,
 		1,
 		&fonts::DejaVu56
 	};
