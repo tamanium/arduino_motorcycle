@@ -15,8 +15,8 @@
 #include "MyLovyanGFX.h"	// ディスプレイ設定
 
 // --------------------定数--------------------
-const int MONITOR_INTERVAL = 5;		//ms
-const int DISPLAY_INTERVAL = 30;	//ms
+const int MONITOR_INTERVAL = 3;		//ms
+const int DISPLAY_INTERVAL = 15;	//ms
 const int TEMP_INTERVAL    = 2000;	//ms
 const int TIME_INTERVAL    = 30;	//ms
 const int BUZZER_DURATION  = 50;	//ms
@@ -52,7 +52,6 @@ unsigned int spPulseFreq[] = {
 	900, 950,
 	1000
 };
-unsigned int spPulseSize = 21;
 
 // シフトポジション配列
 int gears[] = {
@@ -91,10 +90,11 @@ struct arcInfo{
 	 *  コンストラクタ
 	 */
 	arcInfo(LGFX *display) : sprite(display){}
+
 	/**
-	 * 表示
+	 * 表示(ウインカー向け)
 	 */
-	void displayArc(int stdX, int stdY, bool onOff, bool isWinker = false){
+	void displayArcW(int stdX, int stdY, bool onOff){
 		sprite.fillScreen(TFT_BLUE);
 		// on,offで色変更
 		uint16_t color = onOff ? colorON : TFT_BLACK;
@@ -102,12 +102,31 @@ struct arcInfo{
 		sprite.setPivot(x,y);
 		// 弧描画
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,color);
-		if(isWinker){
-			sprite.fillArc(x,y,r+d+20,r+20,angle2,angle3,color);
-		}
+		sprite.fillArc(x,y,r+d+20,r+20,angle2,angle3,color);
 		// 出力
 		sprite.pushRotateZoom(stdX,stdY,0,1,1,colorBG);
 	}
+
+	/**
+	 * 表示（メーター向け）
+	 */
+	void displayArcM(int stdX, int stdY, byte sp = 0){
+		sprite.fillScreen(TFT_BLUE);
+		// 弧の中心軸
+		sprite.setPivot(x,y);
+		// 弧描画
+		sprite.fillArc(x,y,r+d,r,angle0,angle1,colorON);
+		// 速さに対する弧の角度
+		int angleSp = (360-angle0+angle1)* (100-sp)/100;
+		int newAngle0 = angle1 - angleSp;
+		if(angleSp <= angle1){
+			newAngle0 += 360;
+		}
+		sprite.fillArc(x,y,r+d-2,r+2,newAngle0+1,angle1-1,TFT_BLACK);
+		// 出力
+		sprite.pushRotateZoom(stdX,stdY,0,1,1,colorBG);
+	}
+
 };
 arcInfo arcM(&display);
 arcInfo arcL(&display);
@@ -333,7 +352,7 @@ void setup(void) {
 	int w = (props.Speed.y + 60 - offsetY+10) * 2;
 	int h = w;
 	// 弧の幅
-	arcM.d = 10;
+	arcM.d = 15;
 	arcL.d = 10;
 	arcR.d = 10;
 	// 弧の内外半径
@@ -377,7 +396,7 @@ void setup(void) {
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
 	// 出力
-	arcM.displayArc(centerX,centerY+10,ON);
+	arcM.displayArcM(centerX,centerY+10);
 	// 補助線
 	//display.drawFastHLine(0,centerY-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,centerY+rOUT+6,320,TFT_RED);
@@ -396,7 +415,8 @@ void loop() {
 
 	// 速度パルス切り替え
 	if(spPulseChangeTime <= time){
-		pulseIndex = (++pulseIndex) % spPulseSize;
+		int spPulseSize = sizeof(spPulseFreq)/sizeof(unsigned int);
+		pulseIndex = (pulseIndex+1) % spPulseSize;
 		tone(PINS.spPulse, spPulseFreq[pulseIndex]);
 		spPulseChangeTime = time + 5000;
 	}
@@ -502,9 +522,7 @@ void setDisplay(Prop* p){
  */
 void setDisplay(Prop* p, String value){
 	setDisplay(p);
-	if(value != ""){
-		display.print(value);
-	}
+	display.print(value);
 }
 
 /**
@@ -620,7 +638,7 @@ bool displayWinkers(){
 		// バッファ上書き
 		before[side] = winkers.getStatus(side);
 		// ディスプレイ表示処理
-		arcArr[side]->displayArc(centerX,centerY+10,!before[side],true);
+		arcArr[side]->displayArcW(centerX,centerY+10,!before[side]);
 		// フラグ立てる
 		isSwitched = true;
 	}
@@ -686,12 +704,10 @@ void displayTemp(){
 	// 温度取得
 	sensors_event_t humidity, temp;
 	aht.getEvent(&humidity,&temp);
-	int newTempx10 = temp.temperature * 10;
-	// 100度以上の場合は99.9度(変数では999)に修正
-	if(1000 <= newTempx10){
-		newTempx10 = 999;
-	}
-	else if(newTempx10 <= 0){
+	// 3桁分だけ取得
+	int newTempx10 = (int)(temp.temperature * 10)%1000;
+	// 0以下の場合は0に
+	if(newTempx10 <= 0){
 		newTempx10 = 0;
 	}
 	// 前回温度と同じ場合、スキップ
@@ -708,7 +724,7 @@ void displayTemp(){
 		// 保持変数を更新
 		beforeTempx10 = newTempx10;
 	}
-	int newHumid = humidity.relative_humidity%100;
+	int newHumid = (int)humidity.relative_humidity%100;
 	if(newHumid < 0){
 		newHumid = 0;
 	}
@@ -821,6 +837,7 @@ void displayFreq(unsigned long spTime){
 		if(speed != beforeSpeed){
 			// 速度表示
 			displayNumber(&props.Speed, speed, 2);
+			arcM.displayArcM(centerX,centerY+10,speed);
 			beforeSpeed = speed;
 		}
 		beforeFreq = freq;

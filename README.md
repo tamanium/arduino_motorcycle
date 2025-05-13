@@ -20,7 +20,7 @@
 クロスカブ JA60
 ```:回路図
 
-Housing side                                        ││　Inner side
+Housing side                                        ││ Inner side
                                                     ││                                       12V 
        VCC                  VCC              VCC    ││                                        │
         │                    │                │     ││                                     ┌──┴──┐
