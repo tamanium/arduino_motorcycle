@@ -113,23 +113,6 @@ arcInfo arcM(&display);
 arcInfo arcL(&display);
 arcInfo arcR(&display);
 
-/**
- * i2cモジュールのアドレスから接続中モジュールの有無を取得
- *
- * @param adrs i2cモジュールのアドレス
- * @param arr モジュール配列
- * @param size i2cモジュール数
- * @return モジュールが接続されていれば配列のインデックスを
- */
-int existsModule(byte adrs, Module* arr, int size){
-	for(int i=0; i<size; i++){
-		if(arr[i].address == adrs){
-			return i;
-		}
-	}
-	return -1;
-}
-
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props{
@@ -166,35 +149,6 @@ GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 Winkers winkers(PINS.IOEXP.WNK.left, PINS.IOEXP.WNK.right, &pcf);
 // スイッチ
 Switch pushSw(PINS.IOEXP.sw, &pcf);
-
-/**
- * ディスプレイ表示設定
- *
- * @param p 表示設定
- * @param isTrans 透過させるか
- */
-void setDisplay(Prop* p, String value =""){
-	display.setCursor(p->x,p->y);   //描画位置
-	display.setTextSize(p->size);   //テキスト倍率
-	display.setTextColor(TFT_WHITE, TFT_BLACK); //フォント色...白
-	display.setFont(p->font);
-	if(value != ""){
-		display.print(value);
-	}
-}
-
-/**
- * フォントの縦横を設定
- *
- * @param p 表示設定
- * @param size フォント倍率
- */
-void setPropWH(Prop* p, String str = "0"){
-	display.setFont(p->font);
-	display.setTextSize(p->size);
-	p->width = display.textWidth(str);
-	p->height = display.fontHeight();
-}
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -286,7 +240,7 @@ void setup(void) {
 		1,
 		&fonts::DejaVu56
 	};
-	setPropWH(&props.Gear);
+	setPropWH(&props.Gear, "0");
 	props.Gear.x = centerHorizontal(props.Gear.width);
 
 	// ギアニュートラル
@@ -526,6 +480,61 @@ void loop() {
 // -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
+
+/**
+ * i2cモジュールのアドレスから接続中モジュールの有無を取得
+ *
+ * @param adrs i2cモジュールのアドレス
+ * @param arr モジュール配列
+ * @param size i2cモジュール数
+ * @return モジュールが接続されていれば配列のインデックスを
+ */
+int existsModule(byte adrs, Module* arr, int size){
+	for(int i=0; i<size; i++){
+		if(arr[i].address == adrs){
+			return i;
+		}
+	}
+	return -1;
+}
+
+/**
+ * ディスプレイ表示設定
+ *
+ * @param p 表示設定
+ */
+void setDisplay(Prop* p){
+	display.setCursor(p->x,p->y);   //描画位置
+	display.setTextSize(p->size);   //テキスト倍率
+	display.setTextColor(TFT_WHITE, TFT_BLACK); //フォント色...白
+	display.setFont(p->font);
+}
+
+/**
+ * ディスプレイ表示設定
+ *
+ * @param p 表示設定
+ * @param value 表示文字列
+ */
+void setDisplay(Prop* p, String value){
+	setDisplay(p);
+	if(value != ""){
+		display.print(value);
+	}
+}
+
+/**
+ * フォントの縦横を設定
+ *
+ * @param p 表示設定
+ * @param str 文字列
+ */
+void setPropWH(Prop* p, String str){
+	display.setFont(p->font);
+	display.setTextSize(p->size);
+	p->width = display.textWidth(str);
+	p->height = display.fontHeight();
+}
 
 /**
  * モジュール走査
