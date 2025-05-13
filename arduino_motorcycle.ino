@@ -112,7 +112,6 @@ struct arcInfo{
 arcInfo arcM(&display);
 arcInfo arcL(&display);
 arcInfo arcR(&display);
-arcInfo arcW[2] = {arcL, arcR};
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props{
@@ -315,31 +314,20 @@ void setup(void) {
 	digitalWrite(PINS.buzzer, LOW);
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
-	// 画面リセット
-	display.fillScreen(TFT_BLACK);
-	// ギアポジション表示開始
-	setDisplay(&props.Gear, "0");
-	// 速度
-	setDisplay(&props.Speed, "00");
-	// 速度単位
-	setDisplay(&props.SpUnit, "km/h");
-	// 時間
-	setDisplay(&props.Hour, "00:00:00");
-	// 日付
-	setDisplay(&props.Month, "00/00");
-	// 温度
-	setDisplay(&props.Temp, "00.0");
-	// 温度単位
-	setDisplay(&props.TempUnit, "c");
+	
+	display.fillScreen(TFT_BLACK);        // 画面リセット
+	setDisplay(&props.Gear, "0");         // ギアポジション表示開始
+	setDisplay(&props.Speed, "00");       // 速度
+	setDisplay(&props.SpUnit, "km/h");    // 速度単位
+	setDisplay(&props.Hour, "00:00:00");  // 時間
+	setDisplay(&props.Month, "00/00");    // 日付
+	setDisplay(&props.Temp, "00.0");      // 温度
+	setDisplay(&props.Humid, "00%");      // 湿度
+	setDisplay(&props.SpSensor, "00000"); // 速度センサカウンタ
+	setDisplay(&props.SpFreq, "0000Hz");  // 速度センサ周波数
+	setDisplay(&props.TempUnit, "c");     // 温度単位
 	display.fillCircle(306,6,3,TFT_WHITE);
 	display.fillCircle(306,6,1,TFT_BLACK);
-	// 湿度
-	setDisplay(&props.Humid, "00%");
-	// 速度センサカウンタ
-	setDisplay(&props.SpSensor, "00000");
-	// 速度センサ周波数
-	setDisplay(&props.SpFreq, "0000Hz");
-
 	// スプライト設定
 	// 横縦
 	int w = (props.Speed.y + 60 - offsetY+10) * 2;
@@ -618,7 +606,7 @@ void gearDisplay(char newGear){
  */
 bool displayWinkers(){
 	// バッファ状態
-	static bool buffer[2] = {OFF, OFF};
+	static bool before[2] = {OFF, OFF};
 	// 返却用フラグ
 	bool isSwitched = false;
 
@@ -626,13 +614,13 @@ bool displayWinkers(){
 
 	for(int side=LEFT; side<=RIGHT; side++){
 		// 左右ウインカー状態を判定
-		if(buffer[side] == winkers.getStatus(side)){
+		if(before[side] == winkers.getStatus(side)){
 			continue;
 		}
 		// バッファ上書き
-		buffer[side] = winkers.getStatus(side);
+		before[side] = winkers.getStatus(side);
 		// ディスプレイ表示処理
-		arcArr[side]->displayArc(centerX,centerY+10,!buffer[side],true);
+		arcArr[side]->displayArc(centerX,centerY+10,!before[side],true);
 		// フラグ立てる
 		isSwitched = true;
 	}
