@@ -112,7 +112,7 @@ struct arcInfo{
 arcInfo arcM(&display);
 arcInfo arcL(&display);
 arcInfo arcR(&display);
-
+arcInfo arcW[2] = {arcL, arcR};
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props{
@@ -457,8 +457,6 @@ void loop() {
 		if(displayWinkers() == true && bzzTime == 0 ){
 			// ブザーON
 			digitalWrite(PINS.buzzer, HIGH);
-			//digitalWrite(PINS.buzzer, LOW);
-			//analogWrite(PINS.buzzer, 153);
 			pixels.setPixelColor(0, pixels.Color(1,1,0));
 			pixels.show();
 			// 時間設定
@@ -469,8 +467,6 @@ void loop() {
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
 		digitalWrite(PINS.buzzer, LOW);
-		//digitalWrite(PINS.buzzer, HIGH);
-		//analogWrite(PINS.buzzer, 0);
 		pixels.clear();
 		pixels.show();
 		bzzTime = 0;
@@ -487,7 +483,7 @@ void loop() {
  * @param adrs i2cモジュールのアドレス
  * @param arr モジュール配列
  * @param size i2cモジュール数
- * @return モジュールが接続されていれば配列のインデックスを
+ * @return モジュール配列のインデックス
  */
 int existsModule(byte adrs, Module* arr, int size){
 	for(int i=0; i<size; i++){
@@ -499,7 +495,7 @@ int existsModule(byte adrs, Module* arr, int size){
 }
 
 /**
- * ディスプレイ表示設定
+ * ディスプレイ表示設定0
  *
  * @param p 表示設定
  */
@@ -511,7 +507,7 @@ void setDisplay(Prop* p){
 }
 
 /**
- * ディスプレイ表示設定
+ * ディスプレイ表示設定1
  *
  * @param p 表示設定
  * @param value 表示文字列
@@ -537,7 +533,7 @@ void setPropWH(Prop* p, String str){
 }
 
 /**
- * モジュール走査
+ * モジュールスキャン
  */
 void scanModules(){
 	// モジュールの配列
@@ -579,8 +575,8 @@ void scanModules(){
 
 /**
  * ギアポジションの表示処理
- * @param dispChar char型 表示文字列
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
+ *
+ * @param newChar char型 表示文字列
  */
 void gearDisplay(char newGear){
 	// バッファ文字列
@@ -619,8 +615,6 @@ void gearDisplay(char newGear){
 
 /**
  * ウインカー表示処理
- * @param winkers Winkers型 ウインカークラス
- * @return isSwitchStatus bool型 左右いずれかが点灯状態が切り替わった場合true
  */
 bool displayWinkers(){
 	// バッファ状態
@@ -697,7 +691,6 @@ void displaySwitch(Switch *sw){
 
 /**
  * 温度表示
- * 
  */
 void displayTemp(){
 	static int beforeTempx10 = 0;
@@ -727,11 +720,8 @@ void displayTemp(){
 		// 保持変数を更新
 		beforeTempx10 = newTempx10;
 	}
-	int newHumid = humidity.relative_humidity;
-	if(100 <= newHumid){
-		newHumid = 99;
-	}
-	else if(newHumid <= 0){
+	int newHumid = humidity.relative_humidity%100;
+	if(newHumid < 0){
 		newHumid = 0;
 	}
 	// 前回温度と同じ場合、スキップ
@@ -751,9 +741,6 @@ void displayTemp(){
 /**
  * 現在時刻表示処理
  *
- * @param totalSec long型 経過時間(秒)
- * @param tft Adafruit_ST7735クラス ディスプレイ設定
- * @param dispInfo 表示文字情報構造体 文字の座標と大きさ
  */
 void displayRealTime(){
 	// 前回日時
@@ -868,7 +855,7 @@ void interruptMethod(){
 }
 
 /**
- * 値の表示（右0埋め）
+ * 値の表示（左0埋め）
  * 
  * @param p Prop型 表示設定
  * @param valueByte byte型 表示値
@@ -890,7 +877,7 @@ void displayNumber(Prop* p, byte valueByte, int digitNum){
 }
 
 /**
- * 値の表示（右0埋め）
+ * 値の表示（左0埋め）　開発用
  * 
  * @param p Prop型 表示設定
  * @param valueLong long型 表示値
