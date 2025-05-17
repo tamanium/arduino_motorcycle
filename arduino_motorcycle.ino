@@ -177,7 +177,7 @@ void setup(void) {
 	Wire1.setSCL(PINS.I2C.scl);
 	Wire1.begin();// いらないけど明示しておく
 	// ここは外部でpulldownする
-	pinMode(PINS.intrpt, INPUT_PULLUP);
+	//pinMode(PINS.intrpt, INPUT_PULLUP);
 
 	int offsetY = 50;
 	
@@ -401,9 +401,9 @@ void setup(void) {
 	//display.drawFastHLine(0,centerY-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,centerY+rOUT+6,320,TFT_RED);
 	// 速度パルス
-	tone(PINS.spPulse, spPulseFreq[2]);
+	//tone(PINS.spPulse, spPulseFreq[2]);
 	// 割り込み処理
-	attachInterrupt(digitalPinToInterrupt(PINS.intrpt), interruptMethod, RISING);
+	//attachInterrupt(digitalPinToInterrupt(PINS.intrpt), interruptMethod, RISING);
 }
 
 // ------------------------------ループ------------------------------
@@ -414,12 +414,12 @@ void loop() {
 	static int pulseIndex = 0;
 
 	// 速度パルス切り替え
-	if(spPulseChangeTime <= time){
-		int spPulseSize = sizeof(spPulseFreq)/sizeof(unsigned int);
-		pulseIndex = (pulseIndex+1) % spPulseSize;
-		tone(PINS.spPulse, spPulseFreq[pulseIndex]);
-		spPulseChangeTime = time + 5000;
-	}
+	//if(spPulseChangeTime <= time){
+	//	int spPulseSize = sizeof(spPulseFreq)/sizeof(unsigned int);
+	//	pulseIndex = (pulseIndex+1) % spPulseSize;
+	//	tone(PINS.spPulse, spPulseFreq[pulseIndex]);
+	//	spPulseChangeTime = time + 5000;
+	//}
 
 	// 速度計算・表示
 	if(spTime <= time){
@@ -851,13 +851,13 @@ void displayFreq(unsigned long spTime){
 /**
  * 割り込み処理
  */
-void interruptMethod(){
-	// カウンタインクリメント
-	pulseTotalCounter++;
-	if(100000 <= pulseTotalCounter){
-		pulseTotalCounter = 0;
-	}
-}
+//void interruptMethod(){
+//	// カウンタインクリメント
+//	pulseTotalCounter++;
+//	if(100000 <= pulseTotalCounter){
+//		pulseTotalCounter = 0;
+//	}
+//}
 
 /**
  * 値の表示（左0埋め）

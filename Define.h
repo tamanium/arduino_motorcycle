@@ -29,6 +29,7 @@
 		Module adCnv = {"AD Converter", 0x4A};
 		Module rtcMm = {"RTC memory  ", 0x50};
 		Module rtcIC = {"RTC IC      ", 0x68};
+		Module speed = {"Speed Sensor", 0x55};
 	} MODULES;
 	
 	/**
@@ -46,8 +47,8 @@
 		const int LED = 16;
 		const int buzzer = 26;     // ブザー
 		const int relay = 0;       // ダミーリレー
-		const int intrpt = 28;     // 割り込みピン
-		const int spPulse = 29;    // 速度パルス
+		//const int intrpt = 28;     // 割り込みピン
+		//const int spPulse = 29;    // 速度パルス
 		struct I2c{                // I2C通信
 			const int scl = 15;
 			const int sda = 14;
