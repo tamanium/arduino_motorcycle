@@ -766,12 +766,18 @@ void displayRealTime(){
 void displaySpeed(){
 
 	byte data = getData(0x00);
+	//setDisplay(&props.SpSensor);
+	//display.print(data);
 	displayNumber(&props.SpSensor, data, 3);
 
 	data = getData(0x01);
+	//setDisplay(&props.SpFreq);
+	//display.print(data);
 	displayNumber(&props.SpFreq, data, 3);
 	
 	byte speed = 40;
+	//setDisplay(&props.Speed);
+	//display.print(speed);
 	displayNumber(&props.Speed, speed, 2);
 	arcM.displayArcM(centerX,centerY+10,speed);
 }
@@ -799,10 +805,12 @@ void displayNumber(Prop* p, byte valueByte, int digitNum){
 	setDisplay(p);
 	// 速度周波数表示
 	for(int digit = pow(10, digitNum-1); 1 < digit; digit /= 10 ){
-		if(valueByte / digit != 0){
+		if(valueByte / digit == 0){
+			display.print('0');
+		}
+		else{
 			break;
 		}
-		display.print('0');
 	}
 	display.print(valueByte);
 }
@@ -819,10 +827,12 @@ void displayNumber(Prop* p, unsigned int valueInt, int digitNum){
 	setDisplay(p);
 	// 速度周波数表示
 	for(int digit = pow(10, digitNum-1); 1 < digit; digit /= 10 ){
-		if(valueInt / digit != 0){
+		if(valueInt / digit == 0){
+			display.print('0');
+		}
+		else{
 			break;
 		}
-		display.print('0');
 	}
 	display.print(valueInt);
 }
