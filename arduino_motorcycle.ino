@@ -38,21 +38,6 @@ unsigned int pulseTotalCounter = 0;     // 速度センサーカウンタ
 unsigned long spTime = 0;      // 速度センサ時間 
 unsigned long spPulseSwitchTime = 0; // 速度パルスH/L切り替え
 unsigned long spPulseChangeTime = 0; // 速度パルス周波数切り替え
-/*
-unsigned int spPulseFreq[] = {
-	10,  50,
-	100, 150,
-	200, 250,
-	300, 350,
-	400, 450,
-	500, 550,
-	600, 650,
-	700, 750,
-	800, 850,
-	900, 950,
-	1000
-};
-*/
 
 // シフトポジション配列
 int gears[] = {
@@ -149,7 +134,7 @@ struct Props{
 	Prop SpUnit;   // 速度単位
 	Prop InitMsg;  // 初期表示：「hello」
 	Prop SpSensor; // 速度センサカウンタ
-	Prop SpFreq;     // 速度センサ周波数
+	Prop SpFreq;   // 速度センサ周波数
 } props;
 
 // オンボLED
@@ -176,10 +161,8 @@ void setup(void) {
 	// I2C設定
 	Wire1.setSDA(PINS.I2C.sda);
 	Wire1.setSCL(PINS.I2C.scl);
-	Wire1.begin();// いらないけど明示しておく
-	// ここは外部でpulldownする
-	//pinMode(PINS.intrpt, INPUT_PULLUP);
-
+	Wire1.begin();
+	
 	int offsetY = 50;
 	
 	// 月
@@ -292,15 +275,15 @@ void setup(void) {
 	setPropWH(&props.SpUnit,"km/h");
 	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
 
-	// 速度センサーパルス数
+	// スピードセンサデータ0
 	props.SpSensor.size=1;
-	setPropWH(&props.SpSensor,"00000");
+	setPropWH(&props.SpSensor,"0000 0");
 	props.SpSensor.x = fromRight(props.SpSensor.width);
 	props.SpSensor.y = fromBottom(props.SpSensor.height)-1;
 
-	// 速度センサー周波数
+	// スピードセンサデータ1
 	props.SpFreq.size = 1;
-	setPropWH(&props.SpFreq,"0000Hz");
+	setPropWH(&props.SpFreq,"0000 1");
 	props.SpFreq.x = fromRight(props.SpFreq.width);
 	props.SpFreq.y = props.SpSensor.y - props.SpFreq.height;
 
@@ -321,6 +304,12 @@ void setup(void) {
 
 	// I2C通信スキャン
 	scanModules();
+	while(true){
+		byte data = getData(0x00);
+		display.print(data);
+		data = getData(0x01);
+		display.print(data);
+	}
 	
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
@@ -343,8 +332,8 @@ void setup(void) {
 	setDisplay(&props.Month, "00/00");    // 日付
 	setDisplay(&props.Temp, "00.0");      // 温度
 	setDisplay(&props.Humid, "00%");      // 湿度
-	setDisplay(&props.SpSensor, "00000"); // 速度センサカウンタ
-	setDisplay(&props.SpFreq, "0000Hz");  // 速度センサ周波数
+	setDisplay(&props.SpSensor, "0000 0"); // 速度センサカウンタ
+	setDisplay(&props.SpFreq, "0000 1");  // 速度センサ周波数
 	setDisplay(&props.TempUnit, "c");     // 温度単位
 	display.fillCircle(306,6,3,TFT_WHITE);
 	display.fillCircle(306,6,1,TFT_BLACK);
@@ -401,10 +390,6 @@ void setup(void) {
 	// 補助線
 	//display.drawFastHLine(0,centerY-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,centerY+rOUT+6,320,TFT_RED);
-	// 速度パルス
-	//tone(PINS.spPulse, spPulseFreq[2]);
-	// 割り込み処理
-	//attachInterrupt(digitalPinToInterrupt(PINS.intrpt), interruptMethod, RISING);
 }
 
 // ------------------------------ループ------------------------------
@@ -413,20 +398,6 @@ void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 	static int pulseIndex = 0;
-
-	// 速度パルス切り替え
-	//if(spPulseChangeTime <= time){
-	//	int spPulseSize = sizeof(spPulseFreq)/sizeof(unsigned int);
-	//	pulseIndex = (pulseIndex+1) % spPulseSize;
-	//	tone(PINS.spPulse, spPulseFreq[pulseIndex]);
-	//	spPulseChangeTime = time + 5000;
-	//}
-
-	// 速度計算・表示
-	if(spTime <= time){
-		displayFreq(spTime);
-		spTime = time + SP_DURATION;
-	}
 
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
@@ -746,7 +717,6 @@ void displayTemp(){
 
 /**
  * 現在時刻表示処理
- *
  */
 void displayRealTime(){
 	// 前回日時
@@ -800,54 +770,16 @@ void displayRealTime(){
  * 速度センサカウンタの表示
  */
 void displaySpeed(){
-	// 表示設定
-	setDisplay(&props.SpSensor);
-	// 速度カウンタ表示
-	displayNumber(&props.SpSensor, pulseTotalCounter, 5);
-}
 
-/**
- * 速度センサ周波数の表示
- */
-void displayFreq(unsigned long spTime){
-	// 前回単位時間当たりパルス数
-	static unsigned int beforeCounter = 0;
-	// 前回システム時間
-	static unsigned long beforeSpTime;
-	// 前回速度周波数
-	static int beforeFreq = 0;
-	// 前回速度
-	static byte beforeSpeed = 0;
-	// 今回速度周波数
-	unsigned int freq = 0;
+	byte data = getData(0x00);
+	displayNumber(&props.SpSensor, data, 3);
 
-	if(beforeCounter != 0 && beforeSpTime != 0){
-		// 前回単位時間当たりパルス数取得
-		unsigned long pulseCounter = pulseTotalCounter - beforeCounter;
-		// 単位時間取得
-		unsigned long pulseTime = spTime - beforeSpTime;
-		// 周波数取得
-		freq = pulseCounter * 1000 / pulseTime;
-		// 表示設定
-		setDisplay(&props.SpFreq);
-		// 速度周波数表示
-		displayNumber(&props.SpFreq, freq, 4);
-
-		// 速度換算（100km/h超の場合でも3桁目非表示）
-		byte speed = (freq / 10) % 100;
-		// 前回速度と比較
-		if(speed != beforeSpeed){
-			// 速度表示
-			displayNumber(&props.Speed, speed, 2);
-			arcM.displayArcM(centerX,centerY+10,speed);
-			beforeSpeed = speed;
-		}
-		beforeFreq = freq;
-	}
-	// カウンタ
-	beforeCounter = pulseTotalCounter;
-	// システム時間
-	beforeSpTime = spTime;
+	data = getData(0x01);
+	displayNumber(&props.SpFreq, data, 3);
+	
+	byte speed = 40;
+	displayNumber(&props.Speed, speed, 2);
+	arcM.displayArcM(centerX,centerY+10,speed);
 }
 
 /**
@@ -899,4 +831,28 @@ void displayNumber(Prop* p, unsigned int valueInt, int digitNum){
 		display.print('0');
 	}
 	display.print(valueInt);
+}
+
+/**
+ * スピードセンサ(ATTINY85)からデータ取得
+ *
+ * @param reg byte型 データ種類
+ */
+byte getData(byte reg){
+	if(0x01 < reg){
+		return 0x09;
+	}
+
+	byte adrs = 0x55;
+	byte result = 0x08;
+
+	Wire1.beginTransmission(adrs);
+	Wire1.write(reg);
+	Wire1.endTransmission(false);
+	Wire1.requestFrom(adrs, 1);
+	
+	while(0 < Wire1.available()){
+		result = Wire1.read();
+	}
+	return result;
 }
