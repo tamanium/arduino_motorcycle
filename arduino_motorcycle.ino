@@ -38,7 +38,7 @@ unsigned int pulseTotalCounter = 0;     // 速度センサーカウンタ
 unsigned long spTime = 0;      // 速度センサ時間 
 unsigned long spPulseSwitchTime = 0; // 速度パルスH/L切り替え
 unsigned long spPulseChangeTime = 0; // 速度パルス周波数切り替え
-
+/*
 unsigned int spPulseFreq[] = {
 	10,  50,
 	100, 150,
@@ -52,6 +52,7 @@ unsigned int spPulseFreq[] = {
 	900, 950,
 	1000
 };
+*/
 
 // シフトポジション配列
 int gears[] = {
@@ -872,12 +873,10 @@ void displayNumber(Prop* p, byte valueByte, int digitNum){
 	setDisplay(p);
 	// 速度周波数表示
 	for(int digit = pow(10, digitNum-1); 1 < digit; digit /= 10 ){
-		if(valueByte / digit == 0){
-			display.print('0');
-		}
-		else{
+		if(valueByte / digit != 0){
 			break;
 		}
+		display.print('0');
 	}
 	display.print(valueByte);
 }
