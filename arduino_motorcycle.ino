@@ -548,6 +548,7 @@ void scanModules(){
 		MODULES.thmst,
 		MODULES.adCnv,
 		MODULES.rtcMm,
+		MODULES.speed,
 		MODULES.rtcIC
 	};
 
@@ -893,12 +894,10 @@ void displayNumber(Prop* p, unsigned int valueInt, int digitNum){
 	setDisplay(p);
 	// 速度周波数表示
 	for(int digit = pow(10, digitNum-1); 1 < digit; digit /= 10 ){
-		if(valueInt / digit == 0){
-			display.print('0');
-		}
-		else{
+		if(valueInt / digit != 0){
 			break;
 		}
+		display.print('0');
 	}
 	display.print(valueInt);
 }
