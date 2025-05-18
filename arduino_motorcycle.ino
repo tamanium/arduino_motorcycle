@@ -304,12 +304,6 @@ void setup(void) {
 
 	// I2C通信スキャン
 	scanModules();
-	while(true){
-		byte data = getData(0x00);
-		display.print(data);
-		data = getData(0x01);
-		display.print(data);
-	}
 	
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
