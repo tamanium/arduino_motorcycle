@@ -107,7 +107,7 @@ struct arcInfo{
 		// 弧描画
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,colorON);
 		// 速さに対する弧の角度
-		int angleSp = (360-angle0+angle1)* (100-sp)/100;
+		int angleSp = (360-angle0+angle1)* (99-sp)/99;
 		int newAngle0 = angle1 - angleSp;
 		if(angleSp <= angle1){
 			newAngle0 += 360;
@@ -167,6 +167,7 @@ void setup(void) {
 	// I2C設定
 	Wire1.setSDA(PINS.I2C.sda);
 	Wire1.setSCL(PINS.I2C.scl);
+	Wire1.setClock(400000);
 	Wire1.begin();
 	
 	int offsetY = 50;
@@ -851,19 +852,26 @@ void displayRealTime(){
  * 速度センサカウンタの表示
  */
 void displaySpeed(){
-
+	long start = millis();
+	
+	// 入力パルス周波数取得・表示
 	int data = getData(0x00);
 	displayNumber(&props.SpFreqIn, data, 4);
 
-	data = getData(0x01);
-	displayNumber(&props.SpFreqOut, data, 4);
-	
+	// 速度算出・表示
 	byte speed = byte(data/10);
+	//byte speed = 50;
 	if(100<=speed){
 		speed = 99;
 	}
 	displayNumber(&props.Speed, speed, 2);
-	arcM.displayArcM(centerX,centerY+10,speed);
+	//arcM.displayArcM(centerX,centerY+10,speed);
+	
+	// 出力パルス周波数取得
+	//data = getData(0x01);
+	//displayNumber(&props.SpFreqOut, data, 4);
+	int time = int(millis() - start);
+	displayNumber(&props.SpFreqOut, time, 4);
 }
 
 /**
@@ -889,7 +897,7 @@ void displayNumber(Prop* p, byte valueByte, int digitNum){
 }
 
 /**
- * 値の表示（左0埋め）　開発用
+ * 値の表示（左0埋め）開発用
  * 
  * @param p Prop型 表示設定
  * @param valueLong long型 表示値
@@ -927,11 +935,13 @@ int getData(byte reg){
 	Wire1.write(reg);
 	Wire1.endTransmission(false);
 	Wire1.requestFrom(adrs, 2);
+	//Wire1.requestFrom(adrs, 1);
 	
-	while(0 < Wire1.available()){
-		result = Wire1.read()<<8;
-		result |= Wire1.read();
-		//result = (result<<8) & Wire1.read();
+	if(Wire1.available() == 2){
+		result = (Wire1.read()<<8) | Wire1.read();
+	}
+	else if(Wire1.available() == 1){
+		result = Wire1.read();
 	}
 	return result;
 }
