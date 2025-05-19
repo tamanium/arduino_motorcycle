@@ -14,6 +14,8 @@
 #include "Switch.h"			// スイッチクラス
 #include "MyLovyanGFX.h"	// ディスプレイ設定
 
+//#define BUZZER_ON
+
 // --------------------定数--------------------
 const int MONITOR_INTERVAL = 3;		//ms
 const int DISPLAY_INTERVAL = 15;	//ms
@@ -23,6 +25,8 @@ const int BUZZER_DURATION  = 50;	//ms
 const int WINKER_DURATION  = 380;	//ms
 const int SP_DURATION = 500;  //ms
 int spPulseDuration = 1000;       //ms
+
+
 
 // 中心座標
 const int centerX = OLED.WIDTH>>1;
@@ -133,8 +137,9 @@ struct Props{
 	Prop Speed;    // 速度
 	Prop SpUnit;   // 速度単位
 	Prop InitMsg;  // 初期表示：「hello」
-	Prop SpSensor; // 速度センサカウンタ
-	Prop SpFreq;   // 速度センサ周波数
+	Prop SpFreqIn; // 速度センサカウンタ
+	Prop SpFreqInUnit; // 「Hz」
+	Prop SpFreqOut;   // 速度センサ周波数
 } props;
 
 // オンボLED
@@ -156,6 +161,7 @@ Switch pushSw(PINS.IOEXP.sw, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
+	delay(500);
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
 	// I2C設定
@@ -212,7 +218,7 @@ void setup(void) {
 		props.Hour.size,
 		props.Hour.font
 	};
-	setPropWH(&props.Temp,"00.0 c");
+	setPropWH(&props.Temp,"00 c");
  	props.Temp.x = fromRight(props.Temp.width)-3;
 
 	// 温度単位
@@ -223,7 +229,7 @@ void setup(void) {
 		props.Temp.font
 	};
 	setPropWH(&props.TempUnit, "c");
-	props.TempUnit.x = fromRight(props.TempUnit.width);
+	props.TempUnit.x = fromRight(props.TempUnit.width)-3;
 
 	// 湿度
 	props.Humid = {
@@ -243,7 +249,7 @@ void setup(void) {
 		&fonts::DejaVu56
 	};
 	setPropWH(&props.Gear, "0");
-	props.Gear.x = centerHorizontal(props.Gear.width);
+	props.Gear.x = centerHorizontal(props.Gear.width)+2;
 
 	// ギアニュートラル
 	props.Newt = {
@@ -253,39 +259,69 @@ void setup(void) {
 		&fonts::DejaVu56
 	};
 	setPropWH(&props.Newt, "N");
-	props.Newt.x = centerHorizontal(props.Newt.width);
+	props.Newt.x = centerHorizontal(props.Newt.width)+2;
 
 	// 速度
+	/*
 	props.Speed = {
 		0,
 		30+offsetY,
 		1,
 		&fonts::Font8
 	};
+	*/
+	props.Speed = {
+		0,
+		10+offsetY,
+		1,
+		&fonts::Font7
+	};
 	setPropWH(&props.Speed, "00");
 	props.Speed.x = centerHorizontal(props.Speed.width);
 
 	// 速度単位
+	/*
 	props.SpUnit = {
 		0,
 		110+offsetY,
 		1,
 		&fonts::Font4
 	};
+	*/
+	props.SpUnit = {
+		0,
+		props.Speed.y + props.Speed.height,
+		1,
+		&fonts::Font2
+	};
 	setPropWH(&props.SpUnit,"km/h");
 	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
 
-	// スピードセンサデータ0
-	props.SpSensor.size=1;
-	setPropWH(&props.SpSensor,"0000 0");
-	props.SpSensor.x = fromRight(props.SpSensor.width);
-	props.SpSensor.y = fromBottom(props.SpSensor.height)-1;
+	// スピードセンサIN
+	props.SpFreqIn = {
+		0,
+		props.SpUnit.y + props.SpUnit.height,
+		1,
+		&fonts::Font7
+	};
+	setPropWH(&props.SpFreqIn, "0000");
+	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
 
-	// スピードセンサデータ1
-	props.SpFreq.size = 1;
-	setPropWH(&props.SpFreq,"0000 1");
-	props.SpFreq.x = fromRight(props.SpFreq.width);
-	props.SpFreq.y = props.SpSensor.y - props.SpFreq.height;
+	// スピードセンサIN単位
+	props.SpFreqInUnit = {
+		0,
+		props.SpFreqIn.y + props.SpFreqIn.height,
+		1,
+		&fonts::Font2
+	};
+	setPropWH(&props.SpFreqInUnit,"Hz");
+	props.SpFreqInUnit.x = centerHorizontal(props.SpFreqInUnit.width);
+
+	// スピードセンサOUT
+	props.SpFreqOut.size = 1;
+	setPropWH(&props.SpFreqOut,"0000 OUT");
+	props.SpFreqOut.x = fromRight(props.SpFreqOut.width);
+	props.SpFreqOut.y = fromBottom(props.SpFreqOut.height);
 
 	// 初期表示メッセージ
 	props.InitMsg = {
@@ -295,7 +331,7 @@ void setup(void) {
 	// ディスプレイの初期化
 	display.init();
 	// 明るさ
-	display.setBrightness(brightLevel[0]);
+	display.setBrightness(brightLevel[2]);
 
 	// ブザー連動LED設定
 	pixels.begin();
@@ -304,7 +340,18 @@ void setup(void) {
 
 	// I2C通信スキャン
 	scanModules();
-	
+	/*	
+	setDisplay(&props.SpFreqIn, "0000 IN "); // 速度センサカウンタ
+	setDisplay(&props.SpFreqOut, "0000 OUT");  // 速度センサ周波数
+	while(true){
+		int data = getData(0x00);
+		displayNumber(&props.SpFreqIn, data, 4);
+		
+		data = getData(0x01);
+		displayNumber(&props.SpFreqOut, data, 4);
+		delay(500);
+	}
+	*/
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1); // IOエキスパンダ
 	gearPositions.begin();                    // シフトインジケータ
@@ -312,7 +359,9 @@ void setup(void) {
 	rtc.begin(&Wire1);                        // RTC
 	winkers.begin();                          // ウインカー
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
-	pinMode(PINS.buzzer, OUTPUT);              // ウインカー音
+	#ifdef BUZZER_ON
+		pinMode(PINS.buzzer, OUTPUT);              // ウインカー音
+	#endif
 	aht.begin(&Wire1,0,MODULES.thmst.address);// 温度計
 	digitalWrite(PINS.buzzer, LOW);
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
@@ -324,16 +373,18 @@ void setup(void) {
 	setDisplay(&props.SpUnit, "km/h");    // 速度単位
 	setDisplay(&props.Hour, "00:00:00");  // 時間
 	setDisplay(&props.Month, "00/00");    // 日付
-	setDisplay(&props.Temp, "00.0");      // 温度
+	setDisplay(&props.Temp, "00");        // 温度
 	setDisplay(&props.Humid, "00%");      // 湿度
-	setDisplay(&props.SpSensor, "0000 0"); // 速度センサカウンタ
-	setDisplay(&props.SpFreq, "0000 1");  // 速度センサ周波数
-	setDisplay(&props.TempUnit, "c");     // 温度単位
-	display.fillCircle(306,6,3,TFT_WHITE);
-	display.fillCircle(306,6,1,TFT_BLACK);
+	setDisplay(&props.SpFreqIn, "0000"); // 速度センサカウンタ
+	setDisplay(&props.SpFreqInUnit, "Hz");
+	setDisplay(&props.SpFreqOut, "0000 OUT");   // 速度センサ周波数
+	setDisplay(&props.TempUnit, "c");        // 温度単位
+	display.fillCircle(306-3,6,3,TFT_WHITE);
+	display.fillCircle(306-3,6,1,TFT_BLACK);
 	// スプライト設定
 	// 横縦
-	int w = (props.Speed.y + 60 - offsetY+10) * 2;
+	//int w = (props.Speed.y + 60 - offsetY+10) * 2;
+	int w = (75 + 60 - offsetY+10) * 2;
 	int h = w;
 	// 弧の幅
 	arcM.d = 15;
@@ -430,7 +481,9 @@ void loop() {
 		// ウインカー点灯状態が切り替わった場合
 		if(displayWinkers() == true && bzzTime == 0 ){
 			// ブザーON
-			digitalWrite(PINS.buzzer, HIGH);
+			#ifdef BUZZER_ON
+				digitalWrite(PINS.buzzer, HIGH);
+			#endif
 			pixels.setPixelColor(0, pixels.Color(1,1,0));
 			pixels.show();
 			// 時間設定
@@ -440,7 +493,9 @@ void loop() {
 	}
 	//ブザーOFF処理
 	if(bzzTime != 0 && bzzTime <= time){
-		digitalWrite(PINS.buzzer, LOW);
+		#ifdef BUZZER_ON
+			digitalWrite(PINS.buzzer, LOW);
+		#endif
 		pixels.clear();
 		pixels.show();
 		bzzTime = 0;
@@ -666,18 +721,34 @@ void displaySwitch(Switch *sw){
  * 温度表示
  */
 void displayTemp(){
-	static int beforeTempx10 = 0;
-	static int beforeHumid = 0;
+	//static int beforeTempx10 = 0;
+	static byte beforeTemp = 0;
+	//static int beforeHumid = 0;
+	static byte beforeHumid = 0;
 	// 温度取得
 	sensors_event_t humidity, temp;
 	aht.getEvent(&humidity,&temp);
 	// 3桁分だけ取得
-	int newTempx10 = (int)(temp.temperature * 10)%1000;
+	//int newTempx10 = (int)(temp.temperature * 10)%1000;
+	int newTempInt = (byte)(temp.temperature);
 	// 0以下の場合は0に
-	if(newTempx10 <= 0){
-		newTempx10 = 0;
+	//if(newTempx10 <= 0){
+	//	newTempx10 = 0;
+	//}
+	if(newTempInt < 0){
+		newTempInt = 0;
 	}
+	else if(100 <= newTempInt ){
+		newTempInt = 99;
+	}
+	byte newTemp = byte(newTempInt);
+	if(beforeTemp != newTemp){
+		displayNumber(&props.Temp, newTemp, 2);
+		beforeTemp = newTemp;
+	}
+
 	// 前回温度と同じ場合、スキップ
+	/*
 	if(beforeTempx10 != newTempx10){
 		setDisplay(&props.Temp);
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -691,10 +762,25 @@ void displayTemp(){
 		// 保持変数を更新
 		beforeTempx10 = newTempx10;
 	}
-	int newHumid = (int)humidity.relative_humidity%100;
-	if(newHumid < 0){
-		newHumid = 0;
+	*/
+
+	//int newHumid = (int)humidity.relative_humidity%100;
+	//if(newHumid < 0){
+	//	newHumid = 0;
+	//}
+	int newHumidInt = (int)humidity.relative_humidity%100;
+	if(newHumidInt < 0){
+		newHumidInt = 0;
 	}
+	else if(100 <= newHumidInt ){
+		newHumidInt = 99;
+	}
+	byte newHumid = byte(newHumidInt);
+	if(beforeHumid != newHumid){
+		displayNumber(&props.Humid, newHumid, 2);
+		beforeHumid = newHumid;
+	}
+	/*
 	// 前回温度と同じ場合、スキップ
 	if(beforeHumid != newHumid){
 		setDisplay(&props.Humid);
@@ -707,6 +793,7 @@ void displayTemp(){
 		// 保持変数を更新
 		beforeHumid = newHumid;
 	}
+	*/
 }
 
 /**
@@ -766,32 +853,18 @@ void displayRealTime(){
 void displaySpeed(){
 
 	int data = getData(0x00);
-	//setDisplay(&props.SpSensor);
-	//display.print(data);
-	displayNumber(&props.SpSensor, data, 3);
+	displayNumber(&props.SpFreqIn, data, 4);
 
 	data = getData(0x01);
-	//setDisplay(&props.SpFreq);
-	//display.print(data);
-	displayNumber(&props.SpFreq, data, 3);
+	displayNumber(&props.SpFreqOut, data, 4);
 	
-	byte speed = 40;
-	//setDisplay(&props.Speed);
-	//display.print(speed);
+	byte speed = byte(data/10);
+	if(100<=speed){
+		speed = 99;
+	}
 	displayNumber(&props.Speed, speed, 2);
 	arcM.displayArcM(centerX,centerY+10,speed);
 }
-
-/**
- * 割り込み処理
- */
-//void interruptMethod(){
-//	// カウンタインクリメント
-//	pulseTotalCounter++;
-//	if(100000 <= pulseTotalCounter){
-//		pulseTotalCounter = 0;
-//	}
-//}
 
 /**
  * 値の表示（左0埋め）
@@ -822,7 +895,7 @@ void displayNumber(Prop* p, byte valueByte, int digitNum){
  * @param valueLong long型 表示値
  * @param digitNum int型 表示桁数
  */
-void displayNumber(Prop* p, unsigned int valueInt, int digitNum){
+void displayNumber(Prop* p, int valueInt, int digitNum){
 	// 表示設定
 	setDisplay(p);
 	// 速度周波数表示
@@ -848,7 +921,7 @@ int getData(byte reg){
 	}
 
 	byte adrs = 0x55;
-	int result = -2;
+	int result = 0;
 
 	Wire1.beginTransmission(adrs);
 	Wire1.write(reg);
@@ -856,8 +929,9 @@ int getData(byte reg){
 	Wire1.requestFrom(adrs, 2);
 	
 	while(0 < Wire1.available()){
-		result = Wire1.read();
-		result = (result<<8) & Wire1.read();
+		result = Wire1.read()<<8;
+		result |= Wire1.read();
+		//result = (result<<8) & Wire1.read();
 	}
 	return result;
 }
