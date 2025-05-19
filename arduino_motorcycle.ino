@@ -765,7 +765,7 @@ void displayRealTime(){
  */
 void displaySpeed(){
 
-	byte data = getData(0x00);
+	int data = getData(0x00);
 	//setDisplay(&props.SpSensor);
 	//display.print(data);
 	displayNumber(&props.SpSensor, data, 3);
@@ -842,21 +842,22 @@ void displayNumber(Prop* p, unsigned int valueInt, int digitNum){
  *
  * @param reg byte型 データ種類
  */
-byte getData(byte reg){
+int getData(byte reg){
 	if(0x01 < reg){
 		return 0x09;
 	}
 
 	byte adrs = 0x55;
-	byte result = 0x08;
+	int result = -2;
 
 	Wire1.beginTransmission(adrs);
 	Wire1.write(reg);
 	Wire1.endTransmission(false);
-	Wire1.requestFrom(adrs, 1);
+	Wire1.requestFrom(adrs, 2);
 	
 	while(0 < Wire1.available()){
 		result = Wire1.read();
+		result = (result<<8) & Wire1.read();
 	}
 	return result;
 }
