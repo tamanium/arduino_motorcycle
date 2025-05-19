@@ -139,7 +139,7 @@ struct Props{
 	Prop InitMsg;  // 初期表示：「hello」
 	Prop SpFreqIn; // 速度センサカウンタ
 	Prop SpFreqInUnit; // 「Hz」
-	Prop SpFreqOut;   // 速度センサ周波数
+	Prop DebugData;   // 速度センサ周波数
 } props;
 
 // オンボLED
@@ -318,11 +318,10 @@ void setup(void) {
 	setPropWH(&props.SpFreqInUnit,"Hz");
 	props.SpFreqInUnit.x = centerHorizontal(props.SpFreqInUnit.width);
 
-	// スピードセンサOUT
-	props.SpFreqOut.size = 1;
-	setPropWH(&props.SpFreqOut,"0000 OUT");
-	props.SpFreqOut.x = fromRight(props.SpFreqOut.width);
-	props.SpFreqOut.y = fromBottom(props.SpFreqOut.height);
+	// デバッグ用表示
+	setPropWH(&props.DebugData,"0000");
+	props.DebugData.x = fromRight(props.DebugData.width);
+	props.DebugData.y = fromBottom(props.DebugData.height*5);
 
 	// 初期表示メッセージ
 	props.InitMsg = {
@@ -343,13 +342,13 @@ void setup(void) {
 	scanModules();
 	/*	
 	setDisplay(&props.SpFreqIn, "0000 IN "); // 速度センサカウンタ
-	setDisplay(&props.SpFreqOut, "0000 OUT");  // 速度センサ周波数
+	setDisplay(&props.DebugData, "0000 OUT");  // 速度センサ周波数
 	while(true){
 		int data = getData(0x00);
 		displayNumber(&props.SpFreqIn, data, 4);
 		
 		data = getData(0x01);
-		displayNumber(&props.SpFreqOut, data, 4);
+		displayNumber(&props.DebugData, data, 4);
 		delay(500);
 	}
 	*/
@@ -378,7 +377,7 @@ void setup(void) {
 	setDisplay(&props.Humid, "00%");      // 湿度
 	setDisplay(&props.SpFreqIn, "0000"); // 速度センサカウンタ
 	setDisplay(&props.SpFreqInUnit, "Hz");
-	setDisplay(&props.SpFreqOut, "0000 OUT");   // 速度センサ周波数
+	setDisplay(&props.DebugData, "0000");   // 速度センサ周波数
 	setDisplay(&props.TempUnit, "c");        // 温度単位
 	display.fillCircle(306-3,6,3,TFT_WHITE);
 	display.fillCircle(306-3,6,1,TFT_BLACK);
@@ -857,6 +856,7 @@ void displaySpeed(){
 	// 入力パルス周波数取得・表示
 	int data = getData(0x00);
 	displayNumber(&props.SpFreqIn, data, 4);
+	long stop0 = millis();
 
 	// 速度算出・表示
 	byte speed = byte(data/10);
@@ -866,12 +866,17 @@ void displaySpeed(){
 	}
 	displayNumber(&props.Speed, speed, 2);
 	//arcM.displayArcM(centerX,centerY+10,speed);
+	long stop1 = millis();
 	
 	// 出力パルス周波数取得
-	//data = getData(0x01);
-	//displayNumber(&props.SpFreqOut, data, 4);
-	int time = int(millis() - start);
-	displayNumber(&props.SpFreqOut, time, 4);
+	data = getData(0x01);
+	//displayNumber(&props.DebugData, data, 4);
+	long stop2 = millis();
+
+	setDisplay(&props.DebugData);
+	display.println(stop0 - start);
+	display.println(stop1 - stop0);
+	display.println(stop2 - stop1);
 }
 
 /**
