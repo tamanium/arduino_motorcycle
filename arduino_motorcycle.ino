@@ -356,6 +356,7 @@ void setup(void) {
 	pushSw.begin();                           // スイッチ
 	rtc.begin(&Wire1);                        // RTC
 	winkers.begin();                          // ウインカー
+	ads.setGain(GAIN_TWOTHIRDS);
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
 	#ifdef BUZZER_ON
 		pinMode(PINS.buzzer, OUTPUT);              // ウインカー音
@@ -468,14 +469,20 @@ void loop() {
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
 		displayTemp();
-		uint16_t raw = ads.readADC_SingleEnded(3);
+		//uint16_t raw = ads.readADC_SingleEnded(3);
 		//String voltage = String((raw * 0.0001875f), 2);
-		int voltage = raw * 0.001875f;
+		//int voltage = raw * 0.001875f;
+		byte rawVoltage = getData(0x02);
+		int voltagex10 = (rawVoltage * 5 * 3) / 0xFF; 
+		
+		setDisplay(&props.DebugData);
+		display.println(voltagex10);
+		display.println(voltagex10);
 		setDisplay(&props.Voltage);
-		display.print(voltage/100);
-		display.print((voltage/10)%10);
+		display.print(voltagex10/100);
+		display.print((voltagex10/10)%10);
 		display.print('.');
-		display.print(voltage%10);
+		display.print(voltagex10%10);
 
 		tempTime += TEMP_INTERVAL;
 	}
@@ -926,16 +933,23 @@ int getData(byte reg){
 	// 返却用変数
 	int result = -1;
 	
-	if(0x01 < reg){
+	if(0x02 < reg){
 		return -1;
 	}
 	Wire1.beginTransmission(MODULES.speed.address);
 	Wire1.write(reg);
 	Wire1.endTransmission(false);
-	Wire1.requestFrom(MODULES.speed.address, 2);
-
-	if(Wire1.available() == 2){
-		result = (Wire1.read()<<8) | Wire1.read();
+	if(reg == 0x00 || reg == 0x01){
+		Wire1.requestFrom(MODULES.speed.address, 2);
+		if(Wire1.available() == 2){
+			result = (Wire1.read()<<8) | Wire1.read();
+		}
+	}
+	else if(reg == 0x02){
+		Wire1.requestFrom(MODULES.speed.address, 1);
+		if(Wire1.available() == 1){
+			result = Wire1.read();
+		}
 	}
 	return result;
 }
