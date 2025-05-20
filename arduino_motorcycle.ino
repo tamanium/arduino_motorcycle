@@ -472,7 +472,7 @@ void loop() {
 		//uint16_t raw = ads.readADC_SingleEnded(3);
 		//String voltage = String((raw * 0.0001875f), 2);
 		//int voltage = raw * 0.001875f;
-		byte rawVoltage = getData(0x02);
+		int rawVoltage = getData(0x02);
 		int voltagex10 = (rawVoltage * 5 * 3) / 0xFF; 
 		
 		setDisplay(&props.DebugData);
@@ -939,17 +939,9 @@ int getData(byte reg){
 	Wire1.beginTransmission(MODULES.speed.address);
 	Wire1.write(reg);
 	Wire1.endTransmission(false);
-	if(reg == 0x00 || reg == 0x01){
-		Wire1.requestFrom(MODULES.speed.address, 2);
-		if(Wire1.available() == 2){
-			result = (Wire1.read()<<8) | Wire1.read();
-		}
-	}
-	else if(reg == 0x02){
-		Wire1.requestFrom(MODULES.speed.address, 1);
-		if(Wire1.available() == 1){
-			result = Wire1.read();
-		}
+	Wire1.requestFrom(MODULES.speed.address, 2);
+	if(Wire1.available() == 2){
+		result = (Wire1.read()<<8) | Wire1.read();
 	}
 	return result;
 }
