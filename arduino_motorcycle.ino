@@ -473,10 +473,10 @@ void loop() {
 		//String voltage = String((raw * 0.0001875f), 2);
 		//int voltage = raw * 0.001875f;
 		int rawVoltage = getData(0x02);
-		int voltagex10 = (rawVoltage * 5 * 3) / 0xFF; 
+		int voltagex10 = (rawVoltage * 5 * 3 * 10) / 1023; 
 		
 		setDisplay(&props.DebugData);
-		display.println(voltagex10);
+		display.println(rawVoltage);
 		display.println(voltagex10);
 		setDisplay(&props.Voltage);
 		display.print(voltagex10/100);
