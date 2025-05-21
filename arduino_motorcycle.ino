@@ -472,11 +472,12 @@ void loop() {
 		//uint16_t raw = ads.readADC_SingleEnded(3);
 		//String voltage = String((raw * 0.0001875f), 2);
 		//int voltage = raw * 0.001875f;
-		int rawVoltage = getData(0x02);
-		int voltagex10 = (rawVoltage * 5 * 3 * 10) / 1023; 
+		int adcValue = getData(0x02);
+		// Vcc=5.22, 分圧逆数=3.05, 10倍値 => 係数=159
+		int voltagex10 = (adcValue * 159) / 1023; 
 		
 		setDisplay(&props.DebugData);
-		display.println(rawVoltage);
+		display.println(adcValue);
 		display.println(voltagex10);
 		setDisplay(&props.Voltage);
 		display.print(voltagex10/100);
