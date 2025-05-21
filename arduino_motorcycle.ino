@@ -21,6 +21,7 @@
 const int MONITOR_INTERVAL = 3;		//ms
 const int DISPLAY_INTERVAL = 15;	//ms
 const int TEMP_INTERVAL    = 2000;	//ms
+const int VOLT_INTERVAL    = 2000;	//ms
 const int TIME_INTERVAL    = 30;	//ms
 const int BUZZER_DURATION  = 50;	//ms
 const int WINKER_DURATION  = 380;	//ms
@@ -31,11 +32,12 @@ const int CENTER_X = OLED.WIDTH>>1;
 const int CENTER_Y = OLED.HEIGHT>>1;
 
 // --------------------変数--------------------
-unsigned long displayTime = 0; // 表示処理
-unsigned long monitorTime = 0; // 各種読み取り
-unsigned long tempTime = 0;    // 温度測定にて使用
-unsigned long timeTime = 0;    // 時刻測定
-unsigned long bzzTime = 0;     // ブザー
+unsigned long displayTime = 0; // 表示用時間
+unsigned long monitorTime = 0; // 各種読み取り用時間
+unsigned long tempTime = 0;    // 温度表示用時間
+unsigned long voltageTime = 0; // 電圧表示用時間
+unsigned long timeTime = 0;    // 時刻表示用時間
+unsigned long bzzTime = 0;     // ブザー用時間
 unsigned long spTime = 0;      // 速度センサ時間
 
 // シフトポジション配列
@@ -469,23 +471,14 @@ void loop() {
 	// 温度電圧モニタリング・表示
 	if(tempTime <= time){
 		displayTemp();
-		//uint16_t raw = ads.readADC_SingleEnded(3);
-		//String voltage = String((raw * 0.0001875f), 2);
-		//int voltage = raw * 0.001875f;
-		int adcValue = getData(0x02);
-		// Vcc=5.22, 分圧逆数=3.05, 10倍値 => 係数=159
-		int voltagex10 = (adcValue * 159) / 1023; 
-		
-		setDisplay(&props.DebugData);
-		display.println(adcValue);
-		display.println(voltagex10);
-		setDisplay(&props.Voltage);
-		display.print(voltagex10/100);
-		display.print((voltagex10/10)%10);
-		display.print('.');
-		display.print(voltagex10%10);
 
 		tempTime += TEMP_INTERVAL;
+	}
+
+	if(voltageTime <= time){
+		displayVoltage();
+
+		voltageTime += VOLT_INTERVAL;
 	}
 
 	// 時刻表示
@@ -701,7 +694,6 @@ bool displayWinkers(){
 	return isSwitched;
 }
 
-
 /**
  * スイッチ動作表示
  * @param sw スイッチクラス
@@ -749,6 +741,35 @@ void displaySwitch(Switch *sw){
 			display.print(brightIndex);
 			beforeSw = OFF;
 		}
+	}
+}
+
+/**
+ * 電圧表示
+ */
+void displayVoltage(){
+	// 前回電圧値
+	static byte beforeVoltagex10 = 0;
+	// 電圧ADC値取得
+	int adcValue = getData(0x02);
+	// 電圧算出
+	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
+	byte voltagex10 = (adcValue * 159) / 1023;
+	if(voltagex10 != beforeVoltagex10){
+		// 電圧表示
+		setDisplay(&props.Voltage);
+		display.print(voltagex10/100);
+		display.print((voltagex10/10)%10);
+		display.print('.');
+		display.print(voltagex10%10);
+
+		
+		setDisplay(&props.DebugData);
+		display.println(adcValue);
+		display.println(voltagex10/10);
+		display.print(voltagex10);
+
+		beforeVoltagex10 = voltagex10;
 	}
 }
 
