@@ -449,11 +449,30 @@ void loop() {
 	static byte speed = 0;
 	static byte beforeSpeed = 0;
 
-
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
 		// パルス周波数取得
 		pulseFreq = getData(0x00);
+		int freqOut = getData(0x01);
+		int shiftADC = getData(0x03);
+		int winkerADC = getData(0x04);
+		setDisplay(&props.DebugData);
+
+		// デバッグ用表示
+		display.print("in :");
+		display.print(pulseFreq);
+		display.println("   ");
+		display.print("out:");
+		display.print(freqOut);
+		display.println("   ");
+		display.println("");
+		display.print("sAD:");
+		display.print(shiftADC);
+		display.println("    ");
+		display.print("wAD:");
+		display.print(winkerADC);
+		display.println("    ");
+
 		// 速度算出
 		speed = byte(pulseFreq/10);
 		if(100 <= speed){
@@ -468,16 +487,15 @@ void loop() {
 		monitorTime += MONITOR_INTERVAL;
 	}
 
-	// 温度電圧モニタリング・表示
+	// 温度モニタリング・表示
 	if(tempTime <= time){
 		displayTemp();
-
 		tempTime += TEMP_INTERVAL;
 	}
 
+	// 電圧モニタリング・表示
 	if(voltageTime <= time){
 		displayVoltage();
-
 		voltageTime += VOLT_INTERVAL;
 	}
 
@@ -762,12 +780,13 @@ void displayVoltage(){
 		display.print((voltagex10/10)%10);
 		display.print('.');
 		display.print(voltagex10%10);
-
 		
 		setDisplay(&props.DebugData);
-		display.println(adcValue);
-		display.println(voltagex10/10);
-		display.print(voltagex10);
+		display.println("");
+		display.println("");
+		display.print("vAD:");
+		display.print(adcValue);
+		display.println("    ");
 
 		beforeVoltagex10 = voltagex10;
 	}
