@@ -63,7 +63,6 @@ LGFX display;
 // 円弧表示情報
 struct arcInfo{
 	LGFX_Sprite sprite;   // スプライト
-	//LGFX_Sprite spriteBg; // 背景スプライト
 	int x;                // 円弧中心x座標
 	int y;                // 円弧中心y座標
 	int r;                // 内径
@@ -173,26 +172,13 @@ void setup(void) {
 	Wire1.begin();
 	
 	int offsetY = 50;
-	
-	// 月
-	props.Month.font = &fonts::Font4;
-	setPropWH(&props.Month,"00/");
-
-	// 日
-	props.Day = {
-		props.Month.x + props.Month.width,
-		props.Month.y,
-		props.Month.size,
-		props.Month.font
-	};
-	setPropWH(&props.Day, "00  ");
 
 	// 時間
 	props.Hour = {
-		props.Day.x + props.Day.width,
-		props.Month.y,
-		props.Month.size,
-		props.Month.font
+		0,
+		0,
+		1,
+		&fonts::Font4
 	};
 	setPropWH(&props.Hour,"00:");
 
@@ -213,6 +199,24 @@ void setup(void) {
 		props.Hour.font
 	};
 	setPropWH(&props.Sec,"00");
+
+	// 月
+	props.Month = {
+		0,
+		props.Hour.y + props.Hour.height,
+		1,
+		&fonts::Font4
+	}
+	setPropWH(&props.Month,"00/");
+
+	// 日
+	props.Day = {
+		props.Month.x + props.Month.width,
+		props.Month.y,
+		props.Month.size,
+		props.Month.font
+	};
+	setPropWH(&props.Day, "00");
 
 	// 温度
 	props.Temp = {
@@ -369,19 +373,19 @@ void setup(void) {
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
 	
-	display.fillScreen(TFT_BLACK);         // 画面リセット
-	setDisplay(&props.Gear, "0");          // ギアポジション表示開始
-	setDisplay(&props.Speed, "00");        // 速度
-	setDisplay(&props.SpUnit, "km/h");     // 速度単位
-	setDisplay(&props.Hour, "00:00:00");   // 時間
-	setDisplay(&props.Month, "00/00");     // 日付
-	setDisplay(&props.Temp, "00");         // 温度
-	setDisplay(&props.Humid, "00%");       // 湿度
-	setDisplay(&props.SpFreqIn, "0000");   // パルス周波数
-	setDisplay(&props.SpFreqInUnit, "Hz"); // パルス周波数単位
-	setDisplay(&props.Voltage, "00.0V");   // 電圧
-	setDisplay(&props.DebugData);          // デバッグ用表示
-	setDisplay(&props.TempUnit, "c");      // 温度単位
+	display.fillScreen(TFT_BLACK);           // 画面リセット
+	setDisplay(&props.Gear,     "0");        // ギアポジション表示開始
+	setDisplay(&props.Speed,    "00");       // 速度
+	setDisplay(&props.SpUnit,   "km/h");     // 速度単位
+	setDisplay(&props.Hour,     "00:00:00"); // 時間
+	setDisplay(&props.Month,    "00/00");    // 日付
+	setDisplay(&props.Temp,     "00");       // 温度
+	setDisplay(&props.Humid,    "00%");      // 湿度
+	setDisplay(&props.SpFreqIn, "0000");     // パルス周波数
+	setDisplay(&props.SpFreqInUnit, "Hz");   // パルス周波数単位
+	setDisplay(&props.Voltage,  "00.0V");    // 電圧
+	setDisplay(&props.DebugData);            // デバッグ用表示
+	setDisplay(&props.TempUnit, "c");        // 温度単位
 	display.fillCircle(306-3,6,3,TFT_WHITE);
 	display.fillCircle(306-3,6,1,TFT_BLACK);
 	// スプライト設定
