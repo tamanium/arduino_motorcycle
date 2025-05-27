@@ -17,7 +17,7 @@
 //#define BUZZER_ON
 
 // --------------------定数--------------------
-// 各じかんかんかつ
+// 各時間間隔
 const int MONITOR_INTERVAL = 3;		//ms
 const int DISPLAY_INTERVAL = 15;	//ms
 const int TEMP_INTERVAL    = 2000;	//ms
@@ -100,17 +100,17 @@ struct arcInfo{
 	 */
 	void displayArcM(int stdX, int stdY, byte sp = 0){
 		// 弧描画（緑）
-		sprite.fillArc(x,y,r+d,r,angle0,angle1,colorON);
+		sprite.fillArc(x,y,r+d,r,angle0,angle1,TFT_DARKGREEN);
 		
-		if(sp < 99 ){
-			// 速さに対する弧の角度算出
-			int angleSp = (360-angle0+angle1)* (100-sp)/100;
-			int newAngle0 = angle1 - angleSp;
-			if(angleSp <= angle1){
-				newAngle0 += 360;
+		if(sp <= 99 ){
+			if(sp == 99){
+				sp = 100;
 			}
+			// 速さに対する弧の角度算出
+			int angleSp = (360-angle0+angle1) * sp / 100;
+			int newAngle1 = angle0 + angleSp;
 			// 弧描画（黒）
-			sprite.fillArc(x,y,r+d-2,r+2,newAngle0+1,angle1-1,TFT_BLACK);
+			sprite.fillArc(x,y,r+d,r,angle0,newAngle1,colorON);
 		}
 		// 出力
 		sprite.pushRotateZoom(stdX,stdY,0,1,1,colorBG);
@@ -163,7 +163,7 @@ Switch pushSw(PINS.IOEXP.sw, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
-	delay(500);
+	delay(1000);
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
 	// I2C設定
@@ -390,7 +390,7 @@ void setup(void) {
 	int w = (75 + 60 - offsetY+10) * 2;
 	int h = w;
 	// 弧の幅
-	arcM.d = 15;
+	arcM.d = 10;
 	arcL.d = 10;
 	arcR.d = 10;
 	// 弧の内外半径
@@ -909,7 +909,7 @@ void displayRealTime(){
 			continue;
 		}
 		// 表示設定を反映
-		setDisplay(printPropArr[i]);
+		setDisplay(printPropArr[i]);	
 		// 値が1桁の場合は0埋め
 		if(newTime[i] < 10){
 			display.print('0');
