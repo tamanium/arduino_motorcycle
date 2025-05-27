@@ -100,7 +100,7 @@ struct arcInfo{
 	 */
 	void displayArcM(int stdX, int stdY, byte sp = 0){
 		// 弧描画（緑）
-		sprite.fillArc(x,y,r+d,r,angle0,angle1,TFT_DARKGREEN);
+		sprite.fillArc(x,y,r+d,r,angle0,angle1,0x01e0);
 		
 		if(sp <= 99 ){
 			if(sp == 99){
