@@ -18,14 +18,14 @@
 
 // --------------------定数--------------------
 // 各時間間隔(ms)
-const int MONITOR_INTERVAL = 3;	  	//ms
-const int DISPLAY_INTERVAL = 15;	  //ms
-const int TEMP_INTERVAL    = 2000;	//ms
-const int VOLT_INTERVAL    = 2000;	//ms
-const int TIME_INTERVAL    = 30;	  //ms
-const int BUZZER_DURATION  = 50;  	//ms
-const int WINKER_DURATION  = 380;	 //ms
-const int SP_DURATION      = 500; //ms
+const int MONITOR_INTERVAL = 3;
+const int DISPLAY_INTERVAL = 15;
+const int TEMP_INTERVAL    = 2000;
+const int VOLT_INTERVAL    = 2000;
+const int TIME_INTERVAL    = 30;
+const int BUZZER_DURATION  = 50;
+const int WINKER_DURATION  = 380;
+const int SP_DURATION      = 500;
 
 // 中心座標
 const int CENTER_X = OLED.WIDTH>>1;
@@ -46,7 +46,7 @@ unsigned long timeTime = 0;    // 時刻表示用時間
 unsigned long bzzTime = 0;     // ブザー用時間
 unsigned long spTime = 0;      // 速度センサ時間
 
-int winkerValue = INDICATE_BOTH; // ウインカー値
+int winkerStatus = INDICATE_BOTH; // ウインカー値
 
 
 // シフトポジション配列
@@ -464,7 +464,7 @@ void loop() {
 		// ギアポジションアナログ値取得
 		int shiftADC = getData(0x03);
 		// ウインカー値取得
-		winkerValue = getData(0x04);
+		winkerStatus = getData(0x04);
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
 		display.print("in :");
@@ -478,7 +478,7 @@ void loop() {
 		display.print(shiftADC);
 		display.println("    ");
 		display.print("wAD:");
-		display.print(winkerValue);
+		display.print(winkerStatus);
 		display.println("    ");
 
 		// 速度算出
