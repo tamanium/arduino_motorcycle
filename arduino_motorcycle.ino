@@ -8,28 +8,34 @@
 #include <Adafruit_NeoPixel.h>          // オンボLED
 
 // --------------------自作クラス・ピン定義--------------------
-#include "Define.h"			// 値定義
-#include "GearPositions.h"	// ギアポじかんかんかつ
-#include "Winker.h"			// ウインカークラス
-#include "Switch.h"			// スイッチクラス
-#include "MyLovyanGFX.h"	// ディスプレイ設定
+#include "Define.h"			      // 値定義
+#include "GearPositions.h"	// ギアポジション
+#include "Winker.h"			      // ウインカークラス
+#include "Switch.h"		      	// スイッチクラス
+#include "MyLovyanGFX.h"  	// ディスプレイ設定
 
 //#define BUZZER_ON
 
 // --------------------定数--------------------
-// 各時間間隔
-const int MONITOR_INTERVAL = 3;		//ms
-const int DISPLAY_INTERVAL = 15;	//ms
+// 各時間間隔(ms)
+const int MONITOR_INTERVAL = 3;	  	//ms
+const int DISPLAY_INTERVAL = 15;	  //ms
 const int TEMP_INTERVAL    = 2000;	//ms
 const int VOLT_INTERVAL    = 2000;	//ms
-const int TIME_INTERVAL    = 30;	//ms
-const int BUZZER_DURATION  = 50;	//ms
-const int WINKER_DURATION  = 380;	//ms
-const int SP_DURATION = 500;        //ms
+const int TIME_INTERVAL    = 30;	  //ms
+const int BUZZER_DURATION  = 50;  	//ms
+const int WINKER_DURATION  = 380;	 //ms
+const int SP_DURATION      = 500; //ms
 
 // 中心座標
 const int CENTER_X = OLED.WIDTH>>1;
 const int CENTER_Y = OLED.HEIGHT>>1;
+
+// ウインカー値
+const int INDICATE_NONE  = 0;
+const int INDICATE_LEFT  = 1;
+const int INDICATE_RIGHT = 2;
+const int INDICATE_BOTH  = INDICATE_LEFT | INDICATE_RIGHT;
 
 // --------------------変数--------------------
 unsigned long displayTime = 0; // 表示用時間
@@ -39,6 +45,9 @@ unsigned long voltageTime = 0; // 電圧表示用時間
 unsigned long timeTime = 0;    // 時刻表示用時間
 unsigned long bzzTime = 0;     // ブザー用時間
 unsigned long spTime = 0;      // 速度センサ時間
+
+int winkerValue = INDICATE_BOTH; // ウインカー値
+
 
 // シフトポジション配列
 int gears[] = {
@@ -98,19 +107,17 @@ struct arcInfo{
 	 * 表示（メーター向け）
 	 */
 	void displayArcM(int stdX, int stdY, byte sp = 0){
-		// 弧描画（緑）
+		// 弧描画（薄緑）
 		sprite.fillArc(x,y,r+d,r,angle0,angle1,0x01e0);
-		
-		if(sp <= 99 ){
-			if(sp == 99){
-				sp = 100;
-			}
-			// 速さに対する弧の角度算出
-			int angleSp = (360-angle0+angle1) * sp / 100;
-			int newAngle1 = angle0 + angleSp;
-			// 弧描画（黒）
-			sprite.fillArc(x,y,r+d,r,angle0,newAngle1,colorON);
+		// 速度上限
+		if(99 <= sp){
+			sp = 100;
 		}
+		// 速さに対する弧の角度算出
+		int angleSp = (360-angle0+angle1) * sp / 100;
+		int newAngle1 = angle0 + angleSp;
+		// 弧描画（緑）
+		sprite.fillArc(x,y,r+d,r,angle0,newAngle1,colorON);
 		// 出力
 		sprite.pushRotateZoom(stdX,stdY,0,1,1,colorBG);
 	}
@@ -372,7 +379,6 @@ void setup(void) {
 
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
-	
 	display.fillScreen(TFT_BLACK);           // 画面リセット
 	setDisplay(&props.Gear,     "0");        // ギアポジション表示開始
 	setDisplay(&props.Speed,    "00");       // 速度
@@ -415,13 +421,10 @@ void setup(void) {
 	int a1btm = 41;
 	arcM.angle0 = 90  + a0btm;
 	arcM.angle1 = 90  - a0btm;
-
 	arcL.angle0 = 90  + a1btm;
 	arcL.angle1 = 270 - a1top;
-
 	arcR.angle0 = 270 + a1top;
 	arcR.angle1 = 90  - a1btm;
-
 	// 大きさ
 	arcM.sprite.createSprite(w,h);
 	arcL.sprite.createSprite(arcL.x,h);
@@ -430,7 +433,6 @@ void setup(void) {
 	arcM.colorON=TFT_GREEN;
 	arcL.colorON=TFT_YELLOW;
 	arcR.colorON=TFT_YELLOW;
-
 	// 弧の中心・背景色
 	arcM.initArc();
 	arcL.initArc();
@@ -455,14 +457,16 @@ void loop() {
 
 	// 各種モニタリング・更新
 	if(monitorTime <= time){
-		// パルス周波数取得
+		// 入力パルス周波数取得
 		pulseFreq = getData(0x00);
+		// 出力パルス周波数取得
 		int freqOut = getData(0x01);
+		// ギアポジションアナログ値取得
 		int shiftADC = getData(0x03);
-		int winkerADC = getData(0x04);
+		// ウインカー値取得
+		winkerValue = getData(0x04);
+		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
-
-		// デバッグ用表示
 		display.print("in :");
 		display.print(pulseFreq);
 		display.println("   ");
@@ -474,7 +478,7 @@ void loop() {
 		display.print(shiftADC);
 		display.println("    ");
 		display.print("wAD:");
-		display.print(winkerADC);
+		display.print(winkerValue);
 		display.println("    ");
 
 		// 速度算出
