@@ -163,7 +163,7 @@ Adafruit_AHTX0 aht;
 // ギアポジション
 GearPositions gearPositions(gears, sizeof(gears)/sizeof(int), &pcf);
 // ウインカー
-Winkers winkers(PINS.IOEXP.WNK.left, PINS.IOEXP.WNK.right, &pcf);
+//Winkers winkers(PINS.IOEXP.WNK.left, PINS.IOEXP.WNK.right, &pcf);
 // スイッチ
 Switch pushSw(PINS.IOEXP.sw, &pcf);
 
@@ -368,7 +368,7 @@ void setup(void) {
 	gearPositions.begin();                    // シフトインジケータ
 	pushSw.begin();                           // スイッチ
 	rtc.begin(&Wire1);                        // RTC
-	winkers.begin();                          // ウインカー
+	//winkers.begin();                          // ウインカー
 	ads.setGain(GAIN_TWOTHIRDS);
 	ads.begin(MODULES.adCnv.address, &Wire1); // ADコンバータ
 	#ifdef BUZZER_ON
@@ -489,7 +489,7 @@ void loop() {
 		// 現在のギアポジを取得
 		gearPositions.updateStatus();
 		// 現在のウインカー状態を取得
-		winkers.updateStatus();
+		//winkers.updateStatus();
 		// スイッチ状態取得
 		pushSw.updateStatus();
 		monitorTime += MONITOR_INTERVAL;
@@ -702,24 +702,21 @@ bool displayWinkers(){
 	static int before = INDICATE_NONE;
 	// 返却用フラグ
 	bool isSwitched = false;
-
+ // 定数配列
+ int indiConstArr[2] = {INDICATE_LEFT, INDICATE_RIGHT}; 
+	// 円弧表示配列
 	arcInfo* arcArr[2] = {&arcL, &arcR};
 	if(winkerStatus == before){
 		return false;
 	}
-
-	if((winkerStatus & INDICATE_LEFT) != (before & INDICATE_LEFT)){
-		// ディスプレイ表示処理
-		arcL.displayArcW(CENTER_X,CENTER_Y+10,(winkerStatus & INDICATE_LEFT) == INDICATE_LEFT);
-		// フラグ立てる
-		isSwitched = true;
-	}
-
-	if((winkerStatus & INDICATE_RIGHT) != (before & INDICATE_RIGHT)){
-		// ディスプレイ表示処理
-		arcL.displayArcW(CENTER_X,CENTER_Y+10,(winkerStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
-		// フラグ立てる
-		isSwitched = true;
+	int i = 0;
+	for(int indiConst : indiConstArr){
+		if((winkerStatus & indiConst) != (before & indiConst)){
+			// ディスプレイ表示処理
+			arcArr[i++]->displayArcW(CENTER_X,CENTER_Y+10,(winkerStatus & indiConst) == indiConst);
+			// フラグ立てる
+			isSwitched = true;
+		}
 	}
 
 	if(isSwitched){
