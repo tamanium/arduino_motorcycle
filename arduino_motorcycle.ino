@@ -213,7 +213,7 @@ void setup(void) {
 		props.Hour.y + props.Hour.height,
 		1,
 		&fonts::Font4
-	}
+	};
 	setPropWH(&props.Month,"00/");
 
 	// 日
@@ -698,24 +698,32 @@ void gearDisplay(char newGear){
  * ウインカー表示処理
  */
 bool displayWinkers(){
-	// バッファ状態
-	static bool before[2] = {OFF, OFF};
+	// 前回状態
+	static int before = INDICATE_NONE;
 	// 返却用フラグ
 	bool isSwitched = false;
 
 	arcInfo* arcArr[2] = {&arcL, &arcR};
+	if(winkerStatus == before){
+		return false;
+	}
 
-	for(int side=LEFT; side<=RIGHT; side++){
-		// 左右ウインカー状態を判定
-		if(before[side] == winkers.getStatus(side)){
-			continue;
-		}
-		// バッファ上書き
-		before[side] = winkers.getStatus(side);
+	if((winkerStatus & INDICATE_LEFT) != (before & INDICATE_LEFT)){
 		// ディスプレイ表示処理
-		arcArr[side]->displayArcW(CENTER_X,CENTER_Y+10,!before[side]);
+		arcL.displayArcW(CENTER_X,CENTER_Y+10,(winkerStatus & INDICATE_LEFT) == INDICATE_LEFT);
 		// フラグ立てる
 		isSwitched = true;
+	}
+
+	if((winkerStatus & INDICATE_RIGHT) != (before & INDICATE_RIGHT)){
+		// ディスプレイ表示処理
+		arcL.displayArcW(CENTER_X,CENTER_Y+10,(winkerStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
+		// フラグ立てる
+		isSwitched = true;
+	}
+
+	if(isSwitched){
+		before = winkerStatus;
 	}
 	return isSwitched;
 }
