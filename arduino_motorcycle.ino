@@ -35,19 +35,18 @@ const int CENTER_Y = OLED.HEIGHT>>1;
 const int INDICATE_NONE  = 0;
 const int INDICATE_LEFT  = 1;
 const int INDICATE_RIGHT = 2;
-const int INDICATE_BOTH  = INDICATE_LEFT | INDICATE_RIGHT;
+const int INDICATE_BOTH  = INDICATE_LEFT | INDICATE_RIGHT; // 4
 
 // --------------------変数--------------------
-unsigned long displayTime = 0; // 表示用時間
-unsigned long monitorTime = 0; // 各種読み取り用時間
-unsigned long tempTime = 0;    // 温度表示用時間
-unsigned long voltageTime = 0; // 電圧表示用時間
-unsigned long timeTime = 0;    // 時刻表示用時間
-unsigned long bzzTime = 0;     // ブザー用時間
-unsigned long spTime = 0;      // 速度センサ時間
-
-int winkerStatus = INDICATE_BOTH; // ウインカー値
-
+unsigned long displayTime = 0;    // 表示用時間
+unsigned long monitorTime = 0;    // 各種読み取り用時間
+unsigned long tempTime = 0;       // 温度表示用時間
+unsigned long voltageTime = 0;    // 電圧表示用時間
+unsigned long timeTime = 0;       // 時刻表示用時間
+unsigned long bzzTime = 0;        // ブザー用時間
+unsigned long spTime = 0;         // 速度センサ時間
+int winkerStatus = INDICATE_NONE; // ウインカー値
+int gearStatus = 0;                // ギアポジ値
 
 // シフトポジション配列
 int gears[] = {
@@ -350,7 +349,7 @@ void setup(void) {
 	props.InitMsg = {
 		0, 0, 2
 	};
-	// 初期情報表示
+
 	// ディスプレイの初期化
 	display.init();
 	// 明るさ
@@ -560,23 +559,6 @@ void loop() {
 // -------------------------------------------------------------------
 
 /**
- * i2cモジュールのアドレスから接続中モジュールの有無を取得
- *
- * @param adrs i2cモジュールのアドレス
- * @param arr モジュール配列
- * @param size i2cモジュール数
- * @return モジュール配列のインデックス
- */
-int existsModule(byte adrs, Module* arr, int size){
-	for(int i=0; i<size; i++){
-		if(arr[i].address == adrs){
-			return i;
-		}
-	}
-	return -1;
-}
-
-/**
  * ディスプレイ表示設定0
  *
  * @param p 表示設定
@@ -654,6 +636,30 @@ void scanModules(){
 	delay(2000);
 }
 
+/**
+ * i2cモジュールのアドレスから接続中モジュールの有無を取得
+ *
+ * @param adrs i2cモジュールのアドレス
+ * @param arr モジュール配列
+ * @param size i2cモジュール数
+ * @return モジュール配列のインデックス
+ */
+int existsModule(byte adrs, Module* arr, int size){
+	for(int i=0; i<size; i++){
+		if(arr[i].address == adrs){
+			return i;
+		}
+	}
+	return -1;
+}
+
+void gearDisplay2(){
+	static char before = '0';
+	int 
+ char gearChar = 'N';
+
+	before = gearStatus;
+}
 /**
  * ギアポジションの表示処理
  *
