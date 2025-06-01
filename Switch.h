@@ -21,5 +21,4 @@
 			bool isLongPress();  // 長押ししているか
 			void updateStatus(); // ウインカー状態更新
 	};
-
 #endif

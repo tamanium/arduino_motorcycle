@@ -655,10 +655,8 @@ int existsModule(byte adrs, Module* arr, int size){
 
 void gearDisplay2(){
 	static char before = '0';
-	int 
- char gearChar = 'N';
-
-	before = gearStatus;
+	char gearChar = 'N';
+	//before = gearStatus;
 }
 /**
  * ギアポジションの表示処理
@@ -815,20 +813,12 @@ void displayVoltage(){
  * 温度表示
  */
 void displayTemp(){
-	//static int beforeTempx10 = 0;
 	static byte beforeTemp = 0;
-	//static int beforeHumid = 0;
 	static byte beforeHumid = 0;
 	// 温度取得
 	sensors_event_t humidity, temp;
 	aht.getEvent(&humidity,&temp);
-	// 3桁分だけ取得
-	//int newTempx10 = (int)(temp.temperature * 10)%1000;
 	int newTempInt = (byte)(temp.temperature);
-	// 0以下の場合は0に
-	//if(newTempx10 <= 0){
-	//	newTempx10 = 0;
-	//}
 	if(newTempInt < 0){
 		newTempInt = 0;
 	}
@@ -840,28 +830,6 @@ void displayTemp(){
 		displayNumber(&props.Temp, newTemp, 2);
 		beforeTemp = newTemp;
 	}
-
-	// 前回温度と同じ場合、スキップ
-	/*
-	if(beforeTempx10 != newTempx10){
-		setDisplay(&props.Temp);
-		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		// 温度が一桁以下の場合、十の位にスペース
-		if(10 <= newTempx10 && newTempx10 < 100){
-			display.print(' ');
-		}
-		display.print(int(newTempx10/10));
-		display.print('.');
-		display.print(int(newTempx10)%10);
-		// 保持変数を更新
-		beforeTempx10 = newTempx10;
-	}
-	*/
-
-	//int newHumid = (int)humidity.relative_humidity%100;
-	//if(newHumid < 0){
-	//	newHumid = 0;
-	//}
 	int newHumidInt = (int)humidity.relative_humidity%100;
 	if(newHumidInt < 0){
 		newHumidInt = 0;
@@ -874,20 +842,6 @@ void displayTemp(){
 		displayNumber(&props.Humid, newHumid, 2);
 		beforeHumid = newHumid;
 	}
-	/*
-	// 前回温度と同じ場合、スキップ
-	if(beforeHumid != newHumid){
-		setDisplay(&props.Humid);
-		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		// 温度が一桁以下の場合、十の位にスペース
-		if(1 <= newHumid && newHumid < 10){
-			display.print(' ');
-		}
-		display.print(int(newHumid));
-		// 保持変数を更新
-		beforeHumid = newHumid;
-	}
-	*/
 }
 
 /**
