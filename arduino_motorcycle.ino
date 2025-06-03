@@ -343,7 +343,7 @@ void setup(void) {
 
 	// デバッグ用表示
 	setPropWH(&props.DebugData, "00");
-	props.DebugData.y = fromBottom(props.DebugData.height * 8);
+	props.DebugData.y = fromBottom(props.DebugData.height * 9);
 
 	// 初期表示メッセージ
 	props.InitMsg = {
@@ -466,18 +466,21 @@ void loop() {
 		winkerStatus = getData(0x04);
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
-		display.print("in :");
+		display.print("FreqI:");
 		display.print(pulseFreq);
 		display.println("   ");
-		display.print("out:");
+		display.print("FreqO:");
 		display.print(freqOut);
 		display.println("   ");
 		display.println("");
-		display.print("sAD:");
+		display.print("spdAD:");
 		display.print(gearADC);
 		display.println("    ");
-		display.print("wAD:");
+		display.print("wnkAD:");
 		display.print(winkerStatus);
+		display.println("    ");
+		display.print("geaAD:");
+		display.print(gearADC);
 		display.println("    ");
 
 		// 速度算出
