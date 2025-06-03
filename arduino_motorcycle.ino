@@ -9,7 +9,6 @@
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"         // 値定義
-#include "GearPositions.h"  // ギアポジション //廃止予定
 #include "Winker.h"         // ウインカークラス //廃止予定
 #include "Switch.h"         // スイッチクラス //廃止予定
 #include "MyLovyanGFX.h"    // ディスプレイ設定
@@ -48,14 +47,6 @@ unsigned long spTime = 0;          // 速度センサ時間
 int winkerStatus = INDICATE_NONE;  // ウインカー値
 int gearADC = 0;                // ギアポジ値
 
-// シフトポジション配列
-int gears[] = {
-  PINS.IOEXP.POS.nwt,
-  PINS.IOEXP.POS.low,
-  PINS.IOEXP.POS.sec,
-  PINS.IOEXP.POS.thi,
-  PINS.IOEXP.POS.top
-};
 // 明るさレベル
 byte brightLevel[] = {
   0x01,
@@ -159,8 +150,6 @@ Adafruit_PCF8574 pcf;
 Adafruit_ADS1X15 ads;
 // 温湿度計
 Adafruit_AHTX0 aht;
-// ギアポジション
-GearPositions gearPositions(gears, sizeof(gears) / sizeof(int), &pcf);
 // ウインカー
 //Winkers winkers(PINS.IOEXP.WNK.left, PINS.IOEXP.WNK.right, &pcf);
 // スイッチ
@@ -364,7 +353,6 @@ void setup(void) {
 	scanModules();
 	// 各モジュール動作開始
 	pcf.begin(MODULES.ioExp.address, &Wire1);  // IOエキスパンダ
-	gearPositions.begin();                     // シフトインジケータ
 	pushSw.begin();                            // スイッチ
 	rtc.begin(&Wire1);                         // RTC
 	//winkers.begin();                          // ウインカー
@@ -486,10 +474,8 @@ void loop() {
 		// 速度算出
 		speed = byte(pulseFreq / 10);
 		if (100 <= speed) {
-		speed = 99;
+			speed = 99;
 		}
-		// 現在のギアポジを取得
-		gearPositions.updateStatus();
 		// 現在のウインカー状態を取得
 		//winkers.updateStatus();
 		// スイッチ状態取得
@@ -531,7 +517,7 @@ void loop() {
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw);
 		// ギア表示
-		gearDisplay(gearPositions.getGear());
+		gearDisplay2();
 		// ウインカー点灯状態が切り替わった場合
 		if (displayWinkers() == true && bzzTime == 0) {
 			// ブザーON
@@ -659,56 +645,42 @@ int existsModule(byte adrs, Module* arr, int size) {
 /**
  * ギアポジションの表示処理
  */
-char gearDisplay2() {
-	int thresholdArr[6] = {0, 100, 200, 300, 400 };
-
-	char gearChar = 'N';
-	if(gearADC < 0){
-		return '0';
-	}
+void gearDisplay2() {
+	static char before = '0';
+	//0, 234, 456, 658, 847
+	int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
+	char gearArr[6] = {'0', '3','2','4','1','N'};
+	char gear = '0';
 	for(int i=0; i<6; i++){
 		if(gearADC < thresholdArr[i]){
-			gearChar = '0' + i;
+			gear = gearArr[i];
+			break;
 		}
 	}
-	return gearChar;
-}
-/**
- * ギアポジションの表示処理
- *
- * @param newChar char型 表示文字列
- */
-void gearDisplay(char newGear) {
-  // バッファ文字列
-  static char beforeGear = '0';
-  // バッファと引数が同じ場合スキップ
-  if (beforeGear == newGear) {
-	return;
-  }
-  // ニュートラルの場合
-  if (newGear == 'N') {
-	setDisplay(&props.Newt);
-	display.setTextColor(TFT_GREEN, TFT_BLACK);
-  }
-  // 1～4の場合
-  else {
-	setDisplay(&props.Gear);
-  }
-  // ディスプレイ設定
-  // ギア抜けorペダル踏み込み中の場合
-  if (newGear == '0') {
-	if (beforeGear == 'N') {
-	  setDisplay(&props.Newt);
+	if(gear == before){
+		return;
 	}
-	// グレーで前回ギアを表示
-	display.setTextColor(TFT_DARKGREY);
-	display.print(beforeGear);
-  } else {
-	// ギア表示更新
-	display.print(newGear);
-  }
-  // バッファ文字列を上書き
-  beforeGear = newGear;
+	if(gear == 'N'){
+		setDisplay(&props.Newt);
+		display.setTextColor(TFT_GREEN, TFT_BLACK);
+		display.print(gear);
+	}
+	else if(gear == '0'){
+		if(before == 'N'){
+			setDisplay(&props.Newt);
+		}
+		else{
+			setDisplay(&props.Gear);
+		}
+		// グレーで前回ギアを表示
+		display.setTextColor(TFT_DARKGREY);
+		display.print(before);
+	}
+	else{
+		setDisplay(&props.Gear);
+		display.print(gear);
+	}
+	before = gear;
 }
 
 /**
@@ -796,14 +768,14 @@ void displaySwitch(Switch* sw) {
  * 電圧表示
  */
 void displayVoltage() {
-  // 前回電圧値
-  static byte beforeVoltagex10 = 0;
-  // 電圧ADC値取得
-  int adcValue = getData(0x02);
-  // 電圧算出
-  // Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
-  byte voltagex10 = (adcValue * 159) / 1023;
-  if (voltagex10 != beforeVoltagex10) {
+	// 前回電圧値
+	static byte beforeVoltagex10 = 0;
+	// 電圧ADC値取得
+	int adcValue = getData(0x02);
+	// 電圧算出
+	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
+	byte voltagex10 = (adcValue * 159) / 1023;
+	if (voltagex10 != beforeVoltagex10) {
 	// 電圧表示
 	setDisplay(&props.Voltage);
 	display.print(voltagex10 / 100);
@@ -955,10 +927,6 @@ void displayNumber(Prop* p, int valueInt, int digitNum) {
 int getData(byte reg) {
   // 返却用変数
   int result = -1;
-
-  if (0x02 < reg) {
-	return -1;
-  }
   Wire1.beginTransmission(MODULES.speed.address);
   Wire1.write(reg);
   Wire1.endTransmission(false);
