@@ -358,10 +358,10 @@ void setup(void) {
 	//winkers.begin();                          // ウインカー
 	ads.setGain(GAIN_TWOTHIRDS);
 	ads.begin(MODULES.adCnv.address, &Wire1);  // ADコンバータ
-#ifdef BUZZER_ON
-	pinMode(PINS.buzzer, OUTPUT);  // ウインカー音
-	digitalWrite(PINS.buzzer, LOW);
-#endif
+	#ifdef BUZZER_ON
+		pinMode(PINS.buzzer, OUTPUT);  // ウインカー音
+		digitalWrite(PINS.buzzer, LOW);
+	#endif
 	aht.begin(&Wire1, 0, MODULES.thmst.address);  // 温度計
 
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
@@ -687,31 +687,32 @@ void gearDisplay2() {
  * ウインカー表示処理
  */
 bool displayWinkers() {
-  // 前回状態
-  static int before = INDICATE_NONE;
-  // 返却用フラグ
-  bool isSwitched = false;
-  // 定数配列
-  int indiConstArr[2] = { INDICATE_LEFT, INDICATE_RIGHT };
-  // 円弧表示配列
-  arcInfo* arcArr[2] = { &arcL, &arcR };
-  if (winkerStatus == before) {
-	return false;
-  }
-  int i = 0;
-  for (int indiConst : indiConstArr) {
-	if ((winkerStatus & indiConst) != (before & indiConst)) {
-	  // ディスプレイ表示処理
-	  arcArr[i++]->displayArcW(CENTER_X, CENTER_Y + 10, (winkerStatus & indiConst) == indiConst);
-	  // フラグ立てる
-	  isSwitched = true;
+	// 前回状態
+	static int before = INDICATE_NONE;
+	// 返却用フラグ
+	bool isSwitched = false;
+	// 定数配列
+	int indicateArr[2] = { INDICATE_LEFT, INDICATE_RIGHT };
+	// 円弧表示配列
+	arcInfo* arcArr[2] = { &arcL, &arcR };
+	if (winkerStatus == before) {
+		return false;
 	}
-  }
+	int i = 0;
 
-  if (isSwitched) {
-	before = winkerStatus;
-  }
-  return isSwitched;
+	for(int side = LEFT; side<=RIGHT;side++){
+		if((winkerStatus & indicateArr[side]) != (before & indicateArr[side])){
+			// ディスプレイ表示処理
+			arcArr[side]->displayArcW(CENTER_X, CENTER_Y + 10, (winkerStatus & indicateArr[side]) == indicateArr[side]);
+			// フラグ立てる
+			isSwitched = true;
+		}
+	}
+
+	if (isSwitched) {
+		before = winkerStatus;
+	}
+	return isSwitched;
 }
 
 /**
@@ -719,47 +720,47 @@ bool displayWinkers() {
  * @param sw スイッチクラス
  */
 void displaySwitch(Switch* sw) {
-  static bool beforeSw = false;
-  static bool beforeLong = false;
-  static byte brightIndex = 0;
+	static bool beforeSw = false;
+	static bool beforeLong = false;
+	static byte brightIndex = 0;
 
-  bool nowSw = sw->getStatus();
-  display.setFont(NULL);
-  display.setTextSize(2);
-  display.setCursor(0, fromBottom(8 * 2));
+	bool nowSw = sw->getStatus();
+	display.setFont(NULL);
+	display.setTextSize(2);
+	display.setCursor(0, fromBottom(8 * 2));
 
-  // キーダウンの場合
-  if (nowSw) {
+	// キーダウンの場合
+	if (nowSw) {
 	display.setTextColor(TFT_RED, TFT_BLACK);
 	if (beforeSw != nowSw) {
-	  display.print("ON  ");
-	  beforeSw = ON;
+		display.print("ON  ");
+		beforeSw = ON;
 	}
 	// 長押し
 	else if (beforeLong != sw->isLongPress()) {
-	  display.print("long");
-	  beforeLong = sw->isLongPress();
+		display.print("long");
+		beforeLong = sw->isLongPress();
 	}
   }
   // キーアップの場合
   else {
 	if (beforeSw != nowSw) {
-	  display.setTextColor(TFT_BLUE, TFT_BLACK);
-	  display.print("OFF ");
-	  beforeSw = OFF;
+		display.setTextColor(TFT_BLUE, TFT_BLACK);
+		display.print("OFF ");
+		beforeSw = OFF;
 	}
 	// 長押し判定だった場合
 	if (beforeLong) {
-	  beforeLong = false;
+		beforeLong = false;
 	}
 	// プッシュ
 	else if (sw->isPush()) {
-	  display.setTextColor(TFT_BLUE, TFT_BLACK);
-	  display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
-	  brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
-	  display.setBrightness(brightLevel[brightIndex]);
-	  display.print(brightIndex);
-	  beforeSw = OFF;
+		display.setTextColor(TFT_BLUE, TFT_BLACK);
+		display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
+		brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
+		display.setBrightness(brightLevel[brightIndex]);
+		display.print(brightIndex);
+		beforeSw = OFF;
 	}
   }
 }
@@ -798,83 +799,83 @@ void displayVoltage() {
  * 温度表示
  */
 void displayTemp() {
-  static byte beforeTemp = 0;
-  static byte beforeHumid = 0;
-  // 温度取得
-  sensors_event_t humidity, temp;
-  aht.getEvent(&humidity, &temp);
-  int newTempInt = (byte)(temp.temperature);
-  if (newTempInt < 0) {
-	newTempInt = 0;
-  } else if (100 <= newTempInt) {
-	newTempInt = 99;
-  }
-  byte newTemp = byte(newTempInt);
-  if (beforeTemp != newTemp) {
-	displayNumber(&props.Temp, newTemp, 2);
-	beforeTemp = newTemp;
-  }
-  int newHumidInt = (int)humidity.relative_humidity % 100;
-  if (newHumidInt < 0) {
-	newHumidInt = 0;
-  } else if (100 <= newHumidInt) {
-	newHumidInt = 99;
-  }
-  byte newHumid = byte(newHumidInt);
-  if (beforeHumid != newHumid) {
-	displayNumber(&props.Humid, newHumid, 2);
-	beforeHumid = newHumid;
-  }
+	static byte beforeTemp = 0;
+	static byte beforeHumid = 0;
+	// 温度取得
+	sensors_event_t humidity, temp;
+	aht.getEvent(&humidity, &temp);
+	int newTempInt = (byte)(temp.temperature);
+	if (newTempInt < 0) {
+		newTempInt = 0;
+	} else if (100 <= newTempInt) {
+		newTempInt = 99;
+	}
+	byte newTemp = byte(newTempInt);
+	if (beforeTemp != newTemp) {
+		displayNumber(&props.Temp, newTemp, 2);
+		beforeTemp = newTemp;
+	}
+	int newHumidInt = (int)humidity.relative_humidity % 100;
+	if (newHumidInt < 0) {
+		newHumidInt = 0;
+	} else if (100 <= newHumidInt) {
+		newHumidInt = 99;
+	}
+	byte newHumid = byte(newHumidInt);
+	if (beforeHumid != newHumid) {
+		displayNumber(&props.Humid, newHumid, 2);
+		beforeHumid = newHumid;
+	}
 }
 
 /**
  * 現在時刻表示処理
  */
 void displayRealTime() {
-  // 前回日時
-  static uint8_t beforeTime[5] = { 13, 32, 25, 60, 60 };
-  // 表示情報配列
-  static Prop* printPropArr[5] = {
-	&props.Month,
-	&props.Day,
-	&props.Hour,
-	&props.Min,
-	&props.Sec,
-  };
-  static int itemLen = 5;
-  // 時刻用変数
-  uint8_t newTime[itemLen] = { 0, 0, 0, 0, 0 };
+	// 前回日時
+	static uint8_t beforeTime[5] = { 13, 32, 25, 60, 60 };
+	// 表示情報配列
+	static Prop* printPropArr[5] = {
+		&props.Month,
+		&props.Day,
+		&props.Hour,
+		&props.Min,
+		&props.Sec,
+	};
+	static int itemLen = 5;
+	// 時刻用変数
+	uint8_t newTime[itemLen] = { 0, 0, 0, 0, 0 };
 
-  // 現在時刻取得
-  DateTime now = rtc.now();
-  // 秒の値が前回と同じ場合スキップ
-  if (beforeTime[SECOND] == now.second()) {
-	return;
-  }
-  // 各配列に格納
-  newTime[MONTH] = now.month();
-  newTime[DAY] = now.day();
-  newTime[HOUR] = now.hour();
-  newTime[MINUTE] = now.minute();
-  newTime[SECOND] = now.second();
+	// 現在時刻取得
+	DateTime now = rtc.now();
+	// 秒の値が前回と同じ場合スキップ
+	if (beforeTime[SECOND] == now.second()) {
+		return;
+	}
+	// 各配列に格納
+	newTime[MONTH] = now.month();
+	newTime[DAY] = now.day();
+	newTime[HOUR] = now.hour();
+	newTime[MINUTE] = now.minute();
+	newTime[SECOND] = now.second();
 
-  // 出力処理
-  for (int i = 0; i < itemLen; i++) {
-	// 前回と同じ場合スキップ
-	if (beforeTime[i] == newTime[i]) {
-	  continue;
+	// 出力処理
+	for (int i = 0; i < itemLen; i++) {
+		// 前回と同じ場合スキップ
+		if (beforeTime[i] == newTime[i]) {
+			continue;
+		}
+		// 表示設定を反映
+		setDisplay(printPropArr[i]);
+		// 値が1桁の場合は0埋め
+		if (newTime[i] < 10) {
+			display.print('0');
+		}
+		// 値を出力
+		display.print(newTime[i]);
+		// 前回日時を更新
+		beforeTime[i] = newTime[i];
 	}
-	// 表示設定を反映
-	setDisplay(printPropArr[i]);
-	// 値が1桁の場合は0埋め
-	if (newTime[i] < 10) {
-	  display.print('0');
-	}
-	// 値を出力
-	display.print(newTime[i]);
-	// 前回日時を更新
-	beforeTime[i] = newTime[i];
-  }
 }
 
 /**
