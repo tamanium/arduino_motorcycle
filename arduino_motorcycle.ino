@@ -4,12 +4,10 @@
 #include <RTClib.h>             // 時計機能
 #include <Adafruit_PCF8574.h>   // IOエキスパンダ
 #include <Adafruit_AHTX0.h>     // 温湿度計
-#include <Adafruit_ADS1X15.h>   // ADコンバータ
 #include <Adafruit_NeoPixel.h>  // オンボLED
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"         // 値定義
-#include "Winker.h"         // ウインカークラス //廃止予定
 #include "Switch.h"         // スイッチクラス //廃止予定
 #include "MyLovyanGFX.h"    // ディスプレイ設定
 
@@ -19,100 +17,116 @@
 // 各時間間隔(ms)
 const int MONITOR_INTERVAL = 3;
 const int DISPLAY_INTERVAL = 15;
-const int TEMP_INTERVAL = 2000;
-const int VOLT_INTERVAL = 2000;
-const int TIME_INTERVAL = 30;
-const int BUZZER_DURATION = 50;
-const int WINKER_DURATION = 380;
-const int SP_DURATION = 500;
+const int TEMP_INTERVAL    = 2000;
+const int VOLT_INTERVAL    = 2000;
+const int TIME_INTERVAL    = 30;
+const int BUZZER_DURATION  = 50;
+const int WINKER_DURATION  = 380;
+const int SP_DURATION      = 500;
 
 // 中心座標
 const int CENTER_X = OLED.WIDTH >> 1;
 const int CENTER_Y = OLED.HEIGHT >> 1;
 
 // ウインカー値
-const int INDICATE_NONE = 0;
-const int INDICATE_LEFT = 1;
-const int INDICATE_RIGHT = 2;
-const int INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT;  // 4
+enum{
+	INDICATE_NONE,
+	INDICATE_LEFT,
+	INDICATE_RIGHT,
+	INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT,
+};
+
+// モジュール側も同じ定義
+enum {
+	INDEX_FREQ,
+	INDEX_GEARS,
+	INDEX_WINKERS,
+	INDEX_SWITCH,
+	INDEX_VOLT,
+	INDEX_PULSE,
+	DATA_SIZE,
+	INDEX_A_PART = 0x40,
+	INDEX_ALL = 0xFF,
+};
+
+// 明るさレベル
+byte brightLevel[] = {
+	0x01,
+	0x08,
+	0x18,
+	0x38,
+	0x80
+};
 
 // --------------------変数--------------------
 unsigned long displayTime = 0;     // 表示用時間
 unsigned long monitorTime = 0;     // 各種読み取り用時間
-unsigned long tempTime = 0;        // 温度表示用時間
+unsigned long tempTime    = 0;     // 温度表示用時間
 unsigned long voltageTime = 0;     // 電圧表示用時間
-unsigned long timeTime = 0;        // 時刻表示用時間
-unsigned long bzzTime = 0;         // ブザー用時間
-unsigned long spTime = 0;          // 速度センサ時間
+unsigned long timeTime    = 0;     // 時刻表示用時間
+unsigned long bzzTime     = 0;     // ブザー用時間
+unsigned long spTime      = 0;     // 速度センサ時間
+
 int winkerStatus = INDICATE_NONE;  // ウインカー値
 int gearADC = 0;                // ギアポジ値
-
-// 明るさレベル
-byte brightLevel[] = {
-  0x01,
-  0x08,
-  0x18,
-  0x38,
-  0x80
-};
 
 // ディスプレイ
 LGFX display;
 
 // 円弧表示情報
 struct arcInfo {
-  LGFX_Sprite sprite;           // スプライト
-  int x;                        // 円弧中心x座標
-  int y;                        // 円弧中心y座標
-  int r;                        // 内径
-  int d;                        // 厚さ
-  int angle0;                   // 角度0
-  int angle1;                   // 角度1
-  uint16_t colorON;             // 色
-  uint16_t colorBG = TFT_BLUE;  // 透過色
-  /**
+	LGFX_Sprite sprite;           // スプライト
+	int x;                        // 円弧中心x座標
+	int y;                        // 円弧中心y座標
+	int r;                        // 内径
+	int d;                        // 厚さ
+	int angle0;                   // 角度0
+	int angle1;                   // 角度1
+	uint16_t colorON;             // 色
+	uint16_t colorBG = TFT_BLUE;  // 透過色
+	/**
 	 *  コンストラクタ
 	 */
-  arcInfo(LGFX* display)
-    : sprite(display) {}
-  /**
+	arcInfo(LGFX* display) : sprite(display) {}
+	/**
 	 * 初期設定　
 	 */
-  void initArc() {
-	sprite.fillScreen(TFT_BLUE);
-	sprite.setPivot(x, y);
-  }
-  /**
+	void initArc() {
+		sprite.fillScreen(TFT_BLUE);
+		sprite.setPivot(x, y);
+	}
+	/**
 	 * 表示(ウインカー向け)
 	 */
-  void displayArcW(int stdX, int stdY, bool onOff) {
-	// on,offで色変更
-	uint16_t color = onOff ? colorON : TFT_BLACK;
-	// 弧描画
-	sprite.fillArc(x, y, r + d, r, angle0, angle1, color);
-	// 出力
-	sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
-  }
+	void displayArcW(int stdX, int stdY, bool onOff) {
+		// on,offで色変更
+		uint16_t color = onOff ? colorON : TFT_BLACK;
+		// 弧描画
+		sprite.fillArc(x, y, r + d, r, angle0, angle1, color);
+		// 出力
+		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
+	}
 
-  /**
+	/**
 	 * 表示（メーター向け）
 	 */
-  void displayArcM(int stdX, int stdY, byte sp = 0) {
-	// 弧描画（薄緑）
-	sprite.fillArc(x, y, r + d, r, angle0, angle1, 0x01e0);
-	// 速度上限
-	if (99 <= sp) {
-	  sp = 100;
+	void displayArcM(int stdX, int stdY, byte sp = 0) {
+		// 弧描画（薄緑）
+		sprite.fillArc(x, y, r + d, r, angle0, angle1, 0x01e0);
+		// 速度上限
+		if (99 <= sp) {
+		sp = 100;
+		}
+		// 速さに対する弧の角度算出
+		int angleSp = (360 - angle0 + angle1) * sp / 100;
+		int newAngle1 = angle0 + angleSp;
+		// 弧描画（緑）
+		sprite.fillArc(x, y, r + d, r, angle0, newAngle1, colorON);
+		// 出力
+		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
 	}
-	// 速さに対する弧の角度算出
-	int angleSp = (360 - angle0 + angle1) * sp / 100;
-	int newAngle1 = angle0 + angleSp;
-	// 弧描画（緑）
-	sprite.fillArc(x, y, r + d, r, angle0, newAngle1, colorON);
-	// 出力
-	sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
-  }
 };
+
 // 円弧情報
 arcInfo arcM(&display);
 arcInfo arcL(&display);
@@ -121,23 +135,23 @@ arcInfo arcR(&display);
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props {
-  Prop Month;         // 月
-  Prop Day;           // 日
-  Prop Hour;          // 時
-  Prop Min;           // 分
-  Prop Sec;           // 秒
-  Prop Temp;          // 温度
-  Prop TempUnit;      // 「℃」
-  Prop Humid;         // 湿度
-  Prop Gear;          // ギア
-  Prop Newt;          // ギアニュートラル
-  Prop Speed;         // 速度
-  Prop SpUnit;        // 「km/h」
-  Prop InitMsg;       // 初期表示
-  Prop SpFreqIn;      // 速度センサカウンタ
-  Prop SpFreqInUnit;  // 「Hz」
-  Prop Voltage;       // 電圧
-  Prop DebugData;     // デバッグ用値表示
+	Prop Month;        // 月
+	Prop Day;          // 日
+	Prop Hour;         // 時
+	Prop Min;          // 分
+	Prop Sec;          // 秒
+	Prop Temp;         // 温度
+	Prop TempUnit;     // 「℃」
+	Prop Humid;        // 湿度
+	Prop Gear;         // ギア
+	Prop Newt;         // ギアニュートラル
+	Prop Speed;        // 速度
+	Prop SpUnit;       // 「km/h」
+	Prop InitMsg;      // 初期表示
+	Prop SpFreqIn;     // 速度センサカウンタ
+	Prop SpFreqInUnit; // 「Hz」
+	Prop Voltage;      // 電圧
+	Prop DebugData;    // デバッグ用値表示
 } props;
 
 // オンボLED
@@ -146,12 +160,8 @@ Adafruit_NeoPixel pixels(1, PINS.LED);
 RTC_DS1307 rtc;
 // IOエキスパンダ
 Adafruit_PCF8574 pcf;
-// ADコンバータ
-Adafruit_ADS1X15 ads;
 // 温湿度計
 Adafruit_AHTX0 aht;
-// ウインカー
-//Winkers winkers(PINS.IOEXP.WNK.left, PINS.IOEXP.WNK.right, &pcf);
 // スイッチ
 Switch pushSw(PINS.IOEXP.sw, &pcf);
 
@@ -355,9 +365,6 @@ void setup(void) {
 	pcf.begin(MODULES.ioExp.address, &Wire1);  // IOエキスパンダ
 	pushSw.begin();                            // スイッチ
 	rtc.begin(&Wire1);                         // RTC
-	//winkers.begin();                          // ウインカー
-	ads.setGain(GAIN_TWOTHIRDS);
-	ads.begin(MODULES.adCnv.address, &Wire1);  // ADコンバータ
 	#ifdef BUZZER_ON
 		pinMode(PINS.buzzer, OUTPUT);  // ウインカー音
 		digitalWrite(PINS.buzzer, LOW);
@@ -445,13 +452,13 @@ void loop() {
 	// 各種モニタリング・更新
 	if (monitorTime <= time) {
 		// 入力パルス周波数取得
-		pulseFreq = getData(0x00);
+		pulseFreq = getData(INDEX_FREQ);
 		// 出力パルス周波数取得
-		int freqOut = getData(0x01);
+		int freqOut = getData(INDEX_PULSE);
 		// ギアポジションアナログ値取得
-		gearADC = getData(0x03);
+		gearADC = getData(INDEX_GEARS);
 		// ウインカー値取得
-		winkerStatus = getData(0x04);
+		winkerStatus = getData(INDEX_WINKERS);
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
 		display.print("FreqI:");
@@ -517,7 +524,7 @@ void loop() {
 		// デバッグ用スイッチ表示
 		displaySwitch(&pushSw);
 		// ギア表示
-		gearDisplay2();
+		gearDisplay();
 		// ウインカー点灯状態が切り替わった場合
 		if (displayWinkers() == true && bzzTime == 0) {
 			// ブザーON
@@ -645,7 +652,7 @@ int existsModule(byte adrs, Module* arr, int size) {
 /**
  * ギアポジションの表示処理
  */
-void gearDisplay2() {
+void gearDisplay() {
 	static char before = '0';
 	//0, 234, 456, 658, 847
 	int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
@@ -772,7 +779,7 @@ void displayVoltage() {
 	// 前回電圧値
 	static byte beforeVoltagex10 = 0;
 	// 電圧ADC値取得
-	int adcValue = getData(0x02);
+	int adcValue = getData(INDEX_VOLT);
 	// 電圧算出
 	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
 	byte voltagex10 = (adcValue * 159) / 1023;
