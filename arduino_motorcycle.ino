@@ -2,13 +2,11 @@
 #include <Adafruit_GFX.h>       // 画面出力
 #include <SPI.h>                // SPI通信
 #include <RTClib.h>             // 時計機能
-#include <Adafruit_PCF8574.h>   // IOエキスパンダ
 #include <Adafruit_AHTX0.h>     // 温湿度計
 #include <Adafruit_NeoPixel.h>  // オンボLED
 
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"         // 値定義
-#include "Switch.h"         // スイッチクラス //廃止予定
 #include "MyLovyanGFX.h"    // ディスプレイ設定
 
 //#define BUZZER_ON
@@ -21,8 +19,6 @@ const int TEMP_INTERVAL    = 2000;
 const int VOLT_INTERVAL    = 2000;
 const int TIME_INTERVAL    = 30;
 const int BUZZER_DURATION  = 50;
-const int WINKER_DURATION  = 380;
-const int SP_DURATION      = 500;
 
 // 中心座標
 const int CENTER_X = OLED.WIDTH >> 1;
@@ -65,7 +61,6 @@ unsigned long tempTime    = 0;     // 温度表示用時間
 unsigned long voltageTime = 0;     // 電圧表示用時間
 unsigned long timeTime    = 0;     // 時刻表示用時間
 unsigned long bzzTime     = 0;     // ブザー用時間
-unsigned long spTime      = 0;     // 速度センサ時間
 
 int moduleData[DATA_SIZE];              // センサーからの取得値
 
@@ -98,10 +93,8 @@ struct arcInfo {
 	 * 表示(ウインカー向け)
 	 */
 	void displayArcW(int stdX, int stdY, bool onOff) {
-		// on,offで色変更
-		uint16_t color = onOff ? colorON : TFT_BLACK;
-		// 弧描画
-		sprite.fillArc(x, y, r + d, r, angle0, angle1, color);
+		// 弧描画 on,offで色変更
+		sprite.fillArc(x, y, r + d, r, angle0, angle1, onOff ? colorON : TFT_BLACK);
 		// 出力
 		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
 	}
@@ -110,17 +103,36 @@ struct arcInfo {
 	 * 表示（メーター向け）
 	 */
 	void displayArcM(int stdX, int stdY, byte sp = 0) {
-		// 弧描画（薄緑）
-		sprite.fillArc(x, y, r + d, r, angle0, angle1, 0x01e0);
-		// 速度上限
+		static byte beforeSp = 0xFF;                // 前回速度
+
+		// 初期処理
+		if(beforeSp == 0xFF){
+			// 弧描画（薄緑）
+			sprite.fillArc(x, y, r + d, r, angle0, angle1, 0x01e0);
+			beforeSp = 0;
+			return;
+		}
+		// 速度が同じ場合、スキップ
+		if(beforeSp == sp){
+			return;
+		}
+		// 速度上限付近の処理
 		if (99 <= sp) {
-		sp = 100;
+			sp = 100;
 		}
 		// 速さに対する弧の角度算出
 		int angleSp = (360 - angle0 + angle1) * sp / 100;
-		int newAngle1 = angle0 + angleSp;
-		// 弧描画（緑）
-		sprite.fillArc(x, y, r + d, r, angle0, newAngle1, colorON);
+		
+		if(beforeSp < sp){
+			// 速度が上がった場合
+			// 弧描画（緑）
+			sprite.fillArc(x, y, r + d, r, angle0, angle0 + angleSp, colorON);
+		}
+		else{
+			// 速度が下がった場合
+			// 弧描画（薄緑）
+			sprite.fillArc(x, y, r + d, r, angle0 + angleSp, angle1, 0x01e0);
+		}
 		// 出力
 		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
 	}
@@ -157,12 +169,8 @@ struct Props {
 Adafruit_NeoPixel pixels(1, PINS.LED);
 // RTC
 RTC_DS1307 rtc;
-// IOエキスパンダ
-Adafruit_PCF8574 pcf;
 // 温湿度計
 Adafruit_AHTX0 aht;
-// スイッチ
-Switch pushSw(PINS.IOEXP.sw, &pcf);
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -361,8 +369,6 @@ void setup(void) {
 	// I2C通信スキャン
 	scanModules();
 	// 各モジュール動作開始
-	pcf.begin(MODULES.ioExp.address, &Wire1);  // IOエキスパンダ
-	pushSw.begin();                            // スイッチ
 	rtc.begin(&Wire1);                         // RTC
 	#ifdef BUZZER_ON
 		pinMode(PINS.buzzer, OUTPUT);  // ウインカー音
@@ -451,14 +457,8 @@ void loop() {
 	if (monitorTime <= time) {
 		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
 		getDataA();
-		// 入力パルス周波数取得
-		//moduleData[INDEX_FREQ] = getData(INDEX_FREQ);
 		// 出力パルス周波数取得
 		int freqOut = getData(INDEX_PULSE);
-		// ギアポジションアナログ値取得
-		//moduleData[INDEX_GEARS] = getData(INDEX_GEARS);
-		// ウインカー値取得
-		//moduleData[INDEX_WINKERS] = getData(INDEX_WINKERS);
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
 		display.print("FreqI:");
@@ -483,10 +483,6 @@ void loop() {
 		if (100 <= speed) {
 			speed = 99;
 		}
-		// 現在のウインカー状態を取得
-		//winkers.updateStatus();
-		// スイッチ状態取得
-		pushSw.updateStatus();
 		monitorTime += MONITOR_INTERVAL;
 	}
 
@@ -522,7 +518,7 @@ void loop() {
 		beforeSpeed = speed;
 		}
 		// デバッグ用スイッチ表示
-		displaySwitch(&pushSw);
+		displaySwitch();
 		// ギア表示
 		gearDisplay();
 		// ウインカー点灯状態が切り替わった場合
@@ -619,16 +615,13 @@ void scanModules() {
 		Wire1.beginTransmission(adrs);
 		byte error = Wire1.endTransmission();
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		String nameColon = moduleArr[moduleIndex].name + ":";
-		display.print(nameColon);
-		uint16_t color = (error == 0) ? TFT_GREEN : TFT_RED;
-		display.setTextColor(color, TFT_BLACK);
-		String msg = (error == 0) ? "OK" : "NG";
-		display.println(msg);
+		display.print(moduleArr[moduleIndex].name + ":");
+		display.setTextColor((error == 0) ? TFT_GREEN : TFT_RED, TFT_BLACK);
+		display.println((error == 0) ? "OK" : "NG");
 	}
 	display.setTextColor(TFT_WHITE);
 	display.println("");
-	display.println("---done---");
+	display.println("-- done --");
 	delay(2000);
 }
 
@@ -643,7 +636,7 @@ void scanModules() {
 int existsModule(byte adrs, Module* arr, int size) {
 	for (int i = 0; i < size; i++) {
 		if (arr[i].address == adrs) {
-		return i;
+			return i;
 		}
 	}
 	return -1;
@@ -705,7 +698,6 @@ bool displayWinkers() {
 	if (moduleData[INDEX_WINKERS] == before) {
 		return false;
 	}
-	int i = 0;
 
 	for(int side = LEFT; side<=RIGHT;side++){
 		if((moduleData[INDEX_WINKERS] & indicateArr[side]) != (before & indicateArr[side])){
@@ -726,12 +718,13 @@ bool displayWinkers() {
  * スイッチ動作表示
  * @param sw スイッチクラス
  */
-void displaySwitch(Switch* sw) {
+void displaySwitch() {
 	static bool beforeSw = false;
-	static bool beforeLong = false;
-	static byte brightIndex = 0;
+	//static bool beforeLong = false;
+	//static byte brightIndex = 0;
 
-	bool nowSw = sw->getStatus();
+	//bool nowSw = sw->getStatus();
+	bool nowSw = moduleData[INDEX_WINKERS] >> 3;
 	display.setFont(NULL);
 	display.setTextSize(2);
 	display.setCursor(0, fromBottom(8 * 2));
@@ -744,10 +737,10 @@ void displaySwitch(Switch* sw) {
 			beforeSw = ON;
 		}
 		// 長押し
-		else if (beforeLong != sw->isLongPress()) {
-			display.print("long");
-			beforeLong = sw->isLongPress();
-		}
+		//else if (beforeLong != sw->isLongPress()) {
+		//	display.print("long");
+		//	beforeLong = sw->isLongPress();
+		//}
 	}
 	// キーアップの場合
 	else {
@@ -757,18 +750,18 @@ void displaySwitch(Switch* sw) {
 			beforeSw = OFF;
 		}
 		// 長押し判定だった場合
-		if (beforeLong) {
-			beforeLong = false;
-		}
+		//if (beforeLong) {
+		//	beforeLong = false;
+		//}
 		// プッシュ
-		else if (sw->isPush()) {
-			display.setTextColor(TFT_BLUE, TFT_BLACK);
-			display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
-			brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
-			display.setBrightness(brightLevel[brightIndex]);
-			display.print(brightIndex);
-			beforeSw = OFF;
-		}
+		// else if (sw->isPush()) {
+		// 	display.setTextColor(TFT_BLUE, TFT_BLACK);
+		// 	display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
+		// 	brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
+		// 	display.setBrightness(brightLevel[brightIndex]);
+		// 	display.print(brightIndex);
+		// 	beforeSw = OFF;
+		// }
 	}
 }
 
@@ -936,10 +929,6 @@ int getData(byte reg) {
 	// 返却用変数
 	requestSpeedModule(reg, 2);
 	int result = -1;
-	//Wire1.beginTransmission(MODULES.speed.address);
-	//Wire1.write(reg);
-	//Wire1.endTransmission(false);
-	//Wire1.requestFrom(MODULES.speed.address, 2);
 	if (Wire1.available() == 2) {
 		result = (Wire1.read() << 8) | Wire1.read();
 	}
@@ -952,11 +941,6 @@ int getData(byte reg) {
 void getDataA(){
 	// 周波数、ギアポジ、ウインカー、スイッチの順に取得
 	requestSpeedModule(INDEX_A_PART, 8);
-	//Wire1.beginTransmission(MODULES.speed.address);
-	//Wire1.write(INDEX_A_PART);
-	//Wire1.endTransmission(false);
-	//Wire1.requestFrom(MODULES.speed.address, 8);
-	int index = INDEX_FREQ;
 	if(Wire1.available() == 8) {
 		moduleData[INDEX_FREQ] = (Wire1.read() << 8) | Wire1.read();
 		moduleData[INDEX_GEARS] = (Wire1.read() << 8) | Wire1.read();
