@@ -110,6 +110,7 @@ struct arcInfo {
 		if(beforeSp == 0xFF){
 			// 弧描画（薄緑）
 			sprite.fillArc(x, y, r + d, r, angle0, angle1, 0x01e0);
+			sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
 			beforeSp = 0;
 			return;
 		}
@@ -136,6 +137,7 @@ struct arcInfo {
 		}
 		// 出力
 		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
+		beforeSp = sp;
 	}
 };
 
