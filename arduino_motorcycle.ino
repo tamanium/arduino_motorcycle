@@ -6,8 +6,9 @@
 #include <Adafruit_NeoPixel.h>  // オンボLED
 
 // --------------------自作クラス・ピン定義--------------------
-#include "Define.h"         // 値定義
-#include "MyLovyanGFX.h"    // ディスプレイ設定
+#include "Define.h"      // 値定義
+#include "MyLovyanGFX.h" // ディスプレイ設定
+#include "DataClass.h"   // データ処理クラス
 
 //#define BUZZER_ON
 
