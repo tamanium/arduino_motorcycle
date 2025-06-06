@@ -67,8 +67,7 @@ unsigned long timeTime    = 0;     // 時刻表示用時間
 unsigned long bzzTime     = 0;     // ブザー用時間
 unsigned long spTime      = 0;     // 速度センサ時間
 
-int winkerStatus = INDICATE_NONE;  // ウインカー値
-int gearADC = 0;                // ギアポジ値
+int moduleData[DATA_SIZE];              // センサーからの取得値
 
 // ディスプレイ
 LGFX display;
@@ -444,42 +443,43 @@ void loop() {
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-	static int pulseFreq = 0;
 	static int beforePulseFreq = 0;
 	static byte speed = 0;
 	static byte beforeSpeed = 0;
 
 	// 各種モニタリング・更新
 	if (monitorTime <= time) {
+		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
+		getDataA();
 		// 入力パルス周波数取得
-		pulseFreq = getData(INDEX_FREQ);
+		//moduleData[INDEX_FREQ] = getData(INDEX_FREQ);
 		// 出力パルス周波数取得
 		int freqOut = getData(INDEX_PULSE);
 		// ギアポジションアナログ値取得
-		gearADC = getData(INDEX_GEARS);
+		//moduleData[INDEX_GEARS] = getData(INDEX_GEARS);
 		// ウインカー値取得
-		winkerStatus = getData(INDEX_WINKERS);
+		//moduleData[INDEX_WINKERS] = getData(INDEX_WINKERS);
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
 		display.print("FreqI:");
-		display.print(pulseFreq);
+		display.print(moduleData[INDEX_FREQ]);
 		display.println("   ");
 		display.print("FreqO:");
 		display.print(freqOut);
 		display.println("   ");
 		display.println("");
 		display.print("spdAD:");
-		display.print(gearADC);
+		display.print(moduleData[INDEX_GEARS]);
 		display.println("    ");
 		display.print("wnkAD:");
-		display.print(winkerStatus);
+		display.print(moduleData[INDEX_WINKERS]);
 		display.println("    ");
 		display.print("geaAD:");
-		display.print(gearADC);
+		display.print(moduleData[INDEX_GEARS]);
 		display.println("    ");
 
 		// 速度算出
-		speed = byte(pulseFreq / 10);
+		speed = byte(moduleData[INDEX_FREQ] / 10);
 		if (100 <= speed) {
 			speed = 99;
 		}
@@ -511,9 +511,9 @@ void loop() {
 	// 各種表示処理
 	if (displayTime <= time) {
 		// 速度カウンタ表示
-		if (pulseFreq != beforePulseFreq) {
-		displayNumber(&props.SpFreqIn, pulseFreq, 4);
-		beforePulseFreq = pulseFreq;
+		if (moduleData[INDEX_FREQ] != beforePulseFreq) {
+		displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
+		beforePulseFreq = moduleData[INDEX_FREQ];
 		}
 		// 速度表示
 		if (speed != beforeSpeed) {
@@ -656,10 +656,10 @@ void gearDisplay() {
 	static char before = '0';
 	//0, 234, 456, 658, 847
 	int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
-	char gearArr[6] = {'0', '3','2','4','1','N'};
+	char gearArr[6] = {'0', '3', '2', '4', '1', 'N'};
 	char gear = '0';
 	for(int i=0; i<6; i++){
-		if(gearADC < thresholdArr[i]){
+		if(moduleData[INDEX_GEARS] < thresholdArr[i]){
 			gear = gearArr[i];
 			break;
 		}
@@ -702,22 +702,22 @@ bool displayWinkers() {
 	int indicateArr[2] = { INDICATE_LEFT, INDICATE_RIGHT };
 	// 円弧表示配列
 	arcInfo* arcArr[2] = { &arcL, &arcR };
-	if (winkerStatus == before) {
+	if (moduleData[INDEX_WINKERS] == before) {
 		return false;
 	}
 	int i = 0;
 
 	for(int side = LEFT; side<=RIGHT;side++){
-		if((winkerStatus & indicateArr[side]) != (before & indicateArr[side])){
+		if((moduleData[INDEX_WINKERS] & indicateArr[side]) != (before & indicateArr[side])){
 			// ディスプレイ表示処理
-			arcArr[side]->displayArcW(CENTER_X, CENTER_Y + 10, (winkerStatus & indicateArr[side]) == indicateArr[side]);
+			arcArr[side]->displayArcW(CENTER_X, CENTER_Y + 10, (moduleData[INDEX_WINKERS] & indicateArr[side]) == indicateArr[side]);
 			// フラグ立てる
 			isSwitched = true;
 		}
 	}
 
 	if (isSwitched) {
-		before = winkerStatus;
+		before = moduleData[INDEX_WINKERS];
 	}
 	return isSwitched;
 }
@@ -738,38 +738,38 @@ void displaySwitch(Switch* sw) {
 
 	// キーダウンの場合
 	if (nowSw) {
-	display.setTextColor(TFT_RED, TFT_BLACK);
-	if (beforeSw != nowSw) {
-		display.print("ON  ");
-		beforeSw = ON;
+		display.setTextColor(TFT_RED, TFT_BLACK);
+		if (beforeSw != nowSw) {
+			display.print("ON  ");
+			beforeSw = ON;
+		}
+		// 長押し
+		else if (beforeLong != sw->isLongPress()) {
+			display.print("long");
+			beforeLong = sw->isLongPress();
+		}
 	}
-	// 長押し
-	else if (beforeLong != sw->isLongPress()) {
-		display.print("long");
-		beforeLong = sw->isLongPress();
+	// キーアップの場合
+	else {
+		if (beforeSw != nowSw) {
+			display.setTextColor(TFT_BLUE, TFT_BLACK);
+			display.print("OFF ");
+			beforeSw = OFF;
+		}
+		// 長押し判定だった場合
+		if (beforeLong) {
+			beforeLong = false;
+		}
+		// プッシュ
+		else if (sw->isPush()) {
+			display.setTextColor(TFT_BLUE, TFT_BLACK);
+			display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
+			brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
+			display.setBrightness(brightLevel[brightIndex]);
+			display.print(brightIndex);
+			beforeSw = OFF;
+		}
 	}
-  }
-  // キーアップの場合
-  else {
-	if (beforeSw != nowSw) {
-		display.setTextColor(TFT_BLUE, TFT_BLACK);
-		display.print("OFF ");
-		beforeSw = OFF;
-	}
-	// 長押し判定だった場合
-	if (beforeLong) {
-		beforeLong = false;
-	}
-	// プッシュ
-	else if (sw->isPush()) {
-		display.setTextColor(TFT_BLUE, TFT_BLACK);
-		display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
-		brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
-		display.setBrightness(brightLevel[brightIndex]);
-		display.print(brightIndex);
-		beforeSw = OFF;
-	}
-  }
 }
 
 /**
@@ -799,7 +799,7 @@ void displayVoltage() {
 	display.println("    ");
 
 	beforeVoltagex10 = voltagex10;
-  }
+	}
 }
 
 /**
@@ -893,17 +893,17 @@ void displayRealTime() {
  * @param digitNum int型 表示桁数
  */
 void displayNumber(Prop* p, byte valueByte, int digitNum) {
-  // 表示設定
-  setDisplay(p);
-  // 速度周波数表示
-  for (int d = pow(10, digitNum - 1); 1 < d; d /= 10) {
-	if (valueByte / d == 0) {
-	  display.print('0');
-	} else {
-	  break;
+	// 表示設定
+	setDisplay(p);
+	// 速度周波数表示
+	for (int d = pow(10, digitNum - 1); 1 < d; d /= 10) {
+		if (valueByte / d == 0) {
+			display.print('0');
+		} else {
+			break;
+		}
 	}
-  }
-  display.print(valueByte);
+	display.print(valueByte);
 }
 
 /**
@@ -928,19 +928,52 @@ void displayNumber(Prop* p, int valueInt, int digitNum) {
 }
 
 /**
- * スピードセンサ(ATTINY85)からデータ取得
+ * モジュール(ATTINY1604)からデータ取得
  *
  * @param reg byte型 データ種類
  */
 int getData(byte reg) {
-  // 返却用変数
-  int result = -1;
-  Wire1.beginTransmission(MODULES.speed.address);
-  Wire1.write(reg);
-  Wire1.endTransmission(false);
-  Wire1.requestFrom(MODULES.speed.address, 2);
-  if (Wire1.available() == 2) {
-	result = (Wire1.read() << 8) | Wire1.read();
-  }
-  return result;
+	// 返却用変数
+	requestSpeedModule(reg, 2);
+	int result = -1;
+	//Wire1.beginTransmission(MODULES.speed.address);
+	//Wire1.write(reg);
+	//Wire1.endTransmission(false);
+	//Wire1.requestFrom(MODULES.speed.address, 2);
+	if (Wire1.available() == 2) {
+		result = (Wire1.read() << 8) | Wire1.read();
+	}
+	return result;
+}
+
+/**
+ * モジュール(ATTINY1604)から一部まとめてデータ取得
+ */
+void getDataA(){
+	// 周波数、ギアポジ、ウインカー、スイッチの順に取得
+	requestSpeedModule(INDEX_A_PART, 8);
+	//Wire1.beginTransmission(MODULES.speed.address);
+	//Wire1.write(INDEX_A_PART);
+	//Wire1.endTransmission(false);
+	//Wire1.requestFrom(MODULES.speed.address, 8);
+	int index = INDEX_FREQ;
+	if(Wire1.available() == 8) {
+		moduleData[INDEX_FREQ] = (Wire1.read() << 8) | Wire1.read();
+		moduleData[INDEX_GEARS] = (Wire1.read() << 8) | Wire1.read();
+		moduleData[INDEX_WINKERS] = (Wire1.read() << 8) | Wire1.read();
+		moduleData[INDEX_SWITCH] = (Wire1.read() << 8) | Wire1.read();
+	}
+}
+
+/**
+ * モジュール(ATTINY1604)へのリクエスト
+ *
+ * @param reg int型 送信レジスト値
+ * @param numByte int型 データ容量(byte)
+ */
+void requestSpeedModule(int reg, int numByte){
+	Wire1.beginTransmission(MODULES.speed.address);
+	Wire1.write(reg);
+	Wire1.endTransmission(false);
+	Wire1.requestFrom(MODULES.speed.address, numByte);
 }
