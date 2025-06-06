@@ -465,22 +465,20 @@ void loop() {
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
 		display.print("FreqI:");
-		display.print(moduleData[INDEX_FREQ]);
-		display.println("   ");
+		displayNumber(moduleData[INDEX_FREQ], ' ', 4);
+		display.println("");
 		display.print("FreqO:");
-		display.print(freqOut);
-		display.println("   ");
+		displayNumber(freqOut, ' ', 4);
 		display.println("");
 		display.print("spdAD:");
-		display.print(moduleData[INDEX_GEARS]);
-		display.println("    ");
+		displayNumber(moduleData[INDEX_GEARS], ' ', 4);
+		display.println("");
 		display.print("wnkAD:");
-		display.print(moduleData[INDEX_WINKERS]);
-		display.println("    ");
+		displayNumber(moduleData[INDEX_WINKERS], ' ', 4);
+		display.println("");
 		display.print("geaAD:");
-		display.print(moduleData[INDEX_GEARS]);
-		display.println("    ");
-
+		displayNumber(moduleData[INDEX_GEARS], ' ', 4);
+		
 		// 速度算出
 		speed = byte(moduleData[INDEX_FREQ] / 10);
 		if (100 <= speed) {
@@ -912,15 +910,20 @@ void displayNumber(Prop* p, byte valueByte, int digitNum) {
 void displayNumber(Prop* p, int valueInt, int digitNum) {
   // 表示設定
   setDisplay(p);
-  // 速度周波数表示
-  for (int d = pow(10, digitNum - 1); 1 < d; d /= 10) {
-	if (valueInt / d == 0) {
-	  display.print('0');
-	} else {
-	  break;
+  // 表示
+  displayNumber(valueInt, '0', digitNum);
+}
+
+void displayNumber(int valueInt, char spacer, int digiNum){
+	// 表示
+	for (int d = pow(10, digiNum - 1); 1 < d; d /= 10) {
+		if (valueInt / d == 0) {
+			display.print(spacer);
+		} else {
+			break;
+		}
 	}
-  }
-  display.print(valueInt);
+	display.print(valueInt);
 }
 
 /**
