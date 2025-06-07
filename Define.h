@@ -23,13 +23,10 @@
 
 	// モジュール構造体
 	struct Modules{
-		int size = 5;
-		Module ioExp = {"IO Expander ", 0x27};
 		Module thmst = {"Thermometer ", 0x38};
-		Module adCnv = {"AD Converter", 0x4A};
+		Module speed = {"Speed Sensor", 0x55};
 		Module rtcMm = {"RTC memory  ", 0x50};
 		Module rtcIC = {"RTC IC      ", 0x68};
-		Module speed = {"Speed Sensor", 0x55};
 	} MODULES;
 	
 	/**
@@ -61,20 +58,6 @@
 			const int BL = 5;
 
 		} SPI;
-		struct IoExp{              // IOエキスパンダのピン定義
-			const int sw = 3;      // スイッチ
-			struct Pos{            //  ギアポジ
-				const int nwt = 2;
-				const int low = 0;
-				const int sec = 1;
-				const int thi = 4;
-				const int top = 5;
-			} POS;
-			struct Wnk{             // ウインカー
-				const int left = 6;
-				const int right = 7;
-			} WNK;
-		} IOEXP;
 	} PINS;
 	
 	// 表示設定

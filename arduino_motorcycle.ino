@@ -43,7 +43,7 @@ enum {
 	INDEX_PULSE,
 	DATA_SIZE,
 	INDEX_A_PART = 0x40,
-	INDEX_ALL = 0xFF,
+	INDEX_ALL    = 0xFF,
 };
 
 // 明るさレベル
@@ -120,22 +120,25 @@ struct arcInfo {
 		}
 		// 速度上限付近の処理
 		if (99 <= sp) {
-			sp = 100;
+			sp = 99;
 		}
 		// 速さに対する弧の角度算出
 		int angleSp = (360 - angle0 + angle1) * sp / 100;
-		
+		int newAngle0 = angle0;
+		int newAngle1 = angle1;
+		int newColor = colorON;
 		if(beforeSp < sp){
 			// 速度が上がった場合
-			// 弧描画（緑）
-			sprite.fillArc(x, y, r + d, r, angle0, angle0 + angleSp, colorON);
+			newAngle1 = angle0 + angleSp;
 		}
 		else{
 			// 速度が下がった場合
-			// 弧描画（薄緑）
-			sprite.fillArc(x, y, r + d, r, angle0 + angleSp, angle1, 0x01e0);
+			newAngle0 = angle0 + angleSp;
+			// 色を薄緑に変更
+			newColor = 0x01e0;
 		}
 		// 出力
+		sprite.fillArc(x, y, r + d, r, newAngle0, newAngle1, newColor);
 		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
 		beforeSp = sp;
 	}
@@ -452,7 +455,10 @@ void loop() {
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
+	static int loopTime = 0;
+	static int loopTimeMax = 0;
 	static int beforePulseFreq = 0;
+	static byte countLoop = 0;
 	static byte speed = 0;
 	static byte beforeSpeed = 0;
 
@@ -464,6 +470,10 @@ void loop() {
 		int freqOut = getData(INDEX_PULSE);
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
+		display.print("loop :");
+		displayNumberln(loopTime, ' ', 4);
+		display.print("loopM:");
+		displayNumberln(loopTimeMax, ' ', 4);
 		display.print("FreqI:");
 		displayNumberln(moduleData[INDEX_FREQ], ' ', 4);
 		display.print("FreqO:");
@@ -477,9 +487,7 @@ void loop() {
 		
 		// 速度算出
 		speed = byte(moduleData[INDEX_FREQ] / 10);
-		if (100 <= speed) {
-			speed = 99;
-		}
+
 		monitorTime += MONITOR_INTERVAL;
 	}
 
@@ -510,6 +518,9 @@ void loop() {
 		}
 		// 速度表示
 		if (speed != beforeSpeed) {
+			if(100 <= speed){
+				speed = 99;
+			}
 			displayNumber(&props.Speed, speed, 2);
 			arcM.displayArcM(CENTER_X, CENTER_Y + 10, speed);
 			beforeSpeed = speed;
@@ -529,8 +540,9 @@ void loop() {
 			// 時間設定
 			bzzTime += BUZZER_DURATION;
 		}
-	displayTime += DISPLAY_INTERVAL;
-}
+
+		displayTime += DISPLAY_INTERVAL;
+	}
 
 	//ブザーOFF処理
 	if (bzzTime != 0 && bzzTime <= time) {
@@ -541,6 +553,18 @@ void loop() {
 		pixels.show();
 		bzzTime = 0;
 	}
+
+	
+	if(70 < ++countLoop){
+		loopTimeMax = 0;
+		countLoop = 0;
+	}
+
+	loopTime = (int)(millis() - time);
+	if(loopTimeMax < loopTime){
+		loopTimeMax = loopTime;
+	}
+
 }
 
 // -------------------------------------------------------------------
@@ -590,8 +614,8 @@ void scanModules() {
 	// モジュールの配列
 	Module moduleArr[] = {
 		MODULES.thmst,
-		MODULES.rtcMm,
 		MODULES.speed,
+		MODULES.rtcMm,
 		MODULES.rtcIC
 	};
 
@@ -602,17 +626,10 @@ void scanModules() {
 	delay(500);
 	// スキャン処理
 	display.println("I2C Module Scanning...");
-	//for (byte adrs = 1; adrs < 0x7F; adrs++) {
 	for (Module  module : moduleArr) {
-		//int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
-		//if (moduleIndex == -1) {
-		//	continue;
-		//}
-		//Wire1.beginTransmission(adrs);
 		Wire1.beginTransmission(module.address);
 		byte error = Wire1.endTransmission();
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		//display.print(moduleArr[moduleIndex].name + ":");
 		display.print(module.name + ":");
 		display.setTextColor((error == 0) ? TFT_GREEN : TFT_RED, TFT_BLACK);
 		display.println((error == 0) ? "OK" : "NG");
@@ -777,18 +794,17 @@ void displayVoltage() {
 	if (voltagex10 != beforeVoltagex10) {
 	// 電圧表示
 	setDisplay(&props.Voltage);
+
 	display.print(voltagex10 / 100);
 	display.print((voltagex10 / 10) % 10);
 	display.print('.');
 	display.print(voltagex10 % 10);
 
 	setDisplay(&props.DebugData);
-	display.println("");
-	display.println("");
-	display.print("vAD:");
-	display.print(adcValue);
-	display.println("    ");
-
+	display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
+	display.print("vltAD:");
+	displayNumberln(adcValue, ' ', 4);
+	
 	beforeVoltagex10 = voltagex10;
 	}
 }
@@ -802,7 +818,7 @@ void displayTemp() {
 	// 温度取得
 	sensors_event_t humidity, temp;
 	aht.getEvent(&humidity, &temp);
-	int newTempInt = (byte)(temp.temperature);
+	int newTempInt = (int)(temp.temperature);
 	if (newTempInt < 0) {
 		newTempInt = 0;
 	} else if (100 <= newTempInt) {
