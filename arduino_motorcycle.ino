@@ -11,6 +11,7 @@
 #include "DataClass.h"   // データ処理クラス
 
 //#define BUZZER_ON
+#define DEBUG_MODE
 
 // --------------------定数--------------------
 // 各時間間隔(ms)
@@ -118,10 +119,6 @@ struct arcInfo {
 		if(beforeSp == sp){
 			return;
 		}
-		// 速度上限付近の処理
-		if (99 <= sp) {
-			sp = 99;
-		}
 		// 速さに対する弧の角度算出
 		int angleSp = (360 - angle0 + angle1) * sp / 100;
 		int newAngle0 = angle0;
@@ -148,6 +145,10 @@ struct arcInfo {
 arcInfo arcM(&display);
 arcInfo arcL(&display);
 arcInfo arcR(&display);
+
+// データクラス(チャタリング対策あり)
+DataClass switchData(true);
+DataClass winkersData(false);
 
 // --------------------インスタンス--------------------
 // 表示設定まとめ
@@ -455,39 +456,50 @@ void loop() {
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
-	static int loopTime = 0;
-	static int loopTimeMax = 0;
-	static int beforePulseFreq = 0;
-	static byte countLoop = 0;
-	static byte speed = 0;
-	static byte beforeSpeed = 0;
 
 	// 各種モニタリング・更新
 	if (monitorTime <= time) {
 		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
 		getDataA();
-		// 出力パルス周波数取得
-		int freqOut = getData(INDEX_PULSE);
-		// 取得値表示(デバッグ)
-		setDisplay(&props.DebugData);
-		display.print("loop :");
-		displayNumberln(loopTime, ' ', 4);
-		display.print("loopM:");
-		displayNumberln(loopTimeMax, ' ', 4);
-		display.print("FreqI:");
-		displayNumberln(moduleData[INDEX_FREQ], ' ', 4);
-		display.print("FreqO:");
-		displayNumberln(freqOut, ' ', 4);
-		display.print("spdAD:");
-		displayNumberln(moduleData[INDEX_GEARS], ' ', 4);
-		display.print("wnkAD:");
-		displayNumberln(moduleData[INDEX_WINKERS], ' ', 4);
-		display.print("geaAD:");
-		displayNumberln(moduleData[INDEX_GEARS], ' ', 4);
-		
-		// 速度算出
-		speed = byte(moduleData[INDEX_FREQ] / 10);
+		switchData.setData(moduleData[INDEX_WINKERS]>>2);
+		winkersData.setData(moduleData[INDEX_WINKERS] & INDICATE_BOTH);
 
+		// デバッグモード表示
+		#ifdef DEBUG_MODE
+			static int loopTimeMax = 0;
+			static byte countLoop = 0;
+			static unsigned long beforeTime = 0;
+
+			int freqOut = getData(INDEX_PULSE);
+
+			if(70 < ++countLoop){
+				loopTimeMax = 0;
+				countLoop = 0;
+			}
+
+			int loopTime = (int)(time - beforeTime);
+			if(loopTimeMax < loopTime){
+				loopTimeMax = loopTime;
+			}
+
+			beforeTime = time;
+			
+			setDisplay(&props.DebugData);
+			display.print("loop :");
+			displayNumberln(loopTime, ' ', 4);
+			display.print("loopM:");
+			displayNumberln(loopTimeMax, ' ', 4);
+			display.print("FreqI:");
+			displayNumberln(moduleData[INDEX_FREQ], ' ', 4);
+			display.print("FreqO:");
+			displayNumberln(freqOut, ' ', 4);
+			display.print("vltAD:");
+			displayNumberln(moduleData[INDEX_VOLT], ' ', 4);
+			display.print("wnkAD:");
+			displayNumberln(moduleData[INDEX_WINKERS], ' ', 4);
+			display.print("geaAD:");
+			displayNumberln(moduleData[INDEX_GEARS], ' ', 4);
+		#endif
 		monitorTime += MONITOR_INTERVAL;
 	}
 
@@ -498,6 +510,7 @@ void loop() {
 	}
 
 	// 電圧モニタリング・表示
+	
 	if (voltageTime <= time) {
 		displayVoltage();
 		voltageTime += VOLT_INTERVAL;
@@ -511,66 +524,46 @@ void loop() {
 
 	// 各種表示処理
 	if (displayTime <= time) {
-		// 速度カウンタ表示
-		if (moduleData[INDEX_FREQ] != beforePulseFreq) {
-			displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
-			beforePulseFreq = moduleData[INDEX_FREQ];
-		}
 		// 速度表示
-		if (speed != beforeSpeed) {
-			if(100 <= speed){
-				speed = 99;
-			}
-			displayNumber(&props.Speed, speed, 2);
-			arcM.displayArcM(CENTER_X, CENTER_Y + 10, speed);
-			beforeSpeed = speed;
-		}
+		displaySpeed();
 		// デバッグ用スイッチ表示
 		displaySwitch();
 		// ギア表示
-		gearDisplay();
-		// ウインカー点灯状態が切り替わった場合
-		if (displayWinkers() == true && bzzTime == 0) {
-			// ブザーON
-			#ifdef BUZZER_ON
-				digitalWrite(PINS.buzzer, HIGH);
-			#endif
-			pixels.setPixelColor(0, pixels.Color(1, 1, 0));
-			pixels.show();
-			// 時間設定
-			bzzTime += BUZZER_DURATION;
+		displayGear();
+		// ウインカー表示
+		bool isChangedWinkers = displayWinkers();
+		// ブザー出力
+		if (isChangedWinkers == true && bzzTime == 0) {
+			setBuzzer(ON);
+			bzzTime = time + BUZZER_DURATION;
 		}
-
 		displayTime += DISPLAY_INTERVAL;
 	}
 
 	//ブザーOFF処理
 	if (bzzTime != 0 && bzzTime <= time) {
-		#ifdef BUZZER_ON
-			digitalWrite(PINS.buzzer, LOW);
-		#endif
-		pixels.clear();
-		pixels.show();
+		setBuzzer(OFF);
 		bzzTime = 0;
 	}
-
-	
-	if(70 < ++countLoop){
-		loopTimeMax = 0;
-		countLoop = 0;
-	}
-
-	loopTime = (int)(millis() - time);
-	if(loopTimeMax < loopTime){
-		loopTimeMax = loopTime;
-	}
-
 }
 
 // -------------------------------------------------------------------
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
 
+void setBuzzer(bool isOn){
+	// ブザーON
+	#ifdef BUZZER_ON
+		digitalWrite(PINS.buzzer, !isOn);
+	#endif
+	if(isOn){
+		pixels.setPixelColor(0, pixels.Color(1, 1, 0));
+	}
+	else{
+		pixels.clear();
+	}
+	pixels.show();
+}
 /**
  * ディスプレイ表示設定0
  *
@@ -641,26 +634,9 @@ void scanModules() {
 }
 
 /**
- * i2cモジュールのアドレスから接続中モジュールの有無を取得
- *
- * @param adrs i2cモジュールのアドレス
- * @param arr モジュール配列
- * @param size i2cモジュール数
- * @return モジュール配列のインデックス
- */
-int existsModule(byte adrs, Module* arr, int size) {
-	for (int i = 0; i < size; i++) {
-		if (arr[i].address == adrs) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-/**
  * ギアポジションの表示処理
  */
-void gearDisplay() {
+void displayGear() {
 	static char before = '0';
 	//0, 234, 456, 658, 847
 	int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
@@ -681,12 +657,16 @@ void gearDisplay() {
 		display.print(gear);
 	}
 	else if(gear == '0'){
+		Prop* prop = (before == 'N') ? &props.Newt : &props.Gear;
+		/*
 		if(before == 'N'){
 			setDisplay(&props.Newt);
 		}
 		else{
 			setDisplay(&props.Gear);
 		}
+		*/
+		setDisplay(prop);
 		// グレーで前回ギアを表示
 		display.setTextColor(TFT_DARKGREY);
 		display.print(before);
@@ -702,31 +682,29 @@ void gearDisplay() {
  * ウインカー表示処理
  */
 bool displayWinkers() {
-	// 前回状態
-	static int before = INDICATE_NONE;
-	// 返却用フラグ
-	bool isSwitched = false;
-	// 定数配列
-	int indicateArr[2] = { INDICATE_LEFT, INDICATE_RIGHT };
+	// 前回値
+	static byte beforeData = INDICATE_NONE;
 	// 円弧表示配列
-	arcInfo* arcArr[2] = { &arcL, &arcR };
-	if (moduleData[INDEX_WINKERS] == before) {
+	static arcInfo* arcArr[2] = { &arcL, &arcR };
+	// 定数配列
+	const byte indicateArr[2] = { INDICATE_LEFT, INDICATE_RIGHT };
+
+	// 現在値取得
+	byte nowData = (byte)(winkersData.getData());
+	// 前回値と同じ場合、処理終了
+	if (nowData == beforeData) {
 		return false;
 	}
 
 	for(int side = LEFT; side<=RIGHT;side++){
-		if((moduleData[INDEX_WINKERS] & indicateArr[side]) != (before & indicateArr[side])){
+		if((nowData & indicateArr[side]) != (beforeData & indicateArr[side])){
 			// ディスプレイ表示処理
-			arcArr[side]->displayArcW(CENTER_X, CENTER_Y + 10, (moduleData[INDEX_WINKERS] & indicateArr[side]) == indicateArr[side]);
-			// フラグ立てる
-			isSwitched = true;
+			arcArr[side]->displayArcW(CENTER_X, CENTER_Y + 10, (nowData & indicateArr[side]) == indicateArr[side]);
 		}
 	}
 
-	if (isSwitched) {
-		before = moduleData[INDEX_WINKERS];
-	}
-	return isSwitched;
+	beforeData = nowData;
+	return true;
 }
 
 /**
@@ -739,7 +717,7 @@ void displaySwitch() {
 	//static byte brightIndex = 0;
 
 	//bool nowSw = sw->getStatus();
-	bool nowSw = moduleData[INDEX_WINKERS] >> 3;
+	bool nowSw = switchData.getData();
 	display.setFont(NULL);
 	display.setTextSize(2);
 	display.setCursor(0, fromBottom(8 * 2));
@@ -777,6 +755,32 @@ void displaySwitch() {
 		// 	display.print(brightIndex);
 		// 	beforeSw = OFF;
 		// }
+	}
+}
+
+/**
+ * スピード表示
+ */
+void displaySpeed(){
+	// 前回パルス周波数
+	static int beforePulseFreq = 0;
+	// 前回スピード
+	static byte beforeSpeed = 0;
+
+	// 速度カウンタ表示
+	if (moduleData[INDEX_FREQ] != beforePulseFreq) {
+		displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
+		beforePulseFreq = moduleData[INDEX_FREQ];
+	}
+	// 速度表示
+	byte speed = byte(moduleData[INDEX_FREQ] / 10);
+	if(100 <= speed){
+		speed = 99;
+	}
+	if (speed != beforeSpeed) {
+		displayNumber(&props.Speed, speed, 2);
+		arcM.displayArcM(CENTER_X, CENTER_Y + 10, speed);
+		beforeSpeed = speed;
 	}
 }
 
