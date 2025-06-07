@@ -56,14 +56,14 @@ byte brightLevel[] = {
 };
 
 // --------------------変数--------------------
-unsigned long displayTime = 0;     // 表示用時間
-unsigned long monitorTime = 0;     // 各種読み取り用時間
-unsigned long tempTime    = 0;     // 温度表示用時間
-unsigned long voltageTime = 0;     // 電圧表示用時間
-unsigned long timeTime    = 0;     // 時刻表示用時間
-unsigned long bzzTime     = 0;     // ブザー用時間
+unsigned long displayTime = 0; // 表示用時間
+unsigned long monitorTime = 0; // 各種読み取り用時間
+unsigned long tempTime    = 0; // 温度表示用時間
+unsigned long voltageTime = 0; // 電圧表示用時間
+unsigned long timeTime    = 0; // 時刻表示用時間
+unsigned long bzzTime     = 0; // ブザー用時間
 
-int moduleData[DATA_SIZE];              // センサーからの取得値
+int moduleData[DATA_SIZE];     // センサーからの取得値
 
 // ディスプレイ
 LGFX display;
@@ -177,7 +177,7 @@ Adafruit_AHTX0 aht;
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
-	delay(1000);
+	delay(100);
 	// デバッグ用シリアル設定
 	Serial.begin(9600);
 	// I2C設定
@@ -465,19 +465,15 @@ void loop() {
 		// 取得値表示(デバッグ)
 		setDisplay(&props.DebugData);
 		display.print("FreqI:");
-		displayNumber(moduleData[INDEX_FREQ], ' ', 4);
-		display.println("");
+		displayNumberln(moduleData[INDEX_FREQ], ' ', 4);
 		display.print("FreqO:");
-		displayNumber(freqOut, ' ', 4);
-		display.println("");
+		displayNumberln(freqOut, ' ', 4);
 		display.print("spdAD:");
-		displayNumber(moduleData[INDEX_GEARS], ' ', 4);
-		display.println("");
+		displayNumberln(moduleData[INDEX_GEARS], ' ', 4);
 		display.print("wnkAD:");
-		displayNumber(moduleData[INDEX_WINKERS], ' ', 4);
-		display.println("");
+		displayNumberln(moduleData[INDEX_WINKERS], ' ', 4);
 		display.print("geaAD:");
-		displayNumber(moduleData[INDEX_GEARS], ' ', 4);
+		displayNumberln(moduleData[INDEX_GEARS], ' ', 4);
 		
 		// 速度算出
 		speed = byte(moduleData[INDEX_FREQ] / 10);
@@ -509,14 +505,14 @@ void loop() {
 	if (displayTime <= time) {
 		// 速度カウンタ表示
 		if (moduleData[INDEX_FREQ] != beforePulseFreq) {
-		displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
-		beforePulseFreq = moduleData[INDEX_FREQ];
+			displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
+			beforePulseFreq = moduleData[INDEX_FREQ];
 		}
 		// 速度表示
 		if (speed != beforeSpeed) {
-		displayNumber(&props.Speed, speed, 2);
-		arcM.displayArcM(CENTER_X, CENTER_Y + 10, speed);
-		beforeSpeed = speed;
+			displayNumber(&props.Speed, speed, 2);
+			arcM.displayArcM(CENTER_X, CENTER_Y + 10, speed);
+			beforeSpeed = speed;
 		}
 		// デバッグ用スイッチ表示
 		displaySwitch();
@@ -593,9 +589,7 @@ void setPropWH(Prop* p, String str) {
 void scanModules() {
 	// モジュールの配列
 	Module moduleArr[] = {
-		MODULES.ioExp,
 		MODULES.thmst,
-		MODULES.adCnv,
 		MODULES.rtcMm,
 		MODULES.speed,
 		MODULES.rtcIC
@@ -608,15 +602,18 @@ void scanModules() {
 	delay(500);
 	// スキャン処理
 	display.println("I2C Module Scanning...");
-	for (byte adrs = 1; adrs < 0x7F; adrs++) {
-		int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
-		if (moduleIndex == -1) {
-			continue;
-		}
-		Wire1.beginTransmission(adrs);
+	//for (byte adrs = 1; adrs < 0x7F; adrs++) {
+	for (Module  module : moduleArr) {
+		//int moduleIndex = existsModule(adrs, moduleArr, MODULES.size);
+		//if (moduleIndex == -1) {
+		//	continue;
+		//}
+		//Wire1.beginTransmission(adrs);
+		Wire1.beginTransmission(module.address);
 		byte error = Wire1.endTransmission();
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		display.print(moduleArr[moduleIndex].name + ":");
+		//display.print(moduleArr[moduleIndex].name + ":");
+		display.print(module.name + ":");
 		display.setTextColor((error == 0) ? TFT_GREEN : TFT_RED, TFT_BLACK);
 		display.println((error == 0) ? "OK" : "NG");
 	}
@@ -911,10 +908,10 @@ void displayNumber(Prop* p, int valueInt, int digitNum) {
   // 表示設定
   setDisplay(p);
   // 表示
-  displayNumber(valueInt, '0', digitNum);
+  displayNumberln(valueInt, '0', digitNum);
 }
 
-void displayNumber(int valueInt, char spacer, int digiNum){
+void displayNumberln(int valueInt, char spacer, int digiNum){
 	// 表示
 	for (int d = pow(10, digiNum - 1); 1 < d; d /= 10) {
 		if (valueInt / d == 0) {
@@ -923,7 +920,7 @@ void displayNumber(int valueInt, char spacer, int digiNum){
 			break;
 		}
 	}
-	display.print(valueInt);
+	display.println(valueInt);
 }
 
 /**
