@@ -36,15 +36,15 @@ enum{
 
 // モジュール側も同じ定義
 enum {
-	INDEX_FREQ,
-	INDEX_GEARS,
-	INDEX_WINKERS,
-	INDEX_SWITCH,
-	INDEX_VOLT,
-	INDEX_PULSE,
-	DATA_SIZE,
-	INDEX_A_PART = 0x40,
-	INDEX_ALL    = 0xFF,
+	INDEX_FREQ,          // パルス周波数
+	INDEX_GEARS,         // ギアポジADC値
+	INDEX_WINKERS,       // ウインカービット値
+	INDEX_SWITCH,        // スイッチビット値
+	INDEX_VOLT,          // 電圧ADC値
+
+	DATA_SIZE,           // 配列要素数
+	INDEX_A_PART = 0x40, // 電圧と出力パルス以外のデータを要求する値
+	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
 // 明るさレベル
@@ -470,8 +470,6 @@ void loop() {
 			static byte countLoop = 0;
 			static unsigned long beforeTime = 0;
 
-			int freqOut = getData(INDEX_PULSE);
-
 			if(70 < ++countLoop){
 				loopTimeMax = 0;
 				countLoop = 0;
@@ -491,8 +489,6 @@ void loop() {
 			displayNumberln(loopTimeMax, ' ', 4);
 			display.print("FreqI:");
 			displayNumberln(moduleData[INDEX_FREQ], ' ', 4);
-			display.print("FreqO:");
-			displayNumberln(freqOut, ' ', 4);
 			display.print("vltAD:");
 			displayNumberln(moduleData[INDEX_VOLT], ' ', 4);
 			display.print("wnkAD:");
