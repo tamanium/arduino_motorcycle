@@ -26,14 +26,6 @@ const int BUZZER_DURATION  = 50;
 const int CENTER_X = OLED.WIDTH >> 1;
 const int CENTER_Y = OLED.HEIGHT >> 1;
 
-// ウインカー値
-enum{
-	INDICATE_NONE,
-	INDICATE_LEFT,
-	INDICATE_RIGHT,
-	INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT,
-};
-
 // モジュール側も同じ定義
 enum {
 	INDEX_FREQ,          // パルス周波数
@@ -45,6 +37,15 @@ enum {
 	DATA_SIZE,           // 配列要素数
 	INDEX_A_PART = 0x40, // 電圧と出力パルス以外のデータを要求する値
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
+};
+
+
+// ウインカー値
+enum{
+	INDICATE_NONE,
+	INDICATE_LEFT,
+	INDICATE_RIGHT,
+	INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT,
 };
 
 // 明るさレベル
@@ -462,7 +463,7 @@ void loop() {
 		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
 		getDataA();
 		switchData.setData(moduleData[INDEX_WINKERS]>>2);
-		winkersData.setData(moduleData[INDEX_WINKERS] & INDICATE_BOTH);
+		//winkersData.setData(moduleData[INDEX_WINKERS] & INDICATE_BOTH);
 
 		// デバッグモード表示
 		#ifdef DEBUG_MODE
@@ -679,27 +680,39 @@ void displayGear() {
  */
 bool displayWinkers() {
 	// 前回値
-	static byte beforeData = INDICATE_NONE;
-	// 円弧表示配列
-	static arcInfo* arcArr[2] = { &arcL, &arcR };
-	// 定数配列
-	const byte indicateArr[2] = { INDICATE_LEFT, INDICATE_RIGHT };
+	static byte beforeStatus = INDICATE_NONE;
+	// 閾値
+	int thresholdArr[] = {480, 650, 900};
 
 	// 現在値取得
-	byte nowData = (byte)(winkersData.getData());
+	int nowData = moduleData[INDEX_WINKERS];
+	byte nowStatus = INDICATE_NONE;
+
+	// ハザード機能つけたら以下コメント解除
+	//if(nowData < thresholdArr[0]){
+	//	nowStatus = INDICATE_BOTH;
+	//}
+	//else if (nowData < thresholdArr[1]){
+	 if (nowData < thresholdArr[1]){
+		nowStatus = INDICATE_LEFT;
+	}
+	else if(nowData < thresholdArr[2]){
+		nowStatus = INDICATE_RIGHT;
+	}
+
 	// 前回値と同じ場合、処理終了
-	if (nowData == beforeData) {
+	if (nowStatus == beforeStatus) {
 		return false;
 	}
 
-	for(int side = LEFT; side<=RIGHT;side++){
-		if((nowData & indicateArr[side]) != (beforeData & indicateArr[side])){
-			// ディスプレイ表示処理
-			arcArr[side]->displayArcW(CENTER_X, CENTER_Y + 10, (nowData & indicateArr[side]) == indicateArr[side]);
-		}
-	}
+	//左ウインカーの表示
+	bool onOff = ((nowStatus & INDICATE_LEFT) == INDICATE_LEFT);
+	arcL.displayArcW(CENTER_X, CENTER_Y + 10, onOff);
+	//右ウインカーの表示
+	onOff = ((nowStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
+	arcR.displayArcW(CENTER_X, CENTER_Y + 10, onOff);
 
-	beforeData = nowData;
+	beforeStatus = nowStatus;
 	return true;
 }
 
