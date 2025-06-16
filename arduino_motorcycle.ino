@@ -253,7 +253,7 @@ void setup(void) {
 
 	// スピードセンサIN
 	props.SpFreqIn.under(&props.SpUnit);
-	props.SpUnit.font = &fonts::Font7;
+	props.SpFreqIn.font = &fonts::Font7;
 	setPropWH(&props.SpFreqIn, "0000");
 	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
 
@@ -316,7 +316,7 @@ void setup(void) {
 	// スプライト設定
 	// 横縦
 	//int w = (props.Speed.y + 60 - offsetY+10) * 2;
-	int w = (75 + 60 - offsetY + 10) * 2;
+	int w = (135 - offsetY + 10) * 2;
 	int h = w;
 	// 弧の幅
 	arcM.d = 10;
@@ -371,8 +371,8 @@ void loop() {
 	unsigned long time = millis();
 
 	//デバッグ用
-	unsigned int temp_duration = 0;
-	unsigned int time_duration = 0;
+	static unsigned int temp_duration = 0;
+	static unsigned int time_duration = 0;
 
 	// 各種モニタリング・更新
 	if (monitorTime <= time) {
@@ -380,7 +380,6 @@ void loop() {
 		getDataA();
 		//switchData.setData(moduleData[INDEX_WINKERS]>>2);
 		switchData.setData(moduleData[INDEX_SWITCH]);
-		//winkersData.setData(moduleData[INDEX_WINKERS] & INDICATE_BOTH);
 
 		// デバッグモード表示
 		#ifdef DEBUG_MODE
@@ -425,7 +424,7 @@ void loop() {
 	if (tempTime <= time) {
 		unsigned long _time = millis();
 		displayTemp();
-		temp_duration = _time - millis();
+		temp_duration = millis() - _time;
 		tempTime += TEMP_INTERVAL;
 	}
 
@@ -440,7 +439,7 @@ void loop() {
 	if (timeTime <= time) {
 		unsigned long _time = millis();
 		displayRealTime();
-		time_duration = _time - millis();
+		time_duration = millis() - _time;
 		timeTime += TIME_INTERVAL;
 	}
 
@@ -552,14 +551,14 @@ void scanModules() {
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("-- done --");
-	display.print("3 ");
+	display.println("3");
 	delay(1000);
-	display.print("2 ");
+	display.println("2 ");
 	delay(1000);
-	display.print("1 ");
+	display.println("1 ");
 	delay(1000);
 	display.print("Start");
-	delay(1000);
+	delay(1500);
 }
 
 /**
@@ -567,25 +566,13 @@ void scanModules() {
  */
 void displayGear() {
 	static char before = '0';
-
-	bool reverse = false;
-	//0, 234, 456, 658, 847
-	//int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
 	char gearArr[5] = {'N', '1', '2', '3', '4'};
 	char gear = '0';
 	// 現在のギアポジを取得
 	for(int i=0; i<5; i++){
-		if(!reverse){
-			if(moduleData[INDEX_GEARS] & (1<<i)){
-				gear = gearArr[i];
-				break;
-			}
-		}
-		else{
-			if(!(moduleData[INDEX_GEARS] & (1<<i))){
-				gear = gearArr[i];
-				break;
-			}
+		if(!(moduleData[INDEX_GEARS] & (1<<i))){
+			gear = gearArr[i];
+			break;
 		}
 	}
 	// 前回と同じ場合、スキップ
@@ -745,26 +732,24 @@ void displayVoltage() {
 	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
 	byte voltagex10 = (adcValue * 159) / 1023;
 	if (voltagex10 != beforeVoltagex10) {
-	// 電圧表示
-	setDisplay(&props.Voltage);
+		// 電圧表示
+		setDisplay(&props.Voltage);
 
-	char volChars[] = {'0','0','.','0'};
+		char volChars[] = {'0','.','0','0'};
 
-	volChars[0] = (voltagex10 / 100 == 0) ? ' ' : '0'+(voltagex10 / 100);
-	volChars[1] += (voltagex10 / 10) % 10;
-	volChars[3] += voltagex10 % 10;
-	display.print(volChars);
-	//display.print(voltagex10 / 100);
-	//display.print((voltagex10 / 10) % 10);
-	//display.print('.');
-	//display.print(voltagex10 % 10);
+		volChars[0] += voltagex10 / 100;
+		volChars[1] += (voltagex10 / 10) % 10;
+		volChars[3] += voltagex10 % 10;
+		display.print(volChars);
 
-	setDisplay(&props.DebugData);
-	display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
-	display.print("vltAD:");
-	displayNumberln(adcValue, ' ', 4);
-	
-	beforeVoltagex10 = voltagex10;
+		// デバッグモード表示
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData);
+			display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
+			display.print("vltAD:");
+			displayNumberln(adcValue, ' ', 4);
+		#endif
+		beforeVoltagex10 = voltagex10;
 	}
 }
 
@@ -877,6 +862,13 @@ void displayNumber(Prop* p, int valueInt, int digitNum) {
 	displayNumberln(valueInt, '0', digitNum);
 }
 
+/**
+ * 値の改行表示（左0埋め）開発用
+ * 
+ * @param p Prop型 表示設定
+ * @param valueLong long型 表示値
+ * @param digitNum int型 表示桁数
+ */
 void displayNumberln(int valueInt, char spacer, int digiNum){
 	// 表示
 	int init = pow(10, digiNum - 1);

@@ -80,7 +80,7 @@
 		}
 		
 		void under(Prop* p){
-			this->x = p->x + p->width;
+			this->x = p->x;
 			this->y = p->y + p->height;
 			this->size = p->size;
 			this->font = p->font;
