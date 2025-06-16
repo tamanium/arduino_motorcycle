@@ -106,7 +106,8 @@ struct arcInfo {
 	 * 表示（メーター向け）
 	 */
 	void displayArcM(int stdX, int stdY, byte sp = 0) {
-		static byte beforeSp = 0xFF;                // 前回速度
+		// 前回速度
+		static byte beforeSp = 0xFF;
 
 		// 初期処理
 		if(beforeSp == 0xFF){
@@ -124,7 +125,7 @@ struct arcInfo {
 		int angleSp = (360 - angle0 + angle1) * sp / 100;
 		int newAngle0 = angle0;
 		int newAngle1 = angle1;
-		int newColor = colorON;
+		uint16_t newColor = colorON;
 		if(beforeSp < sp){
 			// 速度が上がった場合
 			newAngle1 = angle0 + angleSp;
@@ -194,163 +195,76 @@ void setup(void) {
 	int offsetY = 50;
 
 	// 時間
-	props.Hour = {
-		0,
-		0,
-		1,
-		&fonts::Font4
-	};
+	props.Hour.font = &fonts::Font4;
 	setPropWH(&props.Hour, "00:");
 
 	// 分
-	props.Min = {
-		props.Hour.x + props.Hour.width,
-		props.Hour.y,
-		props.Hour.size,
-		props.Hour.font
-	};
-	setPropWH(&props.Min, "00:");
+	props.Min.rightOf(&props.Hour);
 
 	// 秒
-	props.Sec = {
-		props.Min.x + props.Min.width,
-		props.Hour.y,
-		props.Hour.size,
-		props.Hour.font
-	};
+	props.Sec.rightOf(&props.Min);
 	setPropWH(&props.Sec, "00");
 
 	// 月
-	props.Month = {
-		0,
-		props.Hour.y + props.Hour.height,
-		1,
-		&fonts::Font4
-	};
+	props.Month.under(&props.Hour);
 	setPropWH(&props.Month, "00/");
 
 	// 日
-	props.Day = {
-		props.Month.x + props.Month.width,
-		props.Month.y,
-		props.Month.size,
-		props.Month.font
-	};
+	props.Day.rightOf(&props.Month);
 	setPropWH(&props.Day, "00");
 
 	// 温度
-	props.Temp = {
-		0,
-		0,
-		props.Hour.size,
-		props.Hour.font
-	};
+	props.Temp.copy(&props.Hour);
 	setPropWH(&props.Temp, "00 c");
 	props.Temp.x = fromRight(props.Temp.width) - 3;
 
 	// 温度単位
-	props.TempUnit = {
-		0,
-		0,
-		props.Temp.size,
-		props.Temp.font
-	};
+	props.TempUnit.copy(&props.Temp);
 	setPropWH(&props.TempUnit, "c");
 	props.TempUnit.x = fromRight(props.TempUnit.width) - 3;
 
 	// 湿度
-	props.Humid = {
-		props.Temp.x,
-		props.Temp.height,
-		1,
-		&fonts::Font4
-	};
+	props.Humid.under(&props.Temp);
 	setPropWH(&props.Humid, "00%");
 	props.Humid.x = fromRight(props.Humid.width);
 
 	// ギア
-	props.Gear = {
-		0,
-		140 + offsetY,
-		1,
-		&fonts::DejaVu56
-	};
+	props.Gear.y = 140 + offsetY;
+	props.Gear.font = &fonts::DejaVu56;
 	setPropWH(&props.Gear, "0");
 	props.Gear.x = centerHorizontal(props.Gear.width);
 
 	// ギアニュートラル
-	props.Newt = {
-		0,
-		props.Gear.y,
-		1,
-		&fonts::DejaVu56
-	};
+	props.Newt.copy(&props.Gear);
 	setPropWH(&props.Newt, "N");
 	props.Newt.x = centerHorizontal(props.Newt.width);
 
 	// 速度
-	/*
-	props.Speed = {
-		0,
-		30+offsetY,
-		1,
-		&fonts::Font8
-	};
-	*/
-	props.Speed = {
-		0,
-		10 + offsetY,
-		1,
-		&fonts::Font7
-	};
+	props.Speed.y = 10 + offsetY;
+	props.Speed.font = &fonts::Font7;
 	setPropWH(&props.Speed, "00");
 	props.Speed.x = centerHorizontal(props.Speed.width);
 
 	// 速度単位
-	/*
-	props.SpUnit = {
-		0,
-		110+offsetY,
-		1,
-		&fonts::Font4
-	};
-	*/
-	props.SpUnit = {
-		0,
-		props.Speed.y + props.Speed.height,
-		1,
-		&fonts::Font2
-	};
+	props.SpUnit.under(&props.Speed);
+	props.SpUnit.font = &fonts::Font2;
 	setPropWH(&props.SpUnit, "km/h");
 	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
 
 	// スピードセンサIN
-	props.SpFreqIn = {
-		0,
-		props.SpUnit.y + props.SpUnit.height,
-		1,
-		&fonts::Font7
-	};
+	props.SpFreqIn.under(&props.SpUnit);
+	props.SpUnit.font = &fonts::Font7;
 	setPropWH(&props.SpFreqIn, "0000");
 	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
 
 	// スピードセンサIN単位
-	props.SpFreqInUnit = {
-		0,
-		props.SpFreqIn.y + props.SpFreqIn.height,
-		1,
-		&fonts::Font2
-	};
+	props.SpFreqInUnit.under(&props.SpFreqIn);
+	props.SpFreqInUnit.font = &fonts::Font2;
 	setPropWH(&props.SpFreqInUnit, "Hz");
 	props.SpFreqInUnit.x = centerHorizontal(props.SpFreqInUnit.width);
 
 	// 電圧
-	props.Voltage = {
-		0,
-		0,
-		1,
-		&fonts::Font4
-	};
+	props.Voltage.font = &fonts::Font4;
 	setPropWH(&props.Voltage, "00.0V");
 	props.Voltage.x = fromRight(props.Voltage.width);
 	props.Voltage.y = fromBottom(props.Voltage.height);
@@ -360,9 +274,7 @@ void setup(void) {
 	props.DebugData.y = fromBottom(props.DebugData.height * 9);
 
 	// 初期表示メッセージ
-	props.InitMsg = {
-		0, 0, 2
-	};
+	props.InitMsg.size = 2;
 
 	// ディスプレイの初期化
 	display.init();
@@ -458,11 +370,16 @@ void loop() {
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 
+	//デバッグ用
+	unsigned int temp_duration = 0;
+	unsigned int time_duration = 0;
+
 	// 各種モニタリング・更新
 	if (monitorTime <= time) {
 		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
 		getDataA();
-		switchData.setData(moduleData[INDEX_WINKERS]>>2);
+		//switchData.setData(moduleData[INDEX_WINKERS]>>2);
+		switchData.setData(moduleData[INDEX_SWITCH]);
 		//winkersData.setData(moduleData[INDEX_WINKERS] & INDICATE_BOTH);
 
 		// デバッグモード表示
@@ -486,6 +403,10 @@ void loop() {
 			setDisplay(&props.DebugData);
 			display.print("loop :");
 			displayNumberln(loopTime, ' ', 4);
+			display.print("tempT:");
+			displayNumberln(temp_duration, ' ', 4);
+			display.print("timeT:");
+			displayNumberln(time_duration, ' ', 4);
 			display.print("loopM:");
 			displayNumberln(loopTimeMax, ' ', 4);
 			display.print("FreqI:");
@@ -502,7 +423,9 @@ void loop() {
 
 	// 温度モニタリング・表示
 	if (tempTime <= time) {
+		unsigned long _time = millis();
 		displayTemp();
+		temp_duration = _time - millis();
 		tempTime += TEMP_INTERVAL;
 	}
 
@@ -515,7 +438,9 @@ void loop() {
 
 	// 時刻表示
 	if (timeTime <= time) {
+		unsigned long _time = millis();
 		displayRealTime();
+		time_duration = _time - millis();
 		timeTime += TIME_INTERVAL;
 	}
 
@@ -532,7 +457,7 @@ void loop() {
 		// ブザー出力
 		if (isChangedWinkers == true && bzzTime == 0) {
 			setBuzzer(ON);
-			bzzTime = time + BUZZER_DURATION;
+			bzzTime += BUZZER_DURATION;
 		}
 		displayTime += DISPLAY_INTERVAL;
 	}
@@ -627,7 +552,14 @@ void scanModules() {
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("-- done --");
-	delay(2000);
+	display.print("3 ");
+	delay(1000);
+	display.print("2 ");
+	delay(1000);
+	display.print("1 ");
+	delay(1000);
+	display.print("Start");
+	delay(1000);
 }
 
 /**
@@ -635,43 +567,51 @@ void scanModules() {
  */
 void displayGear() {
 	static char before = '0';
+
+	bool reverse = false;
 	//0, 234, 456, 658, 847
-	int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
-	char gearArr[6] = {'0', '3', '2', '4', '1', 'N'};
+	//int thresholdArr[6] = {0, 117, 345, 557, 753, 935};
+	char gearArr[5] = {'N', '1', '2', '3', '4'};
 	char gear = '0';
-	for(int i=0; i<6; i++){
-		if(moduleData[INDEX_GEARS] < thresholdArr[i]){
-			gear = gearArr[i];
-			break;
+	// 現在のギアポジを取得
+	for(int i=0; i<5; i++){
+		if(!reverse){
+			if(moduleData[INDEX_GEARS] & (1<<i)){
+				gear = gearArr[i];
+				break;
+			}
+		}
+		else{
+			if(!(moduleData[INDEX_GEARS] & (1<<i))){
+				gear = gearArr[i];
+				break;
+			}
 		}
 	}
+	// 前回と同じ場合、スキップ
 	if(gear == before){
 		return;
 	}
+	// Nの場合
 	if(gear == 'N'){
 		setDisplay(&props.Newt);
 		display.setTextColor(TFT_GREEN, TFT_BLACK);
 		display.print(gear);
 	}
+	// 0の場合（ギア抜け）
 	else if(gear == '0'){
 		Prop* prop = (before == 'N') ? &props.Newt : &props.Gear;
-		/*
-		if(before == 'N'){
-			setDisplay(&props.Newt);
-		}
-		else{
-			setDisplay(&props.Gear);
-		}
-		*/
 		setDisplay(prop);
 		// グレーで前回ギアを表示
 		display.setTextColor(TFT_DARKGREY);
 		display.print(before);
 	}
+	// 1～4の場合
 	else{
 		setDisplay(&props.Gear);
 		display.print(gear);
 	}
+	// 前回値に今回値を代入
 	before = gear;
 }
 
@@ -772,14 +712,14 @@ void displaySwitch() {
  */
 void displaySpeed(){
 	// 前回パルス周波数
-	static int beforePulseFreq = 0;
+	static int beforeFreq = 0;
 	// 前回スピード
 	static byte beforeSpeed = 0;
 
-	// 速度カウンタ表示
-	if (moduleData[INDEX_FREQ] != beforePulseFreq) {
+	// 周波数表示
+	if (moduleData[INDEX_FREQ] != beforeFreq) {
 		displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
-		beforePulseFreq = moduleData[INDEX_FREQ];
+		beforeFreq = moduleData[INDEX_FREQ];
 	}
 	// 速度表示
 	byte speed = byte(moduleData[INDEX_FREQ] / 10);
@@ -808,10 +748,16 @@ void displayVoltage() {
 	// 電圧表示
 	setDisplay(&props.Voltage);
 
-	display.print(voltagex10 / 100);
-	display.print((voltagex10 / 10) % 10);
-	display.print('.');
-	display.print(voltagex10 % 10);
+	char volChars[] = {'0','0','.','0'};
+
+	volChars[0] = (voltagex10 / 100 == 0) ? ' ' : '0'+(voltagex10 / 100);
+	volChars[1] += (voltagex10 / 10) % 10;
+	volChars[3] += voltagex10 % 10;
+	display.print(volChars);
+	//display.print(voltagex10 / 100);
+	//display.print((voltagex10 / 10) % 10);
+	//display.print('.');
+	//display.print(voltagex10 % 10);
 
 	setDisplay(&props.DebugData);
 	display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
@@ -832,22 +778,12 @@ void displayTemp() {
 	sensors_event_t humidity, temp;
 	aht.getEvent(&humidity, &temp);
 	int newTempInt = (int)(temp.temperature);
-	if (newTempInt < 0) {
-		newTempInt = 0;
-	} else if (100 <= newTempInt) {
-		newTempInt = 99;
-	}
 	byte newTemp = byte(newTempInt);
 	if (beforeTemp != newTemp) {
 		displayNumber(&props.Temp, newTemp, 2);
 		beforeTemp = newTemp;
 	}
 	int newHumidInt = (int)humidity.relative_humidity % 100;
-	if (newHumidInt < 0) {
-		newHumidInt = 0;
-	} else if (100 <= newHumidInt) {
-		newHumidInt = 99;
-	}
 	byte newHumid = byte(newHumidInt);
 	if (beforeHumid != newHumid) {
 		displayNumber(&props.Humid, newHumid, 2);
@@ -916,7 +852,8 @@ void displayNumber(Prop* p, byte valueByte, int digitNum) {
 	// 表示設定
 	setDisplay(p);
 	// 速度周波数表示
-	for (int d = pow(10, digitNum - 1); 1 < d; d /= 10) {
+	int init = pow(10, digitNum - 1);
+	for (int d=init; 1<d; d/=10) {
 		if (valueByte / d == 0) {
 			display.print('0');
 		} else {
@@ -934,15 +871,16 @@ void displayNumber(Prop* p, byte valueByte, int digitNum) {
  * @param digitNum int型 表示桁数
  */
 void displayNumber(Prop* p, int valueInt, int digitNum) {
-  // 表示設定
-  setDisplay(p);
-  // 表示
-  displayNumberln(valueInt, '0', digitNum);
+	// 表示設定
+	setDisplay(p);
+	// 表示
+	displayNumberln(valueInt, '0', digitNum);
 }
 
 void displayNumberln(int valueInt, char spacer, int digiNum){
 	// 表示
-	for (int d = pow(10, digiNum - 1); 1 < d; d /= 10) {
+	int init = pow(10, digiNum - 1);
+	for (int d=init; 1<d; d/=10) {
 		if (valueInt / d == 0) {
 			display.print(spacer);
 		} else {

@@ -5,14 +5,6 @@
 	#include <LovyanGFX.hpp>
 
 	/**
-	 * フォントサイズ
-	 */
-	struct Font{
-		int WIDTH = 6;
-		int HEIGHT = 8;
-	} FONT;
-
-	/**
 	 * モジュール情報
 	 */
 	struct Module{
@@ -68,6 +60,33 @@
 		const lgfx::v1::IFont* font = &fonts::Font0; // フォント
 		int width = 6;
 		int height = 8;
+
+		void copy(Prop* p){
+			this->x = p->x;
+			this->y = p->y;
+			this->size = p->size;
+			this->font = p->font;
+			this->width = p->width;
+			this->height = p->height;
+		}
+
+		void rightOf(Prop* p){
+			this->x = p->x + p->width;
+			this->y = p->y;
+			this->size = p->size;
+			this->font = p->font;
+			this->width = p->width;
+			this->height = p->height;
+		}
+		
+		void under(Prop* p){
+			this->x = p->x + p->width;
+			this->y = p->y + p->height;
+			this->size = p->size;
+			this->font = p->font;
+			this->width = p->width;
+			this->height = p->height;
+		}
 	};
 	
 	/**
