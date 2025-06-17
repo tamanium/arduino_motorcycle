@@ -68,12 +68,55 @@
 	 */
 	Prop propCopy(Prop* p, int location = -1 ){
 		Prop newP = *p;
-		int x = (location == RIGHT) ? 0 : p->width;
-		int y = (location == UNDER) ? 0 : p->height;
+		int x = (location == RIGHT) ? p->width  : 0;
+		int y = (location == UNDER) ? p->height : 0;
 		newP.x = p->x + x;
 		newP.y = p->y + y;
 		return newP;
 	}
+
+	struct Interval {
+		unsigned long time = 0;
+		int interval;
+
+		/**
+		 * コンストラクタ
+		 */ 
+		Interval(int interval) :interval(interval){}
+
+		/**
+		 * 処理時刻が0かどうか
+		 */
+		bool isZero(){
+			return (time == 0);
+		}
+		/**
+		 * 処理時刻に0をセット
+		 */
+		void setZero(){
+			time = 0;
+		}
+
+		/**
+		 * 処理時刻がシステム時刻を超えているか
+		 *
+		 * @param sysTime システム時刻
+		 */
+		bool over(unsigned long sysTime){
+			if(time == 0){
+				time = sysTime;
+				return false;
+			}
+			return (time <= sysTime);
+		}
+
+		/**
+		 * 処理時刻再設定 
+		 */
+		void reset(){
+			time += interval;
+		}
+	};
 	
 	/**
 	 * x座標出力（画面右端原点、左向き）

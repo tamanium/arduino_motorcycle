@@ -9,7 +9,6 @@
 #include "Define.h"      // 値定義
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
-#include "Duration.h"    // 実行時間クラス
 
 //#define BUZZER_ON
 #define DEBUG_MODE
@@ -55,7 +54,6 @@ enum{
 int moduleData[DATA_SIZE];             // センサーからの取得値
 DataClass switchData(true);            //データクラス：スイッチ
 DataClass winkersData(false);          //データクラス：ウインカーADC値
-
 
 LGFX display;                          // ディスプレイ
 Adafruit_NeoPixel pixels(1, PINS.LED); // オンボLED
@@ -162,7 +160,6 @@ struct Props {
 	Prop DebugData;    // デバッグ用値表示
 } props;
 
-
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	delay(100);
@@ -178,11 +175,9 @@ void setup(void) {
 	// 時間
 	props.Hour.font = &fonts::Font4;
 	setPropWH(&props.Hour, "00:");
-
 	// 分
 	props.Min = propCopy(&props.Hour, RIGHT);
 	setPropWH(&props.Min, "00:");
-
 	// 秒
 	props.Sec = propCopy(&props.Min, RIGHT);
 	setPropWH(&props.Sec, "00");
@@ -350,22 +345,18 @@ void setup(void) {
 // ------------------------------ループ------------------------------
 void loop() {
 	
-	static Duration displayTime(20);   // 表示用時間
-	static Duration monitorTime(3);    // 各種読み取り用時間
-	static Duration tempTime(2000);    // 温度表示用時間
-	static Duration voltageTime(2000); // 電圧表示用時間
-	static Duration timeTime(30);      // 時刻表示用時間
-	static unsigned long bzzTime = 0;  // ブザー用時間
+	static Interval intervalDisplay(20);   // 表示用時間
+	static Interval intervalMonitor(3);    // 各種読み取り用時間
+	static Interval intervalTemp(2000);    // 温度表示用時間
+	static Interval intervalVoltage(2000); // 電圧表示用時間
+	static Interval intervalTime(30);      // 時刻表示用時間
+	static Interval intervalBzz(50);       // ブザー用時間
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
 
-	//デバッグ用
-	static unsigned int temp_duration = 0;
-	static unsigned int time_duration = 0;
-
 	// 各種モニタリング・更新
-	if (monitorTime.over(time)) {
+	if (intervalMonitor.over(time)) {
 		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
 		getDataA();
 		switchData.setData(moduleData[INDEX_SWITCH]);
@@ -391,10 +382,6 @@ void loop() {
 			setDisplay(&props.DebugData);
 			display.print("loop :");
 			displayNumberln(loopTime, 4);
-			display.print("tempT:");
-			displayNumberln(temp_duration, 4);
-			display.print("timeT:");
-			displayNumberln(time_duration, 4);
 			display.print("loopM:");
 			displayNumberln(loopTimeMax, 4);
 			display.print("FreqI:");
@@ -406,54 +393,47 @@ void loop() {
 			display.print("geaAD:");
 			displayNumberln(moduleData[INDEX_GEARS], 4);
 		#endif
-		monitorTime.reset();
+		intervalMonitor.reset();
 	}
 
 	// 温度モニタリング・表示
-	if (tempTime.over(time)) {
-		unsigned long _time = millis();
+	if (intervalTemp.over(time)) {
 		displayTemp();
-		temp_duration = millis() - _time;
-		tempTime.reset();
+		intervalTemp.reset();
 	}
 
 	// 電圧モニタリング・表示
-	
-	if (voltageTime.over(time)) {
+	if (intervalVoltage.over(time)) {
 		displayVoltage();
-		voltageTime.reset();
+		intervalVoltage.reset();
 	}
 
 	// 時刻表示
-	if (timeTime.over(time)) {
-		unsigned long _time = millis();
+	if (intervalTime.over(time)) {
 		displayRealTime();
-		time_duration = millis() - _time;
-		timeTime.reset();
+		intervalTime.reset();
 	}
 
 	// 各種表示処理
-	if (displayTime.over(time)) {
+	if (intervalDisplay.over(time)) {
 		// 速度表示
 		displaySpeed();
 		// デバッグ用スイッチ表示
 		displaySwitch();
 		// ギア表示
 		displayGear();
-		// ウインカー表示
-		bool isChangedWinkers = displayWinkers();
-		// ブザー出力
-		if (isChangedWinkers == true && bzzTime == 0) {
+		// ウインカー表示・ブザー出力
+		if (displayWinkers() && intervalBzz.isZero()) {
 			setBuzzer(ON);
-			bzzTime += 50;
+			intervalBzz.reset();
 		}
-		displayTime.reset();
+		intervalDisplay.reset();
 	}
 
 	//ブザーOFF処理
-	if (bzzTime != 0 && bzzTime <= time) {
+	if (!intervalBzz.isZero() && intervalBzz.over(time)) {
 		setBuzzer(OFF);
-		bzzTime = 0;
+		intervalBzz.setZero();
 	}
 }
 
@@ -529,14 +509,15 @@ void scanModules() {
 	display.setTextColor(TFT_WHITE);
 	display.println("");
 	display.println("-- done --");
-	display.println("3");
+	display.println("");
+	display.print("3 ");
 	delay(1000);
 	display.print("2 ");
 	delay(1000);
-	display.println("1 ");
+	display.print("1 ");
 	delay(1000);
 	display.print("Start");
-	delay(1500);
+	delay(1000);
 }
 
 /**
@@ -711,12 +692,11 @@ void displayVoltage() {
 		// 電圧表示
 		setDisplay(&props.Voltage);
 
-		char volChars[] = {'0','.','0','0'};
-
-		volChars[0] += voltagex10 / 100;
-		volChars[1] += (voltagex10 / 10) % 10;
-		volChars[3] += voltagex10 % 10;
-		display.print(volChars);
+		String volStr = String(voltagex10/100)
+							+ String((voltagex10/10)%10)
+							+ "."
+							+ String(voltagex10%10);
+		display.print(volStr);
 
 		// デバッグモード表示
 		#ifdef DEBUG_MODE
