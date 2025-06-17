@@ -9,23 +9,26 @@
 #include "Define.h"      // 値定義
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
+#include "Duration.h"    // 実行時間クラス
 
 //#define BUZZER_ON
 #define DEBUG_MODE
 
-// --------------------定数--------------------
-// 各時間間隔(ms)
-const int MONITOR_INTERVAL = 3;
-const int DISPLAY_INTERVAL = 15;
-const int TEMP_INTERVAL    = 2000;
-const int VOLT_INTERVAL    = 2000;
-const int TIME_INTERVAL    = 30;
-const int BUZZER_DURATION  = 50;
+// --------------------プロトタイプ宣言--------------------
+void setDisplay(Prop* p, uint16_t color=TFT_WHITE);
+void displayNumberln(int valueInt, int digiNum, char spacer=' ');
 
+// --------------------定数--------------------
 // 中心座標
 const int CENTER_X = OLED.WIDTH >> 1;
 const int CENTER_Y = OLED.HEIGHT >> 1;
 
+// 明るさレベル
+const byte brightLevel[] = {
+	0x01, 0x08, 0x18, 0x38, 0x80
+};
+
+// --------------------列挙型--------------------
 // モジュール側も同じ定義
 enum {
 	INDEX_FREQ,          // パルス周波数
@@ -39,7 +42,6 @@ enum {
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
-
 // ウインカー値
 enum{
 	INDICATE_NONE,
@@ -48,27 +50,17 @@ enum{
 	INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT,
 };
 
-// 明るさレベル
-byte brightLevel[] = {
-	0x01,
-	0x08,
-	0x18,
-	0x38,
-	0x80
-};
-
 // --------------------変数--------------------
-unsigned long displayTime = 0; // 表示用時間
-unsigned long monitorTime = 0; // 各種読み取り用時間
-unsigned long tempTime    = 0; // 温度表示用時間
-unsigned long voltageTime = 0; // 電圧表示用時間
-unsigned long timeTime    = 0; // 時刻表示用時間
-unsigned long bzzTime     = 0; // ブザー用時間
 
-int moduleData[DATA_SIZE];     // センサーからの取得値
+int moduleData[DATA_SIZE];             // センサーからの取得値
+DataClass switchData(true);            //データクラス：スイッチ
+DataClass winkersData(false);          //データクラス：ウインカーADC値
 
-// ディスプレイ
-LGFX display;
+
+LGFX display;                          // ディスプレイ
+Adafruit_NeoPixel pixels(1, PINS.LED); // オンボLED
+RTC_DS1307 rtc;                        // RTC
+Adafruit_AHTX0 aht;                    // 温湿度計
 
 // 円弧表示情報
 struct arcInfo {
@@ -148,10 +140,6 @@ arcInfo arcM(&display);
 arcInfo arcL(&display);
 arcInfo arcR(&display);
 
-// データクラス(チャタリング対策あり)
-DataClass switchData(true);
-DataClass winkersData(false);
-
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props {
@@ -174,20 +162,13 @@ struct Props {
 	Prop DebugData;    // デバッグ用値表示
 } props;
 
-// オンボLED
-Adafruit_NeoPixel pixels(1, PINS.LED);
-// RTC
-RTC_DS1307 rtc;
-// 温湿度計
-Adafruit_AHTX0 aht;
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	delay(100);
-	// デバッグ用シリアル設定
-	Serial.begin(9600);
-	// I2C設定
-	Wire1.setSDA(PINS.I2C.sda);
+	
+	Serial.begin(9600);         // デバッグ用シリアル設定
+	Wire1.setSDA(PINS.I2C.sda); // I2C設定
 	Wire1.setSCL(PINS.I2C.scl);
 	Wire1.setClock(400000);
 	Wire1.begin();
@@ -199,32 +180,33 @@ void setup(void) {
 	setPropWH(&props.Hour, "00:");
 
 	// 分
-	props.Min.rightOf(&props.Hour);
+	props.Min = propCopy(&props.Hour, RIGHT);
+	setPropWH(&props.Min, "00:");
 
 	// 秒
-	props.Sec.rightOf(&props.Min);
+	props.Sec = propCopy(&props.Min, RIGHT);
 	setPropWH(&props.Sec, "00");
 
 	// 月
-	props.Month.under(&props.Hour);
+	props.Month = propCopy(&props.Hour, UNDER);
 	setPropWH(&props.Month, "00/");
 
 	// 日
-	props.Day.rightOf(&props.Month);
+	props.Day = propCopy(&props.Month, RIGHT);
 	setPropWH(&props.Day, "00");
 
 	// 温度
-	props.Temp.copy(&props.Hour);
+	props.Temp = propCopy(&props.Hour);
 	setPropWH(&props.Temp, "00 c");
 	props.Temp.x = fromRight(props.Temp.width) - 3;
 
 	// 温度単位
-	props.TempUnit.copy(&props.Temp);
+	props.TempUnit = propCopy(&props.Temp);
 	setPropWH(&props.TempUnit, "c");
 	props.TempUnit.x = fromRight(props.TempUnit.width) - 3;
 
 	// 湿度
-	props.Humid.under(&props.Temp);
+	props.Humid = propCopy(&props.Temp, UNDER);
 	setPropWH(&props.Humid, "00%");
 	props.Humid.x = fromRight(props.Humid.width);
 
@@ -235,7 +217,7 @@ void setup(void) {
 	props.Gear.x = centerHorizontal(props.Gear.width);
 
 	// ギアニュートラル
-	props.Newt.copy(&props.Gear);
+	props.Newt = propCopy(&props.Gear);
 	setPropWH(&props.Newt, "N");
 	props.Newt.x = centerHorizontal(props.Newt.width);
 
@@ -246,19 +228,19 @@ void setup(void) {
 	props.Speed.x = centerHorizontal(props.Speed.width);
 
 	// 速度単位
-	props.SpUnit.under(&props.Speed);
+	props.SpUnit = propCopy(&props.Speed, UNDER);
 	props.SpUnit.font = &fonts::Font2;
 	setPropWH(&props.SpUnit, "km/h");
 	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
 
 	// スピードセンサIN
-	props.SpFreqIn.under(&props.SpUnit);
+	props.SpFreqIn = propCopy(&props.SpUnit, UNDER);
 	props.SpFreqIn.font = &fonts::Font7;
 	setPropWH(&props.SpFreqIn, "0000");
 	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
 
 	// スピードセンサIN単位
-	props.SpFreqInUnit.under(&props.SpFreqIn);
+	props.SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER);
 	props.SpFreqInUnit.font = &fonts::Font2;
 	setPropWH(&props.SpFreqInUnit, "Hz");
 	props.SpFreqInUnit.x = centerHorizontal(props.SpFreqInUnit.width);
@@ -299,20 +281,20 @@ void setup(void) {
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
 	display.fillScreen(TFT_BLACK);          // 画面リセット
-	setDisplay(&props.Gear, "0");           // ギアポジション表示開始
-	setDisplay(&props.Speed, "00");         // 速度
-	setDisplay(&props.SpUnit, "km/h");      // 速度単位
-	setDisplay(&props.Hour, "00:00:00");    // 時間
-	setDisplay(&props.Month, "00/00");      // 日付
-	setDisplay(&props.Temp, "00");          // 温度
-	setDisplay(&props.Humid, "00%");        // 湿度
-	setDisplay(&props.SpFreqIn, "0000");    // パルス周波数
-	setDisplay(&props.SpFreqInUnit, "Hz");  // パルス周波数単位
-	setDisplay(&props.Voltage, "00.0V");    // 電圧
-	setDisplay(&props.DebugData);           // デバッグ用表示
-	setDisplay(&props.TempUnit, "c");       // 温度単位
+	displayString(&props.Gear, "0");           // ギアポジション表示開始
+	displayString(&props.Speed, "00");         // 速度
+	displayString(&props.SpUnit, "km/h");      // 速度単位
+	displayString(&props.Hour, "00:00:00");    // 時間
+	displayString(&props.Month, "00/00");      // 日付
+	displayString(&props.Temp, "00");          // 温度
+	displayString(&props.Humid, "00%");        // 湿度
+	displayString(&props.SpFreqIn, "0000");    // パルス周波数
+	displayString(&props.SpFreqInUnit, "Hz");  // パルス周波数単位
+	displayString(&props.Voltage, "00.0V");    // 電圧
+	displayString(&props.TempUnit, "c");       // 温度単位
 	display.fillCircle(306 - 3, 6, 3, TFT_WHITE);
 	display.fillCircle(306 - 3, 6, 1, TFT_BLACK);
+	setDisplay(&props.DebugData);              // デバッグ用表示
 	// スプライト設定
 	// 横縦
 	//int w = (props.Speed.y + 60 - offsetY+10) * 2;
@@ -361,11 +343,19 @@ void setup(void) {
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
+
 }
 
 
 // ------------------------------ループ------------------------------
 void loop() {
+	
+	static Duration displayTime(20);   // 表示用時間
+	static Duration monitorTime(3);    // 各種読み取り用時間
+	static Duration tempTime(2000);    // 温度表示用時間
+	static Duration voltageTime(2000); // 電圧表示用時間
+	static Duration timeTime(30);      // 時刻表示用時間
+	static unsigned long bzzTime = 0;  // ブザー用時間
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
@@ -375,10 +365,9 @@ void loop() {
 	static unsigned int time_duration = 0;
 
 	// 各種モニタリング・更新
-	if (monitorTime <= time) {
+	if (monitorTime.over(time)) {
 		// 周波数、ギアポジ、ウインカー、スイッチの値を取得
 		getDataA();
-		//switchData.setData(moduleData[INDEX_WINKERS]>>2);
 		switchData.setData(moduleData[INDEX_SWITCH]);
 
 		// デバッグモード表示
@@ -401,50 +390,50 @@ void loop() {
 			
 			setDisplay(&props.DebugData);
 			display.print("loop :");
-			displayNumberln(loopTime, ' ', 4);
+			displayNumberln(loopTime, 4);
 			display.print("tempT:");
-			displayNumberln(temp_duration, ' ', 4);
+			displayNumberln(temp_duration, 4);
 			display.print("timeT:");
-			displayNumberln(time_duration, ' ', 4);
+			displayNumberln(time_duration, 4);
 			display.print("loopM:");
-			displayNumberln(loopTimeMax, ' ', 4);
+			displayNumberln(loopTimeMax, 4);
 			display.print("FreqI:");
-			displayNumberln(moduleData[INDEX_FREQ], ' ', 4);
+			displayNumberln(moduleData[INDEX_FREQ], 4);
 			display.print("vltAD:");
-			displayNumberln(moduleData[INDEX_VOLT], ' ', 4);
+			displayNumberln(moduleData[INDEX_VOLT], 4);
 			display.print("wnkAD:");
-			displayNumberln(moduleData[INDEX_WINKERS], ' ', 4);
+			displayNumberln(moduleData[INDEX_WINKERS], 4);
 			display.print("geaAD:");
-			displayNumberln(moduleData[INDEX_GEARS], ' ', 4);
+			displayNumberln(moduleData[INDEX_GEARS], 4);
 		#endif
-		monitorTime += MONITOR_INTERVAL;
+		monitorTime.reset();
 	}
 
 	// 温度モニタリング・表示
-	if (tempTime <= time) {
+	if (tempTime.over(time)) {
 		unsigned long _time = millis();
 		displayTemp();
 		temp_duration = millis() - _time;
-		tempTime += TEMP_INTERVAL;
+		tempTime.reset();
 	}
 
 	// 電圧モニタリング・表示
 	
-	if (voltageTime <= time) {
+	if (voltageTime.over(time)) {
 		displayVoltage();
-		voltageTime += VOLT_INTERVAL;
+		voltageTime.reset();
 	}
 
 	// 時刻表示
-	if (timeTime <= time) {
+	if (timeTime.over(time)) {
 		unsigned long _time = millis();
 		displayRealTime();
 		time_duration = millis() - _time;
-		timeTime += TIME_INTERVAL;
+		timeTime.reset();
 	}
 
 	// 各種表示処理
-	if (displayTime <= time) {
+	if (displayTime.over(time)) {
 		// 速度表示
 		displaySpeed();
 		// デバッグ用スイッチ表示
@@ -456,9 +445,9 @@ void loop() {
 		// ブザー出力
 		if (isChangedWinkers == true && bzzTime == 0) {
 			setBuzzer(ON);
-			bzzTime += BUZZER_DURATION;
+			bzzTime += 50;
 		}
-		displayTime += DISPLAY_INTERVAL;
+		displayTime.reset();
 	}
 
 	//ブザーOFF処理
@@ -490,22 +479,11 @@ void setBuzzer(bool isOn){
  *
  * @param p 表示設定
  */
-void setDisplay(Prop* p) {
+void setDisplay(Prop* p, uint16_t color) {
 	display.setCursor(p->x, p->y);               //描画位置
 	display.setTextSize(p->size);                //テキスト倍率
-	display.setTextColor(TFT_WHITE, TFT_BLACK);  //フォント色...白
+	display.setTextColor(color, TFT_BLACK);  //フォント色...白
 	display.setFont(p->font);
-}
-
-/**
- * ディスプレイ表示設定1
- *
- * @param p 表示設定
- * @param value 表示文字列
- */
-void setDisplay(Prop* p, String value) {
-	setDisplay(p);
-	display.print(value);
 }
 
 /**
@@ -553,7 +531,7 @@ void scanModules() {
 	display.println("-- done --");
 	display.println("3");
 	delay(1000);
-	display.println("2 ");
+	display.print("2 ");
 	delay(1000);
 	display.println("1 ");
 	delay(1000);
@@ -581,16 +559,14 @@ void displayGear() {
 	}
 	// Nの場合
 	if(gear == 'N'){
-		setDisplay(&props.Newt);
-		display.setTextColor(TFT_GREEN, TFT_BLACK);
+		setDisplay(&props.Newt, TFT_GREEN);
 		display.print(gear);
 	}
 	// 0の場合（ギア抜け）
 	else if(gear == '0'){
 		Prop* prop = (before == 'N') ? &props.Newt : &props.Gear;
-		setDisplay(prop);
 		// グレーで前回ギアを表示
-		display.setTextColor(TFT_DARKGREY);
+		setDisplay(prop, TFT_DARKGREY);
 		display.print(before);
 	}
 	// 1～4の場合
@@ -747,7 +723,7 @@ void displayVoltage() {
 			setDisplay(&props.DebugData);
 			display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
 			display.print("vltAD:");
-			displayNumberln(adcValue, ' ', 4);
+			displayNumberln(adcValue, 4);
 		#endif
 		beforeVoltagex10 = voltagex10;
 	}
@@ -827,6 +803,17 @@ void displayRealTime() {
 }
 
 /**
+ * 表示の設定・文字の表示
+ *
+ * @param p Prop型 表示設定
+ * @param str 文字列
+ */
+void displayString(Prop* p, String str){
+	setDisplay(p);
+	display.print(str);
+}
+
+/**
  * 値の表示（左0埋め）
  * 
  * @param p Prop型 表示設定
@@ -856,20 +843,18 @@ void displayNumber(Prop* p, byte valueByte, int digitNum) {
  * @param digitNum int型 表示桁数
  */
 void displayNumber(Prop* p, int valueInt, int digitNum) {
-	// 表示設定
-	setDisplay(p);
-	// 表示
-	displayNumberln(valueInt, '0', digitNum);
+	setDisplay(p);                             // 表示設定
+	displayNumberln(valueInt, digitNum, '0'); // 改行表示
 }
 
 /**
  * 値の改行表示（左0埋め）開発用
  * 
  * @param p Prop型 表示設定
- * @param valueLong long型 表示値
  * @param digitNum int型 表示桁数
+ * @param valueLong long型 表示値
  */
-void displayNumberln(int valueInt, char spacer, int digiNum){
+void displayNumberln(int valueInt, int digiNum, char spacer){
 	// 表示
 	int init = pow(10, digiNum - 1);
 	for (int d=init; 1<d; d/=10) {

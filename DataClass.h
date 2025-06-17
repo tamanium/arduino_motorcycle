@@ -1,5 +1,5 @@
 #ifndef DATA_CLASS_H_INCLUDE
-	#define DATA_CLASSN_H_INCLUDE
+	#define DATA_CLASS_H_INCLUDE
 	#include <Arduino.h>
 	
 	// データクラス

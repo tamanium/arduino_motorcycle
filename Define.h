@@ -10,7 +10,6 @@
 	struct Module{
 		String name;		// モジュール名
 		byte address;		// I2Cアドレス
-		bool disabled = true;// 使用可能か
 	};
 
 	// モジュール構造体
@@ -35,7 +34,6 @@
 	struct Pins{
 		const int LED = 16;
 		const int buzzer = 26;     // ブザー
-		const int relay = 0;       // ダミーリレー
 		struct I2c{                // I2C通信
 			const int scl = 15;
 			const int sda = 14;
@@ -60,37 +58,27 @@
 		const lgfx::v1::IFont* font = &fonts::Font0; // フォント
 		int width = 6;
 		int height = 8;
-
-		void copy(Prop* p){
-			this->x = p->x;
-			this->y = p->y;
-			this->size = p->size;
-			this->font = p->font;
-			this->width = p->width;
-			this->height = p->height;
-		}
-
-		void rightOf(Prop* p){
-			this->x = p->x + p->width;
-			this->y = p->y;
-			this->size = p->size;
-			this->font = p->font;
-			this->width = p->width;
-			this->height = p->height;
-		}
-		
-		void under(Prop* p){
-			this->x = p->x;
-			this->y = p->y + p->height;
-			this->size = p->size;
-			this->font = p->font;
-			this->width = p->width;
-			this->height = p->height;
-		}
 	};
+
+	/**
+	 * 表示設定構造体のコピー
+	 *
+	 * @param p 表示設定構造体コピー元
+	 * @param location RIGHTかUNDERか空欄
+	 */
+	Prop propCopy(Prop* p, int location = -1 ){
+		Prop newP = *p;
+		int x = (location == RIGHT) ? 0 : p->width;
+		int y = (location == UNDER) ? 0 : p->height;
+		newP.x = p->x + x;
+		newP.y = p->y + y;
+		return newP;
+	}
 	
 	/**
 	 * x座標出力（画面右端原点、左向き）
+	 *
+	 * @param x 右端原点, 左が正とした場合のx座標
 	 */
 	int fromRight(int x){
 		return OLED.WIDTH-x-1;
@@ -98,10 +86,12 @@
 
 	/**
 	 * y座標出力（画面下底原点、上向き）
+	 * @param y 下端原点とした場合のy座標
 	 */
 	int fromBottom(int y){
 		return OLED.HEIGHT-y-1;
 	}
+
 	/**
 	 * x座標中央揃え
 	 *

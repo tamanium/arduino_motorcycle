@@ -9,6 +9,8 @@
 
 	#define LEFT     0
 	#define RIGHT    1
+	#define OVER     2
+	#define UNDER    3
 
 	#define MONTH    0
 	#define DAY      1
