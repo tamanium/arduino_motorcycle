@@ -10,10 +10,11 @@
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
 
-//#define BUZZER_ON
-#define DEBUG_MODE
+//#define BUZZER_ON　
+#define DEBUG_MODE 
 
 // --------------------プロトタイプ宣言--------------------
+
 void setDisplay(Prop* p, uint16_t color=TFT_WHITE);
 void displayNumberln(int valueInt, int digiNum, char spacer=' ');
 
