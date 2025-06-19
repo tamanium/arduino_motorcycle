@@ -140,6 +140,8 @@ arcInfo arcR(&display);
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props {
+	Prop Clock;        // 時:分:秒
+	Prop Date;         // 月/日
 	Prop Month;        // 月
 	Prop Day;          // 日
 	Prop Hour;         // 時
@@ -170,6 +172,13 @@ void setup(void) {
 	Wire1.begin();
 
 	int offsetY = 50;
+	// 時:分:秒
+	props.Clock.font = &fonts::Font4;
+	setPropWH(&props.Clock, "00:00:00");
+	
+	// 月/日
+	props.Date = propCopy(&props.Clock, UNDER); 
+	setPropWH(&props.Clock, "00/00");
 
 	// 時間
 	props.Hour.font = &fonts::Font4;
@@ -723,6 +732,117 @@ void displayTemp() {
 	}
 }
 
+void displayRealTime2(){
+	// 前回日時
+	static uint8_t beforeTime[5] = { 13, 32, 25, 60, 60 };
+	
+	// 時刻データ数
+	int itemLen = 5;
+	// 現在時刻取得
+	DateTime now = rtc.now();
+	uint8_t newTime[itemLen] = {
+		now.month(),
+		now.day(),
+		now.hour(),
+		now.minute(),
+		now.second()
+	};
+	// 秒の値が前回と同じ場合スキップ
+	if (beforeTime[SECOND] == newTime[SECOND]) {
+		return;
+	}
+	String templateClock = "00:00:00";
+
+	// 末尾（秒1桁目）削除
+	templateClock.remove(templateClock.length()-1,1);
+	// x座標のオフセット
+	int offset;
+	//if(beforeTime[SECOND]/10 != newTime[SECOND]/10){
+	if(newTime[SECOND]%10 == 0){
+		// 秒の2桁目も異なる場合(10の倍数だった場合)
+		// 末尾（秒2桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);
+		// 値出力
+		display.print(newTime[SECOND]);
+	}
+	else{
+		// 秒の1桁目のみ異なる場合
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);
+		// 値出力
+		display.print(newTime[SECOND]/10);
+		
+		// 末尾（秒2桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
+	}
+
+	// 分の値が前回と同じ場合スキップ
+	if(beforeTime[MINUTE] == newTime[MINUTE]){
+		return;
+	}
+	
+	// 末尾（：と分1桁目）削除
+	templateClock.remove(templateClock.length()-2,2);
+	
+	//if(beforeTime[MINUTE]/10 != newTime[MINUTE]/10){
+	if(newTime[MINUTE]%10 == 0){
+		// 分の2桁目も異なる場合(10の倍数だった場合)
+		// 末尾（分2桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);;
+		// 値出力
+		display.print(newTime[MINUTE]);
+	}
+	else{
+		// 分の1桁目のみ異なる場合
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);
+		// 値出力
+		display.print(newTime[MINUTE]/10);
+		// 末尾（分2桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
+	}
+	
+	// 末尾（：と時1桁目）削除
+	templateClock.remove(templateClock.length()-2,2);
+	//if(newTime[SECOND]%10 == 0){//←これでもいいかも
+	//if(beforeTime[HOUR]/10 != newTime[HOUR]/10){
+	if(newTime[HOUR]%10 == 0){
+		// 時の2桁目も異なる場合(10の倍数だった場合)
+		// 末尾（分2桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);;
+		// 値出力
+		display.print(newTime[HOUR]);
+	}
+	else{
+		// 時の1桁目のみ異なる場合
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);
+		// 値出力
+		display.print(newTime[HOUR]/10);
+		// 末尾（2桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
+	}
+
+}
+
 /**
  * 現在時刻表示処理
  */
@@ -737,23 +857,22 @@ void displayRealTime() {
 		&props.Min,
 		&props.Sec,
 	};
-	static int itemLen = 5;
-	// 時刻用変数
-	uint8_t newTime[itemLen] = { 0, 0, 0, 0, 0 };
 
+	// 時刻データ数
+	int itemLen = 5;
 	// 現在時刻取得
 	DateTime now = rtc.now();
+	uint8_t newTime[itemLen] = {
+		now.month(),
+		now.day(),
+		now.hour(),
+		now.minute(),
+		now.second()
+	};
 	// 秒の値が前回と同じ場合スキップ
 	if (beforeTime[SECOND] == now.second()) {
 		return;
 	}
-	// 各配列に格納
-	newTime[MONTH] = now.month();
-	newTime[DAY] = now.day();
-	newTime[HOUR] = now.hour();
-	newTime[MINUTE] = now.minute();
-	newTime[SECOND] = now.second();
-
 	// 出力処理
 	for (int i = 0; i < itemLen; i++) {
 		// 前回と同じ場合スキップ
