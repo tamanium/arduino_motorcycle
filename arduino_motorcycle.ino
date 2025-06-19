@@ -286,7 +286,7 @@ void setup(void) {
 	displayString(&props.Gear, "0");           // ギアポジション表示開始
 	displayString(&props.Speed, "00");         // 速度
 	displayString(&props.SpUnit, "km/h");      // 速度単位
-	displayString(&props.Hour, "00:00:00");    // 時間
+	displayString(&props.Clock, "00:00:00");    // 時間
 	displayString(&props.Month, "00/00");      // 日付
 	displayString(&props.Temp, "00");          // 温度
 	displayString(&props.Humid, "00%");        // 湿度
@@ -417,7 +417,7 @@ void loop() {
 
 	// 時刻表示
 	if (intervalTime.over(time)) {
-		displayRealTime();
+		displayRealTime2();
 		intervalTime.reset();
 	}
 
@@ -734,113 +734,138 @@ void displayTemp() {
 
 void displayRealTime2(){
 	// 前回日時
-	static uint8_t beforeTime[5] = { 13, 32, 25, 60, 60 };
+	static uint8_t beforeTime[5] = { 60, 60, 60, 60, 60 };
 	
 	// 時刻データ数
 	int itemLen = 5;
 	// 現在時刻取得
 	DateTime now = rtc.now();
 	uint8_t newTime[itemLen] = {
-		now.month(),
-		now.day(),
-		now.hour(),
+		now.second(),
 		now.minute(),
-		now.second()
+		now.hour(),
+		now.day(),
+		now.month()
 	};
 	// 秒の値が前回と同じ場合スキップ
-	if (beforeTime[SECOND] == newTime[SECOND]) {
+	if (beforeTime[0] == newTime[0]) {
 		return;
 	}
+	setDisplay(&props.Clock);
 	String templateClock = "00:00:00";
+	String resultStr = "";
+	char bufChar[2];
+	int printX = props.Clock.x;
 
-	// 末尾（秒1桁目）削除
-	templateClock.remove(templateClock.length()-1,1);
 	// x座標のオフセット
 	int offset;
-	//if(beforeTime[SECOND]/10 != newTime[SECOND]/10){
-	if(newTime[SECOND]%10 == 0){
+	if(newTime[0]%10 == 0){
 		// 秒の2桁目も異なる場合(10の倍数だった場合)
-		// 末尾（秒2桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
+		// 末尾（秒1,2桁目）削除
+		templateClock.remove(templateClock.length()-2,2);
 		// x座標のオフセット算出
 		offset = display.textWidth(templateClock);
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);
-		// 値出力
-		display.print(newTime[SECOND]);
+		// 数値を文字列化
+		sprintf(bufChar, "%02d",newTime[0]);
 	}
 	else{
 		// 秒の1桁目のみ異なる場合
+		// 末尾（秒1桁目）削除
+		templateClock.remove(templateClock.length()-1,1);
 		// x座標のオフセット算出
 		offset = display.textWidth(templateClock);
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);
-		// 値出力
-		display.print(newTime[SECOND]/10);
-		
 		// 末尾（秒2桁目）削除
 		templateClock.remove(templateClock.length()-1,1);
+		// 数値を文字列化
+		sprintf(bufChar, "%1d",newTime[0]%10);
 	}
+	// 値代入
+	resultStr = bufChar + resultStr;
+	// 前回値更新
+	beforeTime[0] = newTime[0];
 
 	// 分の値が前回と同じ場合スキップ
-	if(beforeTime[MINUTE] == newTime[MINUTE]){
+	if(beforeTime[1] == newTime[1]){
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);;
+		// 値出力
+		display.print(resultStr);
 		return;
 	}
 	
-	// 末尾（：と分1桁目）削除
-	templateClock.remove(templateClock.length()-2,2);
+	// 末尾（：）削除
+	templateClock.remove(templateClock.length()-1,1);
+	resultStr = ":" + resultStr;
 	
-	//if(beforeTime[MINUTE]/10 != newTime[MINUTE]/10){
-	if(newTime[MINUTE]%10 == 0){
+	if(newTime[1]%10 == 0){
 		// 分の2桁目も異なる場合(10の倍数だった場合)
 		// 末尾（分2桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
+		templateClock.remove(templateClock.length()-2,2);
 		// x座標のオフセット算出
 		offset = display.textWidth(templateClock);
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);;
-		// 値出力
-		display.print(newTime[MINUTE]);
+		// 数値を文字列化
+		sprintf(bufChar, "%02d",newTime[1]);
 	}
 	else{
 		// 分の1桁目のみ異なる場合
+		templateClock.remove(templateClock.length()-1,1);
 		// x座標のオフセット算出
 		offset = display.textWidth(templateClock);
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);
-		// 値出力
-		display.print(newTime[MINUTE]/10);
 		// 末尾（分2桁目）削除
 		templateClock.remove(templateClock.length()-1,1);
+		// 数値を文字列化
+		sprintf(bufChar, "%1d",newTime[1]%10);
 	}
+	// 値代入
+	resultStr = bufChar + resultStr;
+	// 前回値更新
+	beforeTime[1] = newTime[1];
 	
-	// 末尾（：と時1桁目）削除
-	templateClock.remove(templateClock.length()-2,2);
-	//if(newTime[SECOND]%10 == 0){//←これでもいいかも
-	//if(beforeTime[HOUR]/10 != newTime[HOUR]/10){
-	if(newTime[HOUR]%10 == 0){
-		// 時の2桁目も異なる場合(10の倍数だった場合)
-		// 末尾（分2桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
+	// 時の値が前回と同じ場合スキップ
+	if(beforeTime[2] == newTime[2]){
 		// カーソルセット
 		display.setCursor(props.Clock.x + offset, props.Clock.y);;
 		// 値出力
-		display.print(newTime[HOUR]);
+		display.print(resultStr);
+		return;
+	}
+
+	// 末尾（：）削除
+	templateClock.remove(templateClock.length()-1,1);
+	resultStr = ":" + resultStr;
+
+	if(newTime[2]%10 == 0){
+		// 時の2桁目も異なる場合(10の倍数だった場合)
+		// 末尾（分2桁目）削除
+		templateClock.remove(templateClock.length()-2,2);
+		// x座標のオフセット算出
+		offset = display.textWidth(templateClock);
+		// 数値を文字列化
+		sprintf(bufChar, "%02d", newTime[2]);
 	}
 	else{
 		// 時の1桁目のみ異なる場合
+		templateClock.remove(templateClock.length()-1,1);
 		// x座標のオフセット算出
 		offset = display.textWidth(templateClock);
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);
-		// 値出力
-		display.print(newTime[HOUR]/10);
-		// 末尾（2桁目）削除
+		// 末尾（分2桁目）削除
 		templateClock.remove(templateClock.length()-1,1);
+		// 数値を文字列化
+		sprintf(bufChar, "%1d",  newTime[2]%10);
 	}
-
+	// 値代入
+	resultStr = bufChar + resultStr;
+	// 前回値更新
+	beforeTime[2] = newTime[2];
+	
+	// 時の値が前回と同じ場合スキップ
+	//if(beforeTime[2] == newTime[2]){
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);;
+		// 値出力
+		display.print(resultStr);
+	//	return;
+	//}
 }
 
 /**
