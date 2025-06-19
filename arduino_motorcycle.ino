@@ -19,9 +19,7 @@ void setDisplay(Prop* p, uint16_t color=TFT_WHITE);
 void displayNumberln(int valueInt, int digiNum, char spacer=' ');
 
 // --------------------定数--------------------
-// 中心座標
-const int CENTER_X = OLED.WIDTH >> 1;
-const int CENTER_Y = OLED.HEIGHT >> 1;
+
 
 // 明るさレベル
 const byte brightLevel[] = {
@@ -57,7 +55,7 @@ DataClass switchData(true);            //データクラス：スイッチ
 DataClass winkersData(false);          //データクラス：ウインカーADC値
 
 LGFX display;                          // ディスプレイ
-Adafruit_NeoPixel pixels(1, PINS.LED); // オンボLED
+Adafruit_NeoPixel pixels(1, Pins::LED); // オンボLED
 RTC_DS1307 rtc;                        // RTC
 Adafruit_AHTX0 aht;                    // 温湿度計
 
@@ -166,8 +164,8 @@ void setup(void) {
 	delay(100);
 	
 	Serial.begin(9600);         // デバッグ用シリアル設定
-	Wire1.setSDA(PINS.I2C.sda); // I2C設定
-	Wire1.setSCL(PINS.I2C.scl);
+	Wire1.setSDA(Pins::I2C_SDA); // I2C設定
+	Wire1.setSCL(Pins::I2C_SCL);
 	Wire1.setClock(400000);
 	Wire1.begin();
 
@@ -194,17 +192,17 @@ void setup(void) {
 	// 温度
 	props.Temp = propCopy(&props.Hour);
 	setPropWH(&props.Temp, "00 c");
-	props.Temp.x = fromRight(props.Temp.width) - 3;
+	alignRight(&props.Temp, 3);
 
 	// 温度単位
 	props.TempUnit = propCopy(&props.Temp);
 	setPropWH(&props.TempUnit, "c");
-	props.TempUnit.x = fromRight(props.TempUnit.width) - 3;
+	alignRight(&props.TempUnit, 3);
 
 	// 湿度
 	props.Humid = propCopy(&props.Temp, UNDER);
 	setPropWH(&props.Humid, "00%");
-	props.Humid.x = fromRight(props.Humid.width);
+	alignRight(&props.Humid);
 
 	// ギア
 	props.Gear.y = 140 + offsetY;
@@ -244,13 +242,12 @@ void setup(void) {
 	// 電圧
 	props.Voltage.font = &fonts::Font4;
 	setPropWH(&props.Voltage, "00.0V");
-	props.Voltage.x = fromRight(props.Voltage.width);
-	props.Voltage.y = fromBottom(props.Voltage.height);
+	alignRight(&props.Voltage);
+	alignBottom(&props.Voltage);
 
 	// デバッグ用表示
 	setPropWH(&props.DebugData, "00");
-	props.DebugData.y = fromBottom(props.DebugData.height * 9);
-
+	alignBottom(&props.DebugData, props.DebugData.height * 8);
 	// 初期表示メッセージ
 	props.InitMsg.size = 2;
 
@@ -269,10 +266,10 @@ void setup(void) {
 	// 各モジュール動作開始
 	rtc.begin(&Wire1);                         // RTC
 	#ifdef BUZZER_ON
-		pinMode(PINS.buzzer, OUTPUT);  // ウインカー音
-		digitalWrite(PINS.buzzer, LOW);
+		pinMode(PIN::BUZZER, OUTPUT);  // ウインカー音
+		digitalWrite(PIN::BUZZER, LOW);
 	#endif
-	aht.begin(&Wire1, 0, MODULES.thmst.address);  // 温度計
+	aht.begin(&Wire1, 0, modules[THERM].address);  // 温度計
 
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
@@ -335,7 +332,7 @@ void setup(void) {
 	arcL.initArc();
 	arcR.initArc();
 	// 出力
-	arcM.displayArcM(CENTER_X, CENTER_Y + 10);
+	arcM.displayArcM(CENTER_WIDTH, CENTER_HEIGHT + 10);
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
@@ -445,7 +442,7 @@ void loop() {
 void setBuzzer(bool isOn){
 	// ブザーON
 	#ifdef BUZZER_ON
-		digitalWrite(PINS.buzzer, !isOn);
+		digitalWrite(PIN::BUZZER, !isOn);
 	#endif
 	if(isOn){
 		pixels.setPixelColor(0, pixels.Color(1, 1, 0));
@@ -484,13 +481,6 @@ void setPropWH(Prop* p, String str) {
  * モジュールスキャン
  */
 void scanModules() {
-	// モジュールの配列
-	Module moduleArr[] = {
-		MODULES.thmst,
-		MODULES.speed,
-		MODULES.rtcMm,
-		MODULES.rtcIC
-	};
 
 	// 初期表示メッセージ
 	setDisplay(&props.InitMsg);
@@ -499,7 +489,7 @@ void scanModules() {
 	delay(500);
 	// スキャン処理
 	display.println("I2C Module Scanning...");
-	for (Module  module : moduleArr) {
+	for (Module module : modules) {
 		Wire1.beginTransmission(module.address);
 		byte error = Wire1.endTransmission();
 		display.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -592,10 +582,10 @@ bool displayWinkers() {
 
 	//左ウインカーの表示
 	bool onOff = ((nowStatus & INDICATE_LEFT) == INDICATE_LEFT);
-	arcL.displayArcW(CENTER_X, CENTER_Y + 10, onOff);
+	arcL.displayArcW(CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
 	//右ウインカーの表示
 	onOff = ((nowStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
-	arcR.displayArcW(CENTER_X, CENTER_Y + 10, onOff);
+	arcR.displayArcW(CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
 
 	beforeStatus = nowStatus;
 	return true;
@@ -614,7 +604,7 @@ void displaySwitch() {
 	bool nowSw = switchData.getData();
 	display.setFont(NULL);
 	display.setTextSize(2);
-	display.setCursor(0, fromBottom(8 * 2));
+	display.setCursor(0, DisplaySize::HEIGHT - 8*2 - 1);
 
 	// キーダウンの場合
 	if (nowSw) {
@@ -673,7 +663,7 @@ void displaySpeed(){
 	}
 	if (speed != beforeSpeed) {
 		displayNumber(&props.Speed, speed, 2);
-		arcM.displayArcM(CENTER_X, CENTER_Y + 10, speed);
+		arcM.displayArcM(CENTER_WIDTH, CENTER_HEIGHT + 10, speed);
 		beforeSpeed = speed;
 	}
 }
@@ -884,8 +874,10 @@ void getDataA(){
  * @param numByte int型 データ容量(byte)
  */
 void requestSpeedModule(int reg, int numByte){
-	Wire1.beginTransmission(MODULES.speed.address);
+	Wire1.beginTransmission(modules[SPEED].address);
 	Wire1.write(reg);
 	Wire1.endTransmission(false);
-	Wire1.requestFrom(MODULES.speed.address, numByte);
+	Wire1.requestFrom(modules[SPEED].address, numByte);
 }
+
+

@@ -4,51 +4,54 @@
 	#include "CommonDefine.h"
 	#include <LovyanGFX.hpp>
 
-	/**
-	 * モジュール情報
-	 */
+	// モジュール情報
 	struct Module{
 		String name;		// モジュール名
 		byte address;		// I2Cアドレス
 	};
-
-	// モジュール構造体
-	struct Modules{
-		Module thmst = {"Thermometer ", 0x38};
-		Module speed = {"Speed Sensor", 0x55};
-		Module rtcMm = {"RTC memory  ", 0x50};
-		Module rtcIC = {"RTC IC      ", 0x68};
-	} MODULES;
 	
-	/**
-	 * ディスプレイ定義
-	 */
-	struct Display{
-		const int WIDTH = 320;
-		const int HEIGHT = 240;
-	}OLED;
+	// モジュール情報用インデックス・サイズ
+	enum {
+		THERM,
+		SPEED,
+		RTCMM,
+		RTCIC,
+		MODULE_NUM
+	};
 
+	// モジュール情報配列
+	struct Module modules[MODULE_NUM] = {
+		{"Thermometer", 0x38},
+		{"Attiny1604 ", 0x55},
+		{"RTC memory ", 0x50},
+		{"RTC IC     ", 0x68}
+	};
+	
+	enum DisplaySize {
+		WIDTH = 320,
+		HEIGHT = 240,
+		CENTER_WIDTH = WIDTH >> 1,
+		CENTER_HEIGHT = HEIGHT >> 1
+	};
 	/**
 	 * IOピン定義
 	 */
-	struct Pins{
-		const int LED = 16;
-		const int buzzer = 26;     // ブザー
-		struct I2c{                // I2C通信
-			const int scl = 15;
-			const int sda = 14;
-		} I2C;
-		struct Spi{
-			const int SCLK = 2;
-			const int MOSI = 3;
-			const int MISO = -1;
-			const int DC = 7;
-			const int CS = 6;
-			const int RST = 8;
-			const int BL = 5;
+	enum Pins {
+		LED      = 16,
+		BUZZER   = 26,
 
-		} SPI;
-	} PINS;
+		I2C_SDA  = 14,
+		I2C_SCL  = 15,
+
+		SPI_SCLK =  2,
+		SPI_MOSI =  3,
+		SPI_MISO = -1,
+		SPI_DC   =  7,
+		SPI_CS   =  6,
+		SPI_RST  =  8,
+		SPI_BL   =  5,
+		SPI_BUSY = -1
+	} ;
 	
 	// 表示設定
 	struct Prop {
@@ -68,16 +71,32 @@
 	 */
 	Prop propCopy(Prop* p, int location = -1 ){
 		Prop newP = *p;
+		// コピー元に対して右側に配置する場合
 		int x = (location == RIGHT) ? p->width  : 0;
+		// コピー元に対して下側に配置する場合
 		int y = (location == UNDER) ? p->height : 0;
 		newP.x = p->x + x;
 		newP.y = p->y + y;
 		return newP;
 	}
 
+	/**
+	 * 表示設定を右寄せにする
+	 */
+	void alignRight(Prop* p, int offset = 0){
+		p->x = DisplaySize::WIDTH - p->width - 1 - offset;
+	}
+
+	/**
+	 * 表示設定を下寄せにする
+	 */
+	void alignBottom(Prop* p, int offset = 0){
+		p->y = DisplaySize::HEIGHT - p->height - 1 - offset;
+	}
+
 	struct Interval {
-		unsigned long time = 0;
-		int interval;
+		unsigned long time = 0; // 処理実行時刻[ms]
+		int interval;           // 処理実行間隔[ms]
 
 		/**
 		 * コンストラクタ
@@ -88,13 +107,13 @@
 		 * 処理時刻が0かどうか
 		 */
 		bool isZero(){
-			return (time == 0);
+			return (this->time == 0);
 		}
 		/**
 		 * 処理時刻に0をセット
 		 */
 		void setZero(){
-			time = 0;
+			this->time = 0;
 		}
 
 		/**
@@ -103,46 +122,29 @@
 		 * @param sysTime システム時刻
 		 */
 		bool over(unsigned long sysTime){
-			if(time == 0){
-				time = sysTime;
+			if(this->time == 0){
+				this->time = sysTime;
 				return false;
 			}
-			return (time <= sysTime);
+			return (this->time <= sysTime);
 		}
 
 		/**
 		 * 処理時刻再設定 
 		 */
 		void reset(){
-			time += interval;
+			this->time += this->interval;
 		}
 	};
 	
 	/**
-	 * x座標出力（画面右端原点、左向き）
-	 *
-	 * @param x 右端原点, 左が正とした場合のx座標
-	 */
-	int fromRight(int x){
-		return OLED.WIDTH-x-1;
-	}
-
-	/**
-	 * y座標出力（画面下底原点、上向き）
-	 * @param y 下端原点とした場合のy座標
-	 */
-	int fromBottom(int y){
-		return OLED.HEIGHT-y-1;
-	}
-
-	/**
 	 * x座標中央揃え
 	 *
-	 * @param fontWidth フォント横幅
+	 * @param width フォント横幅
 	 * @param size 文字数
 	 */
 	int centerHorizontal(int width){
-		return (OLED.WIDTH>>1) - (width>>1);
+		return (DisplaySize::WIDTH>>1) - (width>>1);
 	}
 
 
