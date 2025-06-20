@@ -57,10 +57,10 @@
 	struct Prop {
 		int x = 0;                  // x座標
 		int y = 0;                  // y座標
-		int size = 1;               // フォント倍率
+		uint8_t size = 1;               // フォント倍率
 		const lgfx::v1::IFont* font = &fonts::Font0; // フォント
-		int width = 6;
-		int height = 8;
+		uint8_t width = 6;
+		uint8_t height = 8;
 	};
 
 	/**

@@ -18,7 +18,7 @@ void displayNumberln(int valueInt, int digiNum, char spacer=' ');
 
 // --------------------定数--------------------
 // 明るさレベル
-const byte brightLevel[] = {
+const uint8_t brightLevel[] = {
 	0x01, 0x08, 0x18, 0x38, 0x80
 };
 
