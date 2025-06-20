@@ -14,13 +14,9 @@
 #define DEBUG_MODE 
 
 // --------------------プロトタイプ宣言--------------------
-
-void setDisplay(Prop* p, uint16_t color=TFT_WHITE);
 void displayNumberln(int valueInt, int digiNum, char spacer=' ');
 
 // --------------------定数--------------------
-
-
 // 明るさレベル
 const byte brightLevel[] = {
 	0x01, 0x08, 0x18, 0x38, 0x80
@@ -58,6 +54,9 @@ LGFX display;                          // ディスプレイ
 Adafruit_NeoPixel pixels(1, Pins::LED); // オンボLED
 RTC_DS1307 rtc;                        // RTC
 Adafruit_AHTX0 aht;                    // 温湿度計
+
+uint16_t fontColor = TFT_WHITE;
+uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
 struct arcInfo {
@@ -142,23 +141,17 @@ arcInfo arcR(&display);
 struct Props {
 	Prop Clock;        // 時:分:秒
 	Prop Date;         // 月/日
-	Prop Month;        // 月
-	Prop Day;          // 日
-	Prop Hour;         // 時
-	Prop Min;          // 分
-	Prop Sec;          // 秒
 	Prop Temp;         // 温度
-	Prop TempUnit;     // 「℃」
 	Prop Humid;        // 湿度
 	Prop Gear;         // ギア
 	Prop Newt;         // ギアニュートラル
 	Prop Speed;        // 速度
 	Prop SpUnit;       // 「km/h」
-	Prop InitMsg;      // 初期表示
 	Prop SpFreqIn;     // 速度センサカウンタ
-	Prop SpFreqInUnit; // 「Hz」
 	Prop Voltage;      // 電圧
 	Prop DebugData;    // デバッグ用値表示
+	Prop TempUnit;     // 「℃」
+	Prop SpFreqInUnit; // 「Hz」
 } props;
 
 // ------------------------------初期設定------------------------------
@@ -172,93 +165,9 @@ void setup(void) {
 	Wire1.begin();
 
 	int offsetY = 50;
-	// 時:分:秒
-	props.Clock.font = &fonts::Font4;
-	setPropWH(&props.Clock, "00:00:00");
-	
-	// 月/日
-	props.Date = propCopy(&props.Clock, UNDER); 
-	setPropWH(&props.Clock, "00/00");
 
-	// 時間
-	props.Hour.font = &fonts::Font4;
-	setPropWH(&props.Hour, "00:");
-	// 分
-	props.Min = propCopy(&props.Hour, RIGHT);
-	setPropWH(&props.Min, "00:");
-	// 秒
-	props.Sec = propCopy(&props.Min, RIGHT);
-	setPropWH(&props.Sec, "00");
-
-	// 月
-	props.Month = propCopy(&props.Hour, UNDER);
-	setPropWH(&props.Month, "00/");
-
-	// 日
-	props.Day = propCopy(&props.Month, RIGHT);
-	setPropWH(&props.Day, "00");
-
-	// 温度
-	props.Temp = propCopy(&props.Hour);
-	setPropWH(&props.Temp, "00 c");
-	alignRight(&props.Temp, 3);
-
-	// 温度単位
-	props.TempUnit = propCopy(&props.Temp);
-	setPropWH(&props.TempUnit, "c");
-	alignRight(&props.TempUnit, 3);
-
-	// 湿度
-	props.Humid = propCopy(&props.Temp, UNDER);
-	setPropWH(&props.Humid, "00%");
-	alignRight(&props.Humid);
-
-	// ギア
-	props.Gear.y = 140 + offsetY;
-	props.Gear.font = &fonts::DejaVu56;
-	setPropWH(&props.Gear, "0");
-	props.Gear.x = centerHorizontal(props.Gear.width);
-
-	// ギアニュートラル
-	props.Newt = propCopy(&props.Gear);
-	setPropWH(&props.Newt, "N");
-	props.Newt.x = centerHorizontal(props.Newt.width);
-
-	// 速度
-	props.Speed.y = 10 + offsetY;
-	props.Speed.font = &fonts::Font7;
-	setPropWH(&props.Speed, "00");
-	props.Speed.x = centerHorizontal(props.Speed.width);
-
-	// 速度単位
-	props.SpUnit = propCopy(&props.Speed, UNDER);
-	props.SpUnit.font = &fonts::Font2;
-	setPropWH(&props.SpUnit, "km/h");
-	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
-
-	// スピードセンサIN
-	props.SpFreqIn = propCopy(&props.SpUnit, UNDER);
-	props.SpFreqIn.font = &fonts::Font7;
-	setPropWH(&props.SpFreqIn, "0000");
-	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
-
-	// スピードセンサIN単位
-	props.SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER);
-	props.SpFreqInUnit.font = &fonts::Font2;
-	setPropWH(&props.SpFreqInUnit, "Hz");
-	props.SpFreqInUnit.x = centerHorizontal(props.SpFreqInUnit.width);
-
-	// 電圧
-	props.Voltage.font = &fonts::Font4;
-	setPropWH(&props.Voltage, "00.0V");
-	alignRight(&props.Voltage);
-	alignBottom(&props.Voltage);
-
-	// デバッグ用表示
-	setPropWH(&props.DebugData, "00");
-	alignBottom(&props.DebugData, props.DebugData.height * 8);
-	// 初期表示メッセージ
-	props.InitMsg.size = 2;
+	// 各表示情報の初期化
+	initSetProps(offsetY);
 
 	// ディスプレイの初期化
 	display.init();
@@ -282,21 +191,10 @@ void setup(void) {
 
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
 
-	display.fillScreen(TFT_BLACK);          // 画面リセット
-	displayString(&props.Gear, "0");           // ギアポジション表示開始
-	displayString(&props.Speed, "00");         // 速度
-	displayString(&props.SpUnit, "km/h");      // 速度単位
-	displayString(&props.Clock, "00:00:00");    // 時間
-	displayString(&props.Month, "00/00");      // 日付
-	displayString(&props.Temp, "00");          // 温度
-	displayString(&props.Humid, "00%");        // 湿度
-	displayString(&props.SpFreqIn, "0000");    // パルス周波数
-	displayString(&props.SpFreqInUnit, "Hz");  // パルス周波数単位
-	displayString(&props.Voltage, "00.0V");    // 電圧
-	displayString(&props.TempUnit, "c");       // 温度単位
-	display.fillCircle(306 - 3, 6, 3, TFT_WHITE);
-	display.fillCircle(306 - 3, 6, 1, TFT_BLACK);
-	setDisplay(&props.DebugData);              // デバッグ用表示
+	// 各項目の初期表示
+	initDisplayProps();
+
+	setDisplay(&props.DebugData, fontColor);              // デバッグ用表示
 	// スプライト設定
 	// 横縦
 	//int w = (props.Speed.y + 60 - offsetY+10) * 2;
@@ -386,7 +284,7 @@ void loop() {
 
 			beforeTime = time;
 			
-			setDisplay(&props.DebugData);
+			setDisplay(&props.DebugData, fontColor);
 			display.print("loop :");
 			displayNumberln(loopTime, 4);
 			display.print("loopM:");
@@ -448,6 +346,95 @@ void loop() {
 // ------------------------------メソッド------------------------------
 // -------------------------------------------------------------------
 
+/**
+ * 表示情報の初期化
+ */
+void initSetProps(int offsetY){
+	// 時:分:秒
+	props.Clock.font = &fonts::Font4;
+	setPropWH(&props.Clock, "00:00:00");
+
+	// 月/日
+	props.Date = propCopy(&props.Clock, UNDER); 
+	setPropWH(&props.Clock, "00/00");
+
+	// 温度
+	props.Temp = propCopy(&props.Clock);
+	setPropWH(&props.Temp, "00 c");
+	alignRight(&props.Temp, 3);
+
+	// 湿度
+	props.Humid = propCopy(&props.Temp, UNDER);
+	setPropWH(&props.Humid, "00%");
+	alignRight(&props.Humid);
+	// ギア
+	props.Gear.y = 140 + offsetY;
+	props.Gear.font = &fonts::DejaVu56;
+	setPropWH(&props.Gear, "0");
+	props.Gear.x = centerHorizontal(props.Gear.width);
+
+	// ギアニュートラル
+	props.Newt = propCopy(&props.Gear);
+	setPropWH(&props.Newt, "N");
+	props.Newt.x = centerHorizontal(props.Newt.width);
+
+	// 速度
+	props.Speed.y = 10 + offsetY;
+	props.Speed.font = &fonts::Font7;
+	setPropWH(&props.Speed, "00");
+	props.Speed.x = centerHorizontal(props.Speed.width);
+
+	// 速度単位
+	props.SpUnit = propCopy(&props.Speed, UNDER);
+	props.SpUnit.font = &fonts::Font2;
+	setPropWH(&props.SpUnit, "km/h");
+	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
+
+	// スピードセンサIN
+	props.SpFreqIn = propCopy(&props.SpUnit, UNDER);
+	props.SpFreqIn.font = &fonts::Font7;
+	setPropWH(&props.SpFreqIn, "0000");
+	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
+
+	// 電圧
+	props.Voltage.font = &fonts::Font4;
+	setPropWH(&props.Voltage, "00.0V");
+	alignRight(&props.Voltage);
+	alignBottom(&props.Voltage);
+
+	// デバッグ用表示
+	setPropWH(&props.DebugData, "00");
+	alignBottom(&props.DebugData, props.DebugData.height * 8);
+}
+
+void initDisplayProps(){
+	display.fillScreen(bgColor);          // 画面リセット
+	displayString(&props.Gear, "0");           // ギアポジション表示開始
+	displayString(&props.Speed, "00");         // 速度
+	displayString(&props.Clock, "00:00:00");   // 時間
+	displayString(&props.Temp, "00");          // 温度
+	displayString(&props.Humid, "00%");        // 湿度
+	displayString(&props.SpFreqIn, "0000");    // パルス周波数
+	displayString(&props.Voltage, "00.0V");    // 電圧
+	displayString(&props.SpUnit, "km/h");      // 速度単位
+
+	// 温度単位
+	Prop TempUnit = propCopy(&props.Temp);
+	setPropWH(&TempUnit, "c");
+	alignRight(&TempUnit, 3);
+	
+	// スピードセンサIN単位
+	Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER);
+	props.SpFreqInUnit.font = &fonts::Font2;
+	setPropWH(&SpFreqInUnit, "Hz");
+	SpFreqInUnit.x = centerHorizontal(SpFreqInUnit.width);
+
+	displayString(&SpFreqInUnit, "Hz");  // パルス周波数単位
+	displayString(&TempUnit, "c");       // 温度単位
+	display.fillCircle(306 - 3, 6, 3, fontColor);
+	display.fillCircle(306 - 3, 6, 1, bgColor);
+}
+
 void setBuzzer(bool isOn){
 	// ブザーON
 	#ifdef BUZZER_ON
@@ -469,7 +456,7 @@ void setBuzzer(bool isOn){
 void setDisplay(Prop* p, uint16_t color) {
 	display.setCursor(p->x, p->y);               //描画位置
 	display.setTextSize(p->size);                //テキスト倍率
-	display.setTextColor(color, TFT_BLACK);  //フォント色...白
+	display.setTextColor(color, bgColor);  //フォント色...白
 	display.setFont(p->font);
 }
 
@@ -492,7 +479,10 @@ void setPropWH(Prop* p, String str) {
 void scanModules() {
 
 	// 初期表示メッセージ
-	setDisplay(&props.InitMsg);
+	display.fillScreen(bgColor);
+	display.setCursor(0,0);
+	display.setTextSize(2);
+	display.setTextColor(fontColor, bgColor);
 	display.println("Hello");
 	display.println("");
 	delay(500);
@@ -501,12 +491,13 @@ void scanModules() {
 	for (Module module : modules) {
 		Wire1.beginTransmission(module.address);
 		byte error = Wire1.endTransmission();
-		display.setTextColor(TFT_WHITE, TFT_BLACK);
-		display.print(module.name + ":");
+		display.setTextColor(fontColor, bgColor);
+		display.print(module.name);
+		display.print(':');
 		display.setTextColor((error == 0) ? TFT_GREEN : TFT_RED, TFT_BLACK);
 		display.println((error == 0) ? "OK" : "NG");
 	}
-	display.setTextColor(TFT_WHITE);
+	display.setTextColor(fontColor);
 	display.println("");
 	display.println("-- done --");
 	display.println("");
@@ -517,7 +508,7 @@ void scanModules() {
 	display.print("1 ");
 	delay(1000);
 	display.print("Start");
-	delay(1000);
+	delay(500);
 }
 
 /**
@@ -541,20 +532,20 @@ void displayGear() {
 	// Nの場合
 	if(gear == 'N'){
 		setDisplay(&props.Newt, TFT_GREEN);
-		display.print(gear);
 	}
 	// 0の場合（ギア抜け）
 	else if(gear == '0'){
 		Prop* prop = (before == 'N') ? &props.Newt : &props.Gear;
 		// グレーで前回ギアを表示
 		setDisplay(prop, TFT_DARKGREY);
-		display.print(before);
+		gear = before;
 	}
 	// 1～4の場合
 	else{
-		setDisplay(&props.Gear);
-		display.print(gear);
+		setDisplay(&props.Gear, fontColor);
 	}
+	// 表示
+	display.print(gear);
 	// 前回値に今回値を代入
 	before = gear;
 }
@@ -617,7 +608,7 @@ void displaySwitch() {
 
 	// キーダウンの場合
 	if (nowSw) {
-		display.setTextColor(TFT_RED, TFT_BLACK);
+		display.setTextColor(TFT_RED, bgColor);
 		if (beforeSw != nowSw) {
 			display.print("ON  ");
 			beforeSw = ON;
@@ -631,7 +622,7 @@ void displaySwitch() {
 	// キーアップの場合
 	else {
 		if (beforeSw != nowSw) {
-			display.setTextColor(TFT_BLUE, TFT_BLACK);
+			display.setTextColor(TFT_BLUE, bgColor);
 			display.print("OFF ");
 			beforeSw = OFF;
 		}
@@ -690,7 +681,7 @@ void displayVoltage() {
 	byte voltagex10 = (adcValue * 159) / 1023;
 	if (voltagex10 != beforeVoltagex10) {
 		// 電圧表示
-		setDisplay(&props.Voltage);
+		setDisplay(&props.Voltage, fontColor);
 
 		String volStr = String(voltagex10/100)
 							+ String((voltagex10/10)%10)
@@ -700,7 +691,7 @@ void displayVoltage() {
 
 		// デバッグモード表示
 		#ifdef DEBUG_MODE
-			setDisplay(&props.DebugData);
+			setDisplay(&props.DebugData, fontColor);
 			display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
 			display.print("vltAD:");
 			displayNumberln(adcValue, 4);
@@ -733,11 +724,10 @@ void displayTemp() {
 }
 
 void displayRealTime2(){
-	// 前回日時
-	static uint8_t beforeTime[5] = { 60, 60, 60, 60, 60 };
-	
 	// 時刻データ数
-	int itemLen = 5;
+	const int itemLen = 5;
+	// 前回日時
+	static uint8_t beforeTime[itemLen] = { 60, 60, 60, 60, 60 };
 	// 現在時刻取得
 	DateTime now = rtc.now();
 	uint8_t newTime[itemLen] = {
@@ -747,174 +737,49 @@ void displayRealTime2(){
 		now.day(),
 		now.month()
 	};
+	// 初期処理
+	if(60 <= beforeTime[0]){
+		// 前回日時を更新
+		memcpy(beforeTime, newTime, itemLen);
+		return;
+	}
+
 	// 秒の値が前回と同じ場合スキップ
 	if (beforeTime[0] == newTime[0]) {
 		return;
 	}
-	setDisplay(&props.Clock);
-	String templateClock = "00:00:00";
+
+	// 表示情報セット
+	setDisplay(&props.Clock, fontColor);
+	// 表示更新分の文字列
 	String resultStr = "";
-	char bufChar[2];
-	int printX = props.Clock.x;
 
-	// x座標のオフセット
-	int offset;
-	if(newTime[0]%10 == 0){
-		// 秒の2桁目も異なる場合(10の倍数だった場合)
-		// 末尾（秒1,2桁目）削除
-		templateClock.remove(templateClock.length()-2,2);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
-		// 数値を文字列化
-		sprintf(bufChar, "%02d",newTime[0]);
-	}
-	else{
-		// 秒の1桁目のみ異なる場合
-		// 末尾（秒1桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
-		// 末尾（秒2桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
-		// 数値を文字列化
-		sprintf(bufChar, "%1d",newTime[0]%10);
-	}
-	// 値代入
-	resultStr = bufChar + resultStr;
-	// 前回値更新
-	beforeTime[0] = newTime[0];
-
-	// 分の値が前回と同じ場合スキップ
-	if(beforeTime[1] == newTime[1]){
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);;
-		// 値出力
-		display.print(resultStr);
-		return;
-	}
-	
-	// 末尾（：）削除
-	templateClock.remove(templateClock.length()-1,1);
-	resultStr = ":" + resultStr;
-	
-	if(newTime[1]%10 == 0){
-		// 分の2桁目も異なる場合(10の倍数だった場合)
-		// 末尾（分2桁目）削除
-		templateClock.remove(templateClock.length()-2,2);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
-		// 数値を文字列化
-		sprintf(bufChar, "%02d",newTime[1]);
-	}
-	else{
-		// 分の1桁目のみ異なる場合
-		templateClock.remove(templateClock.length()-1,1);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
-		// 末尾（分2桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
-		// 数値を文字列化
-		sprintf(bufChar, "%1d",newTime[1]%10);
-	}
-	// 値代入
-	resultStr = bufChar + resultStr;
-	// 前回値更新
-	beforeTime[1] = newTime[1];
-	
-	// 時の値が前回と同じ場合スキップ
-	if(beforeTime[2] == newTime[2]){
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);;
-		// 値出力
-		display.print(resultStr);
-		return;
-	}
-
-	// 末尾（：）削除
-	templateClock.remove(templateClock.length()-1,1);
-	resultStr = ":" + resultStr;
-
-	if(newTime[2]%10 == 0){
-		// 時の2桁目も異なる場合(10の倍数だった場合)
-		// 末尾（分2桁目）削除
-		templateClock.remove(templateClock.length()-2,2);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
-		// 数値を文字列化
-		sprintf(bufChar, "%02d", newTime[2]);
-	}
-	else{
-		// 時の1桁目のみ異なる場合
-		templateClock.remove(templateClock.length()-1,1);
-		// x座標のオフセット算出
-		offset = display.textWidth(templateClock);
-		// 末尾（分2桁目）削除
-		templateClock.remove(templateClock.length()-1,1);
-		// 数値を文字列化
-		sprintf(bufChar, "%1d",  newTime[2]%10);
-	}
-	// 値代入
-	resultStr = bufChar + resultStr;
-	// 前回値更新
-	beforeTime[2] = newTime[2];
-	
-	// 時の値が前回と同じ場合スキップ
-	//if(beforeTime[2] == newTime[2]){
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);;
-		// 値出力
-		display.print(resultStr);
-	//	return;
-	//}
-}
-
-/**
- * 現在時刻表示処理
- */
-void displayRealTime() {
-	// 前回日時
-	static uint8_t beforeTime[5] = { 13, 32, 25, 60, 60 };
-	// 表示情報配列
-	static Prop* printPropArr[5] = {
-		&props.Month,
-		&props.Day,
-		&props.Hour,
-		&props.Min,
-		&props.Sec,
-	};
-
-	// 時刻データ数
-	int itemLen = 5;
-	// 現在時刻取得
-	DateTime now = rtc.now();
-	uint8_t newTime[itemLen] = {
-		now.month(),
-		now.day(),
-		now.hour(),
-		now.minute(),
-		now.second()
-	};
-	// 秒の値が前回と同じ場合スキップ
-	if (beforeTime[SECOND] == now.second()) {
-		return;
-	}
-	// 出力処理
-	for (int i = 0; i < itemLen; i++) {
-		// 前回と同じ場合スキップ
-		if (beforeTime[i] == newTime[i]) {
-			continue;
+	for(int i=0;i<3;i++){
+		// 値が等しい場合、ループ終了
+		if(beforeTime[i] == newTime[i]){
+			break;
 		}
-		// 表示設定を反映
-		setDisplay(printPropArr[i]);
-		// 値が1桁の場合は0埋め
-		if (newTime[i] < 10) {
-			display.print('0');
-		}
-		// 値を出力
-		display.print(newTime[i]);
-		// 前回日時を更新
 		beforeTime[i] = newTime[i];
+		// 時か分の場合、コロンを頭につける
+		if(i!=0){
+			resultStr = ":" + resultStr;
+		}
+		// 1桁目のみ変わった場合：1桁目だけ取得
+		// それ以外            ：2桁目まで取得
+		byte value = (newTime[i]%10 == 0) ? newTime[i] : newTime[i]%10;
+		// 表示文字列に連結
+		resultStr = String(value) + resultStr;
 	}
+	
+	// offsetの値を文字数から文字幅に変換
+	String templateClock = "00:00:00";
+	int offset = resultStr.length();
+	templateClock.remove(templateClock.length()-offset, offset);
+	offset = display.textWidth(templateClock);
+	// カーソルセット
+	display.setCursor(props.Clock.x + offset, props.Clock.y);
+	// 値出力　
+	display.print(resultStr);
 }
 
 /**
@@ -924,7 +789,7 @@ void displayRealTime() {
  * @param str 文字列
  */
 void displayString(Prop* p, String str){
-	setDisplay(p);
+	setDisplay(p, fontColor);
 	display.print(str);
 }
 
@@ -937,13 +802,14 @@ void displayString(Prop* p, String str){
  */
 void displayNumber(Prop* p, byte valueByte, int digitNum) {
 	// 表示設定
-	setDisplay(p);
+	setDisplay(p, fontColor);
 	// 速度周波数表示
 	int init = pow(10, digitNum - 1);
 	for (int d=init; 1<d; d/=10) {
 		if (valueByte / d == 0) {
 			display.print('0');
-		} else {
+		}
+		else {
 			break;
 		}
 	}
@@ -958,7 +824,7 @@ void displayNumber(Prop* p, byte valueByte, int digitNum) {
  * @param digitNum int型 表示桁数
  */
 void displayNumber(Prop* p, int valueInt, int digitNum) {
-	setDisplay(p);                             // 表示設定
+	setDisplay(p, fontColor);                 // 表示設定
 	displayNumberln(valueInt, digitNum, '0'); // 改行表示
 }
 
@@ -971,15 +837,24 @@ void displayNumber(Prop* p, int valueInt, int digitNum) {
  */
 void displayNumberln(int valueInt, int digiNum, char spacer){
 	// 表示
-	int init = pow(10, digiNum - 1);
-	for (int d=init; 1<d; d/=10) {
-		if (valueInt / d == 0) {
-			display.print(spacer);
-		} else {
-			break;
-		}
+	// int init = pow(10, digiNum - 1);
+	// for (int d=init; 1<d; d/=10) {
+	// 	if (valueInt / d == 0) {
+	// 		display.print(spacer);
+	// 	} else {
+	// 		break;
+	// 	}
+	// }
+	String _format = "%";
+	if(spacer == '0'){
+		_format += '0';
 	}
-	display.println(valueInt);
+	_format += char('0' + digiNum);
+	_format += 'd';
+	char* valueStr = "";
+	const char* format = _format.c_str();
+	sprintf(valueStr, format, valueInt);
+	display.println(valueStr);
 }
 
 /**

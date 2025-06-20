@@ -4,6 +4,9 @@
 	#define ON       true
 	#define OFF      false
 
+	#define LIGHT_MODE true
+	#define DARK_MODE  false
+
 	#define KEY_DOWN true
 	#define KEY_UP   false
 

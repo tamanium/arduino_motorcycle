@@ -6,8 +6,8 @@
 
 	// モジュール情報
 	struct Module{
-		String name;		// モジュール名
-		byte address;		// I2Cアドレス
+		char name[12];	// モジュール名
+		byte address;	// I2Cアドレス
 	};
 	
 	// モジュール情報用インデックス・サイズ
