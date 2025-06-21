@@ -14,7 +14,9 @@
 #define DEBUG_MODE 
 
 // --------------------プロトタイプ宣言--------------------
-void displayNumberln(int valueInt, int digiNum, char spacer=' ');
+void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
+void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
+void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero=false);
 
 // --------------------定数--------------------
 // 明るさレベル
@@ -151,7 +153,7 @@ struct Props {
 	Prop Voltage;      // 電圧
 	Prop DebugData;    // デバッグ用値表示
 	Prop TempUnit;     // 「℃」
-	Prop SpFreqInUnit; // 「Hz」
+	//Prop SpFreqInUnit; // 「Hz」
 } props;
 
 // ------------------------------初期設定------------------------------
@@ -315,7 +317,7 @@ void loop() {
 
 	// 時刻表示
 	if (intervalTime.over(time)) {
-		displayRealTime2();
+		displayRealTime();
 		intervalTime.reset();
 	}
 
@@ -409,12 +411,12 @@ void initSetProps(int offsetY){
 
 void initDisplayProps(){
 	display.fillScreen(bgColor);          // 画面リセット
-	displayString(&props.Gear, "0");           // ギアポジション表示開始
-	displayString(&props.Speed, "00");         // 速度
-	displayString(&props.Clock, "00:00:00");   // 時間
-	displayString(&props.Temp, "00");          // 温度
+	//displayString(&props.Gear, "0");           // ギアポジション表示開始
+	//displayString(&props.Speed, "00");         // 速度
+	//displayString(&props.Clock, "00:00:00");   // 時間
+	//displayString(&props.Temp, "00");          // 温度
 	displayString(&props.Humid, "00%");        // 湿度
-	displayString(&props.SpFreqIn, "0000");    // パルス周波数
+	//displayString(&props.SpFreqIn, "0000");    // パルス周波数
 	displayString(&props.Voltage, "00.0V");    // 電圧
 	displayString(&props.SpUnit, "km/h");      // 速度単位
 
@@ -425,7 +427,7 @@ void initDisplayProps(){
 	
 	// スピードセンサIN単位
 	Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER);
-	props.SpFreqInUnit.font = &fonts::Font2;
+	SpFreqInUnit.font = &fonts::Font2;
 	setPropWH(&SpFreqInUnit, "Hz");
 	SpFreqInUnit.x = centerHorizontal(SpFreqInUnit.width);
 
@@ -653,7 +655,7 @@ void displaySpeed(){
 
 	// 周波数表示
 	if (moduleData[INDEX_FREQ] != beforeFreq) {
-		displayNumber(&props.SpFreqIn, moduleData[INDEX_FREQ], 4);
+		displayNumberln(&props.SpFreqIn, moduleData[INDEX_FREQ], 4, true);
 		beforeFreq = moduleData[INDEX_FREQ];
 	}
 	// 速度表示
@@ -662,7 +664,7 @@ void displaySpeed(){
 		speed = 99;
 	}
 	if (speed != beforeSpeed) {
-		displayNumber(&props.Speed, speed, 2);
+		displayNumberln(&props.Speed, speed, 2, true);
 		arcM.displayArcM(CENTER_WIDTH, CENTER_HEIGHT + 10, speed);
 		beforeSpeed = speed;
 	}
@@ -701,7 +703,7 @@ void displayVoltage() {
 }
 
 /**
- * 温度表示
+ * 温度・湿度表示
  */
 void displayTemp() {
 	static byte beforeTemp = 0;
@@ -709,21 +711,19 @@ void displayTemp() {
 	// 温度取得
 	sensors_event_t humidity, temp;
 	aht.getEvent(&humidity, &temp);
-	int newTempInt = (int)(temp.temperature);
-	byte newTemp = byte(newTempInt);
+	byte newTemp = byte(temp.temperature);
 	if (beforeTemp != newTemp) {
-		displayNumber(&props.Temp, newTemp, 2);
+		displayNumberln(&props.Temp, newTemp, 2);
 		beforeTemp = newTemp;
 	}
-	int newHumidInt = (int)humidity.relative_humidity % 100;
-	byte newHumid = byte(newHumidInt);
+	byte newHumid = byte(humidity.relative_humidity);
 	if (beforeHumid != newHumid) {
-		displayNumber(&props.Humid, newHumid, 2);
+		displayNumberln(&props.Humid, newHumid, 2);
 		beforeHumid = newHumid;
 	}
 }
 
-void displayRealTime2(){
+void displayRealTime(){
 	// 時刻データ数
 	const int itemLen = 5;
 	// 前回日時
@@ -737,13 +737,6 @@ void displayRealTime2(){
 		now.day(),
 		now.month()
 	};
-	// 初期処理
-	if(60 <= beforeTime[0]){
-		// 前回日時を更新
-		memcpy(beforeTime, newTime, itemLen);
-		return;
-	}
-
 	// 秒の値が前回と同じ場合スキップ
 	if (beforeTime[0] == newTime[0]) {
 		return;
@@ -754,23 +747,29 @@ void displayRealTime2(){
 	// 表示更新分の文字列
 	String resultStr = "";
 
-	for(int i=0;i<3;i++){
-		// 値が等しい場合、ループ終了
-		if(beforeTime[i] == newTime[i]){
+	if(60 <= beforeTime[0]){
+		char defaultStr[9];	
+		sprintf(defaultStr, "%02d:%02d:%02d",newTime[2],newTime[1],newTime[0]);
+		display.print(defaultStr);
+		// 前回日時を更新
+		memcpy(beforeTime, newTime, itemLen);
+		return;
+	}
+
+	for(int i=0; i<3; i++){
+		// 0以外の場合
+		if(newTime[i] != 0){
+			// 10の倍数なら2桁とも。そうでなければ1桁だけ
+			byte value = (newTime[i]%10 == 0) ? newTime[i] : newTime[i]%10;
+			resultStr = String(value) + resultStr;
 			break;
 		}
-		beforeTime[i] = newTime[i];
-		// 時か分の場合、コロンを頭につける
-		if(i!=0){
+		// 0の場合
+		resultStr = "00" + resultStr;
+		if(i!=3-1){
 			resultStr = ":" + resultStr;
 		}
-		// 1桁目のみ変わった場合：1桁目だけ取得
-		// それ以外            ：2桁目まで取得
-		byte value = (newTime[i]%10 == 0) ? newTime[i] : newTime[i]%10;
-		// 表示文字列に連結
-		resultStr = String(value) + resultStr;
 	}
-	
 	// offsetの値を文字数から文字幅に変換
 	String templateClock = "00:00:00";
 	int offset = resultStr.length();
@@ -794,38 +793,27 @@ void displayString(Prop* p, String str){
 }
 
 /**
- * 値の表示（左0埋め）
- * 
- * @param p Prop型 表示設定
- * @param valueByte byte型 表示値
- * @param digitNum int型 表示桁数
- */
-void displayNumber(Prop* p, byte valueByte, int digitNum) {
-	// 表示設定
-	setDisplay(p, fontColor);
-	// 速度周波数表示
-	int init = pow(10, digitNum - 1);
-	for (int d=init; 1<d; d/=10) {
-		if (valueByte / d == 0) {
-			display.print('0');
-		}
-		else {
-			break;
-		}
-	}
-	display.print(valueByte);
-}
-
-/**
  * 値の表示（左0埋め）開発用
  * 
  * @param p Prop型 表示設定
  * @param valueLong long型 表示値
  * @param digitNum int型 表示桁数
  */
-void displayNumber(Prop* p, int valueInt, int digitNum) {
-	setDisplay(p, fontColor);                 // 表示設定
-	displayNumberln(valueInt, digitNum, '0'); // 改行表示
+void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero) {
+	setDisplay(p, fontColor);
+	displayNumberln(valueInt, digitNum, spacerZero);
+}
+
+/**
+ * 値の表示（左0埋め）
+ * 
+ * @param p Prop型 表示設定
+ * @param valueByte byte型 表示値
+ * @param digitNum int型 表示桁数
+ */
+void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero) {
+	setDisplay(p, fontColor);
+	displayNumberln(int(valueByte), digitNum, spacerZero);
 }
 
 /**
@@ -833,27 +821,18 @@ void displayNumber(Prop* p, int valueInt, int digitNum) {
  * 
  * @param p Prop型 表示設定
  * @param digitNum int型 表示桁数
- * @param valueLong long型 表示値
+ * @param spacerZero 0埋めするかどうか
  */
-void displayNumberln(int valueInt, int digiNum, char spacer){
-	// 表示
-	// int init = pow(10, digiNum - 1);
-	// for (int d=init; 1<d; d/=10) {
-	// 	if (valueInt / d == 0) {
-	// 		display.print(spacer);
-	// 	} else {
-	// 		break;
-	// 	}
-	// }
-	String _format = "%";
-	if(spacer == '0'){
-		_format += '0';
-	}
-	_format += char('0' + digiNum);
+void displayNumberln(int valueInt, byte digitNum, bool spacerZero){
+	// 表示指定子を設定
+	String _format = (spacerZero) ? "%0" : "%";
+	_format += char('0' + digitNum);
 	_format += 'd';
-	char* valueStr = "";
 	const char* format = _format.c_str();
+	// 表示値を取得
+	char valueStr[5] = "";
 	sprintf(valueStr, format, valueInt);
+	// 表示
 	display.println(valueStr);
 }
 
