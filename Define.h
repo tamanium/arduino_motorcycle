@@ -68,15 +68,20 @@
 	 *
 	 * @param p 表示設定構造体コピー元
 	 * @param location RIGHTかUNDERか空欄
+	 * @param font フォント
 	 */
-	Prop propCopy(Prop* p, int location = -1 ){
+	Prop propCopy(Prop* p, int location = -1, const lgfx::v1::IFont* font=NULL){
 		Prop newP = *p;
 		// コピー元に対して右側に配置する場合
 		int x = (location == RIGHT) ? p->width  : 0;
 		// コピー元に対して下側に配置する場合
 		int y = (location == UNDER) ? p->height : 0;
-		newP.x = p->x + x;
-		newP.y = p->y + y;
+		//
+		if(font != NULL){
+			newP.font = font;
+		}
+		newP.x += x;
+		newP.y += y;
 		return newP;
 	}
 
@@ -89,6 +94,9 @@
 
 	/**
 	 * 表示設定を下寄せにする
+	 *
+	 * @param p 表示設定
+	 * @param offset 右側オフセットピクセル値
 	 */
 	void alignBottom(Prop* p, int offset = 0){
 		p->y = DisplaySize::HEIGHT - p->height - 1 - offset;
@@ -141,7 +149,6 @@
 	 * x座標中央揃え
 	 *
 	 * @param width フォント横幅
-	 * @param size 文字数
 	 */
 	int centerHorizontal(int width){
 		return (DisplaySize::WIDTH>>1) - (width>>1);

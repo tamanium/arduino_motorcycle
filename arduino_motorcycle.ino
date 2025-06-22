@@ -148,11 +148,11 @@ struct Props {
 	Prop Gear;         // ギア
 	Prop Newt;         // ギアニュートラル
 	Prop Speed;        // 速度
-	Prop SpUnit;       // 「km/h」
+	//Prop SpUnit;       // 「km/h」
 	Prop SpFreqIn;     // 速度センサカウンタ
 	Prop Voltage;      // 電圧
 	Prop DebugData;    // デバッグ用値表示
-	Prop TempUnit;     // 「℃」
+	//Prop TempUnit;     // 「℃」
 	//Prop SpFreqInUnit; // 「Hz」
 } props;
 
@@ -369,6 +369,7 @@ void initSetProps(int offsetY){
 	props.Humid = propCopy(&props.Temp, UNDER);
 	setPropWH(&props.Humid, "00%");
 	alignRight(&props.Humid);
+
 	// ギア
 	props.Gear.y = 140 + offsetY;
 	props.Gear.font = &fonts::DejaVu56;
@@ -387,14 +388,12 @@ void initSetProps(int offsetY){
 	props.Speed.x = centerHorizontal(props.Speed.width);
 
 	// 速度単位
-	props.SpUnit = propCopy(&props.Speed, UNDER);
-	props.SpUnit.font = &fonts::Font2;
-	setPropWH(&props.SpUnit, "km/h");
-	props.SpUnit.x = centerHorizontal(props.SpUnit.width);
+	Prop SpUnit = propCopy(&props.Speed, UNDER, &fonts::Font2);
+	setPropWH(&SpUnit, "km/h");
+	//SpUnit.x = centerHorizontal(SpUnit.width);
 
 	// スピードセンサIN
-	props.SpFreqIn = propCopy(&props.SpUnit, UNDER);
-	props.SpFreqIn.font = &fonts::Font7;
+	props.SpFreqIn = propCopy(&SpUnit, UNDER, &fonts::Font7);
 	setPropWH(&props.SpFreqIn, "0000");
 	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
 
@@ -411,30 +410,29 @@ void initSetProps(int offsetY){
 
 void initDisplayProps(){
 	display.fillScreen(bgColor);          // 画面リセット
-	//displayString(&props.Gear, "0");           // ギアポジション表示開始
-	//displayString(&props.Speed, "00");         // 速度
-	//displayString(&props.Clock, "00:00:00");   // 時間
-	//displayString(&props.Temp, "00");          // 温度
 	displayString(&props.Humid, "00%");        // 湿度
-	//displayString(&props.SpFreqIn, "0000");    // パルス周波数
 	displayString(&props.Voltage, "00.0V");    // 電圧
-	displayString(&props.SpUnit, "km/h");      // 速度単位
+	
+	// 速度単位
+	Prop SpUnit = propCopy(&props.Speed, UNDER, &fonts::Font2);
+	setPropWH(&SpUnit, "km/h");
+	SpUnit.x = centerHorizontal(SpUnit.width);
+	displayString(&SpUnit, "km/h");
 
 	// 温度単位
 	Prop TempUnit = propCopy(&props.Temp);
 	setPropWH(&TempUnit, "c");
 	alignRight(&TempUnit, 3);
+	displayString(&TempUnit, "c");       // 温度単位
+	display.fillCircle(306 - 3, 6, 3, fontColor);
+	display.fillCircle(306 - 3, 6, 1, bgColor);
 	
 	// スピードセンサIN単位
-	Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER);
-	SpFreqInUnit.font = &fonts::Font2;
+	Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER, &fonts::Font2);
 	setPropWH(&SpFreqInUnit, "Hz");
 	SpFreqInUnit.x = centerHorizontal(SpFreqInUnit.width);
 
 	displayString(&SpFreqInUnit, "Hz");  // パルス周波数単位
-	displayString(&TempUnit, "c");       // 温度単位
-	display.fillCircle(306 - 3, 6, 3, fontColor);
-	display.fillCircle(306 - 3, 6, 1, bgColor);
 }
 
 void setBuzzer(bool isOn){
@@ -517,7 +515,7 @@ void scanModules() {
  * ギアポジションの表示処理
  */
 void displayGear() {
-	static char before = '0';
+	static char before = 'N';
 	char gearArr[5] = {'N', '1', '2', '3', '4'};
 	char gear = '0';
 	// 現在のギアポジを取得
@@ -593,6 +591,7 @@ bool displayWinkers() {
 	return true;
 }
 
+
 /**
  * スイッチ動作表示
  * @param sw スイッチクラス
@@ -649,9 +648,9 @@ void displaySwitch() {
  */
 void displaySpeed(){
 	// 前回パルス周波数
-	static int beforeFreq = 0;
+	static int beforeFreq = -1;
 	// 前回スピード
-	static byte beforeSpeed = 0;
+	static byte beforeSpeed = 0xFF;
 
 	// 周波数表示
 	if (moduleData[INDEX_FREQ] != beforeFreq) {
@@ -684,12 +683,12 @@ void displayVoltage() {
 	if (voltagex10 != beforeVoltagex10) {
 		// 電圧表示
 		setDisplay(&props.Voltage, fontColor);
-
-		String volStr = String(voltagex10/100)
-							+ String((voltagex10/10)%10)
-							+ "."
-							+ String(voltagex10%10);
-		display.print(volStr);
+		char valueChars[2];
+		sprintf(valueChars, "%02d", int(voltagex10/10));
+		display.print(valueChars);
+		valueChars[0] = '.';
+		valueChars[1] = '0' + voltagex10%10;
+		display.print(valueChars);
 
 		// デバッグモード表示
 		#ifdef DEBUG_MODE
