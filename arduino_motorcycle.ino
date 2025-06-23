@@ -13,11 +13,6 @@
 //#define BUZZER_ON　
 #define DEBUG_MODE 
 
-// --------------------プロトタイプ宣言--------------------
-void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
-void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
-void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero=false);
-
 // --------------------定数--------------------
 // 明るさレベル
 const uint8_t brightLevel[] = {
@@ -57,104 +52,45 @@ Adafruit_NeoPixel pixels(1, Pins::LED); // オンボLED
 RTC_DS1307 rtc;                        // RTC
 Adafruit_AHTX0 aht;                    // 温湿度計
 
-uint16_t fontColor = TFT_WHITE;
+uint16_t textColor = TFT_WHITE;
 uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
-struct arcInfo {
+struct ArcInfo : BaseArcInfo {
 	LGFX_Sprite sprite;           // スプライト
-	int x;                        // 円弧中心x座標
-	int y;                        // 円弧中心y座標
-	int r;                        // 内径
-	int d;                        // 厚さ
-	int angle0;                   // 角度0
-	int angle1;                   // 角度1
-	uint16_t colorON;             // 色
-	uint16_t colorBG = TFT_BLUE;  // 透過色
 	/**
 	 *  コンストラクタ
 	 */
-	arcInfo(LGFX* display) : sprite(display) {}
-	/**
-	 * 初期設定　
-	 */
-	void initArc() {
-		sprite.fillScreen(TFT_BLUE);
-		sprite.setPivot(x, y);
-	}
-	/**
-	 * 表示(ウインカー向け)
-	 */
-	void displayArcW(int stdX, int stdY, bool onOff) {
-		// 弧描画 on,offで色変更
-		sprite.fillArc(x, y, r + d, r, angle0, angle1, onOff ? colorON : TFT_BLACK);
-		// 出力
-		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
-	}
-
-	/**
-	 * 表示（メーター向け）
-	 */
-	void displayArcM(int stdX, int stdY, byte sp = 0) {
-		// 前回速度
-		static byte beforeSp = 0xFF;
-
-		// 初期処理
-		if(beforeSp == 0xFF){
-			// 弧描画（薄緑）
-			sprite.fillArc(x, y, r + d, r, angle0, angle1, 0x01e0);
-			sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
-			beforeSp = 0;
-			return;
-		}
-		// 速度が同じ場合、スキップ
-		if(beforeSp == sp){
-			return;
-		}
-		// 速さに対する弧の角度算出
-		int angleSp = (360 - angle0 + angle1) * sp / 100;
-		int newAngle0 = angle0;
-		int newAngle1 = angle1;
-		uint16_t newColor = colorON;
-		if(beforeSp < sp){
-			// 速度が上がった場合
-			newAngle1 = angle0 + angleSp;
-		}
-		else{
-			// 速度が下がった場合
-			newAngle0 = angle0 + angleSp;
-			// 色を薄緑に変更
-			newColor = 0x01e0;
-		}
-		// 出力
-		sprite.fillArc(x, y, r + d, r, newAngle0, newAngle1, newColor);
-		sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, colorBG);
-		beforeSp = sp;
-	}
+	ArcInfo(LGFX* display) : sprite(display) {}
 };
 
 // 円弧情報
-arcInfo arcM(&display);
-arcInfo arcL(&display);
-arcInfo arcR(&display);
+ArcInfo arcM(&display);
+ArcInfo arcL(&display);
+ArcInfo arcR(&display);
+
+// --------------------プロトタイプ宣言--------------------
+void setDisplay(Prop* p, uint16_t color = textColor);
+void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
+void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
+void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero=false);
+void displayArcM(ArcInfo* a, int stdX, int stdY, byte sp = 0);
 
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props {
 	Prop Clock;        // 時:分:秒
-	Prop Date;         // 月/日
+	//Prop Date;         // 月/日
 	Prop Temp;         // 温度
 	Prop Humid;        // 湿度
 	Prop Gear;         // ギア
 	Prop Newt;         // ギアニュートラル
 	Prop Speed;        // 速度
-	//Prop SpUnit;       // 「km/h」
 	Prop SpFreqIn;     // 速度センサカウンタ
 	Prop Voltage;      // 電圧
 	Prop DebugData;    // デバッグ用値表示
-	//Prop TempUnit;     // 「℃」
-	//Prop SpFreqInUnit; // 「Hz」
 } props;
+
 
 // ------------------------------初期設定------------------------------
 void setup(void) {
@@ -195,8 +131,6 @@ void setup(void) {
 
 	// 各項目の初期表示
 	initDisplayProps();
-
-	setDisplay(&props.DebugData, fontColor);              // デバッグ用表示
 	// スプライト設定
 	// 横縦
 	//int w = (props.Speed.y + 60 - offsetY+10) * 2;
@@ -205,12 +139,12 @@ void setup(void) {
 	// 弧の幅
 	arcM.d = 10;
 	arcL.d = 10;
-	arcR.d = 10;
+	arcR.d = arcL.d;
 	// 弧の内外半径
 	int rOUT = (w - 1) >> 1;
 	arcM.r = rOUT - arcM.d;
 	arcL.r = rOUT - arcL.d + 25;
-	arcR.r = rOUT - arcR.d + 25;
+	arcR.r = arcL.r;
 	// 弧の中心座標
 	arcM.x = w >> 1;
 	arcM.y = h >> 1;
@@ -222,30 +156,27 @@ void setup(void) {
 	int a0btm = 20;
 	int a1top = 37;
 	int a1btm = 41;
-	arcM.angle0 = 90 + a0btm;
-	arcM.angle1 = 90 - a0btm;
-	arcL.angle0 = 90 + a1btm;
+	arcM.angle0 = 90  + a0btm;
+	arcM.angle1 = 90  - a0btm;
+	arcL.angle0 = 90  + a1btm;
 	arcL.angle1 = 270 - a1top;
-	arcR.angle0 = 270 + a1top;
-	arcR.angle1 = 90 - a1btm;
-	// 大きさ
-	arcM.sprite.createSprite(w, h);
-	arcL.sprite.createSprite(arcL.x, h);
-	arcR.sprite.createSprite(arcL.x, h);
+	arcR.angle0 = arcL.angle0 + 180;
+	arcR.angle1 = arcL.angle1 - 180;
 	// 色
 	arcM.colorON = TFT_GREEN;
 	arcL.colorON = TFT_YELLOW;
-	arcR.colorON = TFT_YELLOW;
+	arcR.colorON = arcL.colorON;
+	// 大きさ
+	arcM.sprite.createSprite(w, h);
+	arcL.sprite.createSprite(arcL.x, h);
+	arcR.sprite.createSprite(arcR.x, h);
 	// 弧の中心・背景色
-	arcM.initArc();
-	arcL.initArc();
-	arcR.initArc();
-	// 出力
-	arcM.displayArcM(CENTER_WIDTH, CENTER_HEIGHT + 10);
+	initArc(&arcM);
+	initArc(&arcL);
+	initArc(&arcR);
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
-
 }
 
 
@@ -286,7 +217,7 @@ void loop() {
 
 			beforeTime = time;
 			
-			setDisplay(&props.DebugData, fontColor);
+			setDisplay(&props.DebugData, textColor);
 			display.print("loop :");
 			displayNumberln(loopTime, 4);
 			display.print("loopM:");
@@ -317,7 +248,8 @@ void loop() {
 
 	// 時刻表示
 	if (intervalTime.over(time)) {
-		displayRealTime();
+		//displayRealDateTime();
+		displayRealTime(time);
 		intervalTime.reset();
 	}
 
@@ -345,8 +277,67 @@ void loop() {
 }
 
 // -------------------------------------------------------------------
-// ------------------------------メソッド------------------------------
+// ------------------------------メソッド-----------------------------
 // -------------------------------------------------------------------
+
+
+/**
+ * 初期設定（透過色での塗りつぶし・弧の中心を設定）
+ */
+void initArc(ArcInfo* a) {
+	a->sprite.fillScreen(a->colorBG);
+	a->sprite.setPivot(a->x, a->y);
+}
+
+/**
+ * 表示(ウインカー向け)
+ */
+void displayArcW(ArcInfo* a, int stdX, int stdY, bool onOff) {
+	// 弧描画 on,offで色変更
+	a->sprite.fillArc(a->x, a->y, a->r +a-> d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
+	// 出力
+	a->sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, a->colorBG);
+}
+
+/**
+ * 表示（メーター向け）
+ */
+void displayArcM(ArcInfo* a, int stdX, int stdY, byte sp) {
+	// 前回速度
+	static byte beforeSp = 0xFF;
+
+	// 初期処理
+	if(beforeSp == 0xFF){
+		// 弧描画（薄緑）
+		a->sprite.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0, a->angle1, 0x01e0);
+		a->sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, a->colorBG);
+		beforeSp = 0;
+		return;
+	}
+	// 速度が同じ場合、スキップ
+	if(beforeSp == sp){
+		return;
+	}
+	// 速さに対する弧の角度算出
+	int angleSp = (360 - a->angle0 + a->angle1) * sp / 100;
+	int newAngle0 = a->angle0;
+	int newAngle1 = a->angle1;
+	uint16_t newColor = a->colorON;
+	if(beforeSp < sp){
+		// 速度が上がった場合
+		newAngle1 = a->angle0 + angleSp;
+	}
+	else{
+		// 速度が下がった場合
+		newAngle0 = a->angle0 + angleSp;
+		// 色を薄緑に変更
+		newColor = 0x01e0;
+	}
+	// 出力
+	a->sprite.fillArc(a->x, a->y, a->r + a->d, a->r, newAngle0, newAngle1, newColor);
+	a->sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, a->colorBG);
+	beforeSp = sp;
+}
 
 /**
  * 表示情報の初期化
@@ -354,11 +345,11 @@ void loop() {
 void initSetProps(int offsetY){
 	// 時:分:秒
 	props.Clock.font = &fonts::Font4;
-	setPropWH(&props.Clock, "00:00:00");
+	setPropWH(&props.Clock, "00");
 
 	// 月/日
-	props.Date = propCopy(&props.Clock, UNDER); 
-	setPropWH(&props.Clock, "00/00");
+	//props.Date = propCopy(&props.Clock, UNDER); 
+	//setPropWH(&props.Clock, "00/00");
 
 	// 温度
 	props.Temp = propCopy(&props.Clock);
@@ -390,7 +381,6 @@ void initSetProps(int offsetY){
 	// 速度単位
 	Prop SpUnit = propCopy(&props.Speed, UNDER, &fonts::Font2);
 	setPropWH(&SpUnit, "km/h");
-	//SpUnit.x = centerHorizontal(SpUnit.width);
 
 	// スピードセンサIN
 	props.SpFreqIn = propCopy(&SpUnit, UNDER, &fonts::Font7);
@@ -424,7 +414,7 @@ void initDisplayProps(){
 	setPropWH(&TempUnit, "c");
 	alignRight(&TempUnit, 3);
 	displayString(&TempUnit, "c");       // 温度単位
-	display.fillCircle(306 - 3, 6, 3, fontColor);
+	display.fillCircle(306 - 3, 6, 3, textColor);
 	display.fillCircle(306 - 3, 6, 1, bgColor);
 	
 	// スピードセンサIN単位
@@ -482,7 +472,7 @@ void scanModules() {
 	display.fillScreen(bgColor);
 	display.setCursor(0,0);
 	display.setTextSize(2);
-	display.setTextColor(fontColor, bgColor);
+	display.setTextColor(textColor, bgColor);
 	display.println("Hello");
 	display.println("");
 	delay(500);
@@ -491,13 +481,13 @@ void scanModules() {
 	for (Module module : modules) {
 		Wire1.beginTransmission(module.address);
 		byte error = Wire1.endTransmission();
-		display.setTextColor(fontColor, bgColor);
+		display.setTextColor(textColor, bgColor);
 		display.print(module.name);
 		display.print(':');
 		display.setTextColor((error == 0) ? TFT_GREEN : TFT_RED, TFT_BLACK);
 		display.println((error == 0) ? "OK" : "NG");
 	}
-	display.setTextColor(fontColor);
+	display.setTextColor(textColor);
 	display.println("");
 	display.println("-- done --");
 	display.println("");
@@ -542,7 +532,7 @@ void displayGear() {
 	}
 	// 1～4の場合
 	else{
-		setDisplay(&props.Gear, fontColor);
+		setDisplay(&props.Gear, textColor);
 	}
 	// 表示
 	display.print(gear);
@@ -582,15 +572,14 @@ bool displayWinkers() {
 
 	//左ウインカーの表示
 	bool onOff = ((nowStatus & INDICATE_LEFT) == INDICATE_LEFT);
-	arcL.displayArcW(CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
+	displayArcW(&arcL, CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
 	//右ウインカーの表示
 	onOff = ((nowStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
-	arcR.displayArcW(CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
+	displayArcW(&arcR, CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
 
 	beforeStatus = nowStatus;
 	return true;
 }
-
 
 /**
  * スイッチ動作表示
@@ -664,7 +653,7 @@ void displaySpeed(){
 	}
 	if (speed != beforeSpeed) {
 		displayNumberln(&props.Speed, speed, 2, true);
-		arcM.displayArcM(CENTER_WIDTH, CENTER_HEIGHT + 10, speed);
+		displayArcM(&arcM, CENTER_WIDTH, CENTER_HEIGHT + 10, speed);
 		beforeSpeed = speed;
 	}
 }
@@ -682,7 +671,7 @@ void displayVoltage() {
 	byte voltagex10 = (adcValue * 159) / 1023;
 	if (voltagex10 != beforeVoltagex10) {
 		// 電圧表示
-		setDisplay(&props.Voltage, fontColor);
+		setDisplay(&props.Voltage, textColor);
 		char valueChars[2];
 		sprintf(valueChars, "%02d", int(voltagex10/10));
 		display.print(valueChars);
@@ -692,7 +681,7 @@ void displayVoltage() {
 
 		// デバッグモード表示
 		#ifdef DEBUG_MODE
-			setDisplay(&props.DebugData, fontColor);
+			setDisplay(&props.DebugData, textColor);
 			display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
 			display.print("vltAD:");
 			displayNumberln(adcValue, 4);
@@ -722,13 +711,79 @@ void displayTemp() {
 	}
 }
 
-void displayRealTime(){
+void displayRealTime(unsigned long sysTime){
+	// 時刻データ数
+	const int itemLen = 3;
+	const int interval = 500;
+	// 前回日時
+	static uint8_t beforeTime[itemLen] = { 60, 60, 60};
+	// コロン点滅用時刻
+	static unsigned long exeTime = 1;
+	// 現在時刻取得
+	DateTime now = rtc.now();
+	// 秒の値が前回と同じ場合コロン点滅処理して終了
+
+	// 現在時刻を配列化
+	uint8_t newTime[itemLen] = {
+		now.second(),
+		now.minute(),
+		now.hour()
+	};
+
+	// 表示更新分の文字列
+	char valueChars[6];
+	// 秒が0ではない、または実行時刻0の場合
+	if(newTime[0] != 0 || 0 < exeTime ){
+		if(newTime[0] != beforeTime[0]){
+			// 秒が前回と異なる場合
+			exeTime = sysTime + interval;
+		}
+		else{
+			// 秒が前回と同じ場合
+			if(sysTime <= exeTime){
+				// 実行時刻がシステム時刻以下の場合
+				return;
+			}
+			// 文字色：黒
+			display.setTextColor(bgColor);
+			exeTime = 0;
+		}
+		// 2文字目までの横幅取得
+		//int offset = display.textWidth("00");
+		// "00"の横幅を取得
+		int offset = props.Clock.width;
+		// カーソルセット
+		display.setCursor(props.Clock.x + offset, props.Clock.y);
+		// 表示文字列取得
+		valueChars[0] = ':';
+	} else{
+		// 表示文字列取得
+		sprintf(valueChars, "%02d:%02d", newTime[2],newTime[1]);
+		// if(newTime[2] < 10 && beforeTime[2]){
+		// 	int offset = display.textWidth("0");
+		// 	display.setCursor(props.Clock.x+offset, props.Clock.y);
+		// }
+		exeTime = sysTime + interval;
+	}
+	// 値出力　
+	display.print(valueChars);
+	// 前回値を更新
+	memcpy(beforeTime, newTime, itemLen);
+}
+
+
+void displayRealDateTime(){
 	// 時刻データ数
 	const int itemLen = 5;
 	// 前回日時
 	static uint8_t beforeTime[itemLen] = { 60, 60, 60, 60, 60 };
 	// 現在時刻取得
 	DateTime now = rtc.now();
+	// 秒の値が前回と同じ場合スキップ
+	if (beforeTime[0] == now.second()) {
+		return;
+	}
+	// 現在時刻を配列化
 	uint8_t newTime[itemLen] = {
 		now.second(),
 		now.minute(),
@@ -736,25 +791,21 @@ void displayRealTime(){
 		now.day(),
 		now.month()
 	};
-	// 秒の値が前回と同じ場合スキップ
-	if (beforeTime[0] == newTime[0]) {
-		return;
-	}
 
-	// 表示情報セット
-	setDisplay(&props.Clock, fontColor);
 	// 表示更新分の文字列
 	String resultStr = "";
-
+	// 表示情報セット
+	setDisplay(&props.Clock, textColor);
+	// 初期処理
 	if(60 <= beforeTime[0]){
-		char defaultStr[9];	
+		char defaultStr[9];
 		sprintf(defaultStr, "%02d:%02d:%02d",newTime[2],newTime[1],newTime[0]);
 		display.print(defaultStr);
 		// 前回日時を更新
 		memcpy(beforeTime, newTime, itemLen);
 		return;
 	}
-
+	// 表示処理
 	for(int i=0; i<3; i++){
 		// 0以外の場合
 		if(newTime[i] != 0){
@@ -787,7 +838,7 @@ void displayRealTime(){
  * @param str 文字列
  */
 void displayString(Prop* p, String str){
-	setDisplay(p, fontColor);
+	setDisplay(p, textColor);
 	display.print(str);
 }
 
@@ -799,7 +850,7 @@ void displayString(Prop* p, String str){
  * @param digitNum int型 表示桁数
  */
 void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero) {
-	setDisplay(p, fontColor);
+	setDisplay(p, textColor);
 	displayNumberln(valueInt, digitNum, spacerZero);
 }
 
@@ -811,7 +862,7 @@ void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero) {
  * @param digitNum int型 表示桁数
  */
 void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero) {
-	setDisplay(p, fontColor);
+	setDisplay(p, textColor);
 	displayNumberln(int(valueByte), digitNum, spacerZero);
 }
 
