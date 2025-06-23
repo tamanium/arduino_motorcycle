@@ -80,7 +80,6 @@ void displayArcM(ArcInfo* a, int stdX, int stdY, byte sp = 0);
 // 表示設定まとめ
 struct Props {
 	Prop Clock;        // 時:分:秒
-	//Prop Date;         // 月/日
 	Prop Temp;         // 温度
 	Prop Humid;        // 湿度
 	Prop Gear;         // ギア
@@ -249,7 +248,7 @@ void loop() {
 	// 時刻表示
 	if (intervalTime.over(time)) {
 		//displayRealDateTime();
-		displayRealTime(time);
+		displayRealTime();
 		intervalTime.reset();
 	}
 
@@ -347,10 +346,6 @@ void initSetProps(int offsetY){
 	props.Clock.font = &fonts::Font4;
 	setPropWH(&props.Clock, "00");
 
-	// 月/日
-	//props.Date = propCopy(&props.Clock, UNDER); 
-	//setPropWH(&props.Clock, "00/00");
-
 	// 温度
 	props.Temp = propCopy(&props.Clock);
 	setPropWH(&props.Temp, "00 c");
@@ -399,9 +394,12 @@ void initSetProps(int offsetY){
 }
 
 void initDisplayProps(){
-	display.fillScreen(bgColor);          // 画面リセット
-	displayString(&props.Humid, "00%");        // 湿度
-	displayString(&props.Voltage, "00.0V");    // 電圧
+	// 画面リセット
+	display.fillScreen(bgColor);
+	// 湿度
+	displayString(&props.Humid, "00%");
+	// 電圧
+	displayString(&props.Voltage, "00.0V");
 	
 	// 速度単位
 	Prop SpUnit = propCopy(&props.Speed, UNDER, &fonts::Font2);
@@ -711,64 +709,31 @@ void displayTemp() {
 	}
 }
 
-void displayRealTime(unsigned long sysTime){
+void displayRealTime(){
 	// 時刻データ数
 	const int itemLen = 3;
-	const int interval = 500;
 	// 前回日時
 	static uint8_t beforeTime[itemLen] = { 60, 60, 60};
-	// コロン点滅用時刻
-	static unsigned long exeTime = 1;
 	// 現在時刻取得
 	DateTime now = rtc.now();
-	// 秒の値が前回と同じ場合コロン点滅処理して終了
-
-	// 現在時刻を配列化
-	uint8_t newTime[itemLen] = {
-		now.second(),
-		now.minute(),
-		now.hour()
-	};
-
-	// 表示更新分の文字列
-	char valueChars[6];
-	// 秒が0ではない、または実行時刻0の場合
-	if(newTime[0] != 0 || 0 < exeTime ){
-		if(newTime[0] != beforeTime[0]){
-			// 秒が前回と異なる場合
-			exeTime = sysTime + interval;
-		}
-		else{
-			// 秒が前回と同じ場合
-			if(sysTime <= exeTime){
-				// 実行時刻がシステム時刻以下の場合
-				return;
-			}
-			// 文字色：黒
-			display.setTextColor(bgColor);
-			exeTime = 0;
-		}
-		// 2文字目までの横幅取得
-		//int offset = display.textWidth("00");
-		// "00"の横幅を取得
-		int offset = props.Clock.width;
-		// カーソルセット
-		display.setCursor(props.Clock.x + offset, props.Clock.y);
-		// 表示文字列取得
-		valueChars[0] = ':';
-	} else{
+	if(60 <= beforeTime[1] || now.minute() != beforeTime[1]){
+		// 現在時刻を配列化
+		uint8_t newTime[itemLen] = {
+			now.second(),
+			now.minute(),
+			now.hour()
+		};
+		// 表示設定セット
+		setDisplay(&props.Clock);
+		// 表示更新分の文字列
+		char valueChars[6];
 		// 表示文字列取得
 		sprintf(valueChars, "%02d:%02d", newTime[2],newTime[1]);
-		// if(newTime[2] < 10 && beforeTime[2]){
-		// 	int offset = display.textWidth("0");
-		// 	display.setCursor(props.Clock.x+offset, props.Clock.y);
-		// }
-		exeTime = sysTime + interval;
+		// 表示
+		display.print(valueChars);
+		// 前回値を更新
+		memcpy(beforeTime, newTime, itemLen);
 	}
-	// 値出力　
-	display.print(valueChars);
-	// 前回値を更新
-	memcpy(beforeTime, newTime, itemLen);
 }
 
 
