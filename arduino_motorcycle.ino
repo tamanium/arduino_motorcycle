@@ -670,7 +670,7 @@ void displayVoltage() {
 	if (voltagex10 != beforeVoltagex10) {
 		// 電圧表示
 		setDisplay(&props.Voltage, textColor);
-		char valueChars[2];
+		char valueChars[3];
 		sprintf(valueChars, "%02d", int(voltagex10/10));
 		display.print(valueChars);
 		valueChars[0] = '.';
@@ -716,7 +716,7 @@ void displayRealTime(){
 	static uint8_t beforeTime[itemLen] = { 60, 60, 60};
 	// 現在時刻取得
 	DateTime now = rtc.now();
-	if(60 <= beforeTime[1] || now.minute() != beforeTime[1]){
+	if(now.minute() != beforeTime[1]){
 		// 現在時刻を配列化
 		uint8_t newTime[itemLen] = {
 			now.second(),
@@ -726,7 +726,7 @@ void displayRealTime(){
 		// 表示設定セット
 		setDisplay(&props.Clock);
 		// 表示更新分の文字列
-		char valueChars[6];
+		char valueChars[8];
 		// 表示文字列取得
 		sprintf(valueChars, "%02d:%02d", newTime[2],newTime[1]);
 		// 表示
@@ -763,7 +763,7 @@ void displayRealDateTime(){
 	setDisplay(&props.Clock, textColor);
 	// 初期処理
 	if(60 <= beforeTime[0]){
-		char defaultStr[9];
+		char defaultStr[12];
 		sprintf(defaultStr, "%02d:%02d:%02d",newTime[2],newTime[1],newTime[0]);
 		display.print(defaultStr);
 		// 前回日時を更新

@@ -1,5 +1,5 @@
 #include <LovyanGFX.hpp>
-#include "Define.h"			// 値定義
+#include "CommonDefine.h" // 値定義
 class LGFX : public lgfx::LGFX_Device{
 
 	// 接続するパネルの型にあったインスタンスを用意します。

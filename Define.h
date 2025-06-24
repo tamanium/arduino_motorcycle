@@ -4,41 +4,12 @@
 	#include "CommonDefine.h"
 	#include <LovyanGFX.hpp>
 
-	// モジュール情報用インデックス・サイズ
-	enum {
-		THERM,
-		SPEED,
-		RTCMM,
-		RTCIC,
-		MODULE_NUM
-	};
-
 	// ディスプレイ関連値
 	enum DisplaySize {
 		WIDTH = 320,
 		HEIGHT = 240,
 		CENTER_WIDTH = WIDTH >> 1,
 		CENTER_HEIGHT = HEIGHT >> 1
-	};
-
-	/**
-	 * IOピン定義
-	 */
-	enum Pins {
-		LED      = 16,
-		BUZZER   = 26,
-
-		I2C_SDA  = 14,
-		I2C_SCL  = 15,
-
-		SPI_SCLK =  2,
-		SPI_MOSI =  3,
-		SPI_MISO = -1,
-		SPI_DC   =  7,
-		SPI_CS   =  6,
-		SPI_RST  =  8,
-		SPI_BL   =  5,
-		SPI_BUSY = -1
 	};
 
 	// モジュール情報
@@ -59,26 +30,26 @@
 	 * 円弧表示情報（基底）
 	 */
 	struct BaseArcInfo {
-		int x;                        // 円弧中心x座標
-		int y;                        // 円弧中心y座標
-		int r;                        // 内径
-		int d;                        // 厚さ
-		int angle0;                   // 角度0
-		int angle1;                   // 角度1
-		uint16_t colorON;             // 色
-		uint16_t colorBG = TFT_BLUE;  // 透過色
+		int x;                       // 円弧中心x座標
+		int y;                       // 円弧中心y座標
+		int r;                       // 内径
+		int d;                       // 厚さ
+		int angle0;                  // 角度0
+		int angle1;                  // 角度1
+		uint16_t colorON;            // 色
+		uint16_t colorBG = TFT_BLUE; // 透過色
 	};
 
 	/**
 	 * 表示設定
 	 */
 	struct Prop {
-		int x = 0;                  // x座標
-		int y = 0;                  // y座標
-		uint8_t size = 1;               // フォント倍率
+		int x = 0;        // x座標
+		int y = 0;        // y座標
+		uint8_t size = 1; // フォント倍率
 		const lgfx::v1::IFont* font = &fonts::Font0; // フォント
-		uint8_t width = 6;
-		uint8_t height = 8;
+		uint8_t width = 6;  // 表示文字列の幅（例外あり）
+		uint8_t height = 8; // 表示文字列の高さ（例外あり）
 	};
 
 	/**
@@ -178,7 +149,7 @@
 	 * @param width フォント横幅
 	 */
 	int centerHorizontal(int width){
-		return (DisplaySize::WIDTH>>1) - (width>>1);
+		return CENTER_WIDTH - (width>>1);
 	}
 
 #endif
