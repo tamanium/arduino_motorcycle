@@ -10,8 +10,8 @@
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
 
-//#define BUZZER_ON　
-#define DEBUG_MODE 
+#define BUZZER_ON
+#define DEBUG_MODE
 
 // --------------------定数--------------------
 // 明るさレベル
@@ -47,10 +47,10 @@ int moduleData[DATA_SIZE];             // センサーからの取得値
 DataClass switchData(true);            //データクラス：スイッチ
 DataClass winkersData(false);          //データクラス：ウインカーADC値
 
-LGFX display;                          // ディスプレイ
+LGFX display;                           // ディスプレイ
 Adafruit_NeoPixel pixels(1, Pins::LED); // オンボLED
-RTC_DS1307 rtc;                        // RTC
-Adafruit_AHTX0 aht;                    // 温湿度計
+RTC_DS1307 rtc;                         // RTC
+Adafruit_AHTX0 aht;                     // 温湿度計
 
 uint16_t textColor = TFT_WHITE;
 uint16_t bgColor = TFT_BLACK;
@@ -115,18 +115,26 @@ void setup(void) {
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1, 1, 0));
 	pixels.show();
-
+	#ifdef BUZZER_ON
+		pinMode(Pins::BUZZER, OUTPUT);  // ウインカー音
+		 setBuzzer(ON);
+		 delay(80);
+		 setBuzzer(OFF);
+		 delay(80);
+		 setBuzzer(ON);
+		 delay(80);
+		 setBuzzer(OFF);
+		digitalWrite(Pins::BUZZER, LOW);
+	#endif
 	// I2C通信スキャン
 	scanModules();
 	// 各モジュール動作開始
-	rtc.begin(&Wire1);                         // RTC
-	#ifdef BUZZER_ON
-		pinMode(PIN::BUZZER, OUTPUT);  // ウインカー音
-		digitalWrite(PIN::BUZZER, LOW);
-	#endif
-	aht.begin(&Wire1, 0, modules[THERM].address);  // 温度計
-
-	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); // 時計合わせ
+	// RTC
+	rtc.begin(&Wire1);
+	// 温度計
+	aht.begin(&Wire1, 0, modules[THERM].address);
+	// 時計合わせ
+	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); 
 
 	// 各項目の初期表示
 	initDisplayProps();
@@ -149,7 +157,7 @@ void setup(void) {
 	arcM.y = h >> 1;
 	arcL.x = arcL.r + arcL.d + 5;
 	arcL.y = arcM.y;
-	arcR.x = 0;
+	arcR.x = -60;
 	arcR.y = arcM.y;
 	// 角度
 	int a0btm = 20;
@@ -164,10 +172,10 @@ void setup(void) {
 	// 色
 	arcM.colorON = TFT_GREEN;
 	arcL.colorON = TFT_YELLOW;
-	arcR.colorON = arcL.colorON;
+	arcR.colorON = TFT_YELLOW;
 	// 大きさ
 	arcM.sprite.createSprite(w, h);
-	arcL.sprite.createSprite(arcL.x, h);
+	arcL.sprite.createSprite(arcL.x-60, h);
 	arcR.sprite.createSprite(arcR.x, h);
 	// 弧の中心・背景色
 	initArc(&arcM);
@@ -187,7 +195,7 @@ void loop() {
 	static Interval intervalTemp(2000);    // 温度表示用時間
 	static Interval intervalVoltage(2000); // 電圧表示用時間
 	static Interval intervalTime(30);      // 時刻表示用時間
-	static Interval intervalBzz(50);       // ブザー用時間
+	static Interval intervalBzz(100);       // ブザー用時間
 
 	// 経過時間(ms)取得
 	unsigned long time = millis();
@@ -426,7 +434,7 @@ void initDisplayProps(){
 void setBuzzer(bool isOn){
 	// ブザーON
 	#ifdef BUZZER_ON
-		digitalWrite(PIN::BUZZER, !isOn);
+		digitalWrite(Pins::BUZZER, isOn);
 	#endif
 	if(isOn){
 		pixels.setPixelColor(0, pixels.Color(1, 1, 0));
@@ -504,11 +512,11 @@ void scanModules() {
  */
 void displayGear() {
 	static char before = 'N';
-	char gearArr[5] = {'N', '1', '2', '3', '4'};
+	char gearArr[5] = {'3', '2', 'N', '4', '1'};
 	char gear = '0';
 	// 現在のギアポジを取得
 	for(int i=0; i<5; i++){
-		if(!(moduleData[INDEX_GEARS] & (1<<i))){
+		if((moduleData[INDEX_GEARS] & (1<<i))){
 			gear = gearArr[i];
 			break;
 		}
@@ -556,7 +564,7 @@ bool displayWinkers() {
 	//	nowStatus = INDICATE_BOTH;
 	//}
 	//else if (nowData < thresholdArr[1]){
-	 if (nowData < thresholdArr[1]){
+	if (nowData < thresholdArr[1]){
 		nowStatus = INDICATE_LEFT;
 	}
 	else if(nowData < thresholdArr[2]){
@@ -664,6 +672,7 @@ void displayVoltage() {
 	static byte beforeVoltagex10 = 0;
 	// 電圧ADC値取得
 	int adcValue = getData(INDEX_VOLT);
+	moduleData[INDEX_VOLT] = adcValue;
 	// 電圧算出
 	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
 	byte voltagex10 = (adcValue * 159) / 1023;
@@ -676,14 +685,6 @@ void displayVoltage() {
 		valueChars[0] = '.';
 		valueChars[1] = '0' + voltagex10%10;
 		display.print(valueChars);
-
-		// デバッグモード表示
-		#ifdef DEBUG_MODE
-			setDisplay(&props.DebugData, textColor);
-			display.setCursor(props.DebugData.x, props.DebugData.y + props.DebugData.height * 7);
-			display.print("vltAD:");
-			displayNumberln(adcValue, 4);
-		#endif
 		beforeVoltagex10 = voltagex10;
 	}
 }
