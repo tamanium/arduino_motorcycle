@@ -645,7 +645,7 @@ void displaySpeed(){
 		beforeFreq = moduleData[INDEX_FREQ];
 	}
 	// 速度表示
-	byte speed = byte(moduleData[INDEX_FREQ] / 10);
+	byte speed = byte(moduleData[INDEX_FREQ] / 12);
 	if(100 <= speed){
 		speed = 99;
 	}
@@ -873,10 +873,10 @@ void getDataA(){
 	// 周波数、ギアポジ、ウインカー、スイッチの順に取得
 	requestSpeedModule(INDEX_A_PART, 8);
 	if(Wire1.available() == 8) {
-		moduleData[INDEX_FREQ] = (Wire1.read() << 8) | Wire1.read();
-		moduleData[INDEX_GEARS] = (Wire1.read() << 8) | Wire1.read();
+		moduleData[INDEX_FREQ]    = (Wire1.read() << 8) | Wire1.read();
+		moduleData[INDEX_GEARS]   = (Wire1.read() << 8) | Wire1.read();
 		moduleData[INDEX_WINKERS] = (Wire1.read() << 8) | Wire1.read();
-		moduleData[INDEX_SWITCH] = (Wire1.read() << 8) | Wire1.read();
+		moduleData[INDEX_SWITCH]  = (Wire1.read() << 8) | Wire1.read();
 	}
 }
 
