@@ -653,7 +653,7 @@ void displaySpeed(){
 		beforeFreq = moduleData[INDEX_FREQ];
 	}
 	// 速度表示
-	byte speed = byte(moduleData[INDEX_FREQ] / 12);
+	byte speed = byte(moduleData[INDEX_FREQ] / 12.5);
 	if(100 <= speed){
 		speed = 99;
 	}
