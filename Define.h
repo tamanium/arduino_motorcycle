@@ -29,7 +29,7 @@
 	/**
 	 * 円弧表示情報（基底）
 	 */
-	struct BaseArcInfo {
+	struct ArcInfo {
 		int x;                       // 円弧中心x座標
 		int y;                       // 円弧中心y座標
 		int r;                       // 内径

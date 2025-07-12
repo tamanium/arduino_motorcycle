@@ -10,7 +10,7 @@
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
 
-#define BUZZER_ON
+//#define BUZZER_ON
 #define DEBUG_MODE
 
 // --------------------定数--------------------
@@ -56,18 +56,22 @@ uint16_t textColor = TFT_WHITE;
 uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
-struct ArcInfo : BaseArcInfo {
-	LGFX_Sprite sprite;           // スプライト
-	/**
-	 *  コンストラクタ
-	 */
-	ArcInfo(LGFX* display) : sprite(display) {}
+struct MeterArcInfo : ArcInfo {
+	// スプライト
+	LGFX_Sprite sprite;
+	// コンストラクタ
+	MeterArcInfo(LGFX* display) : sprite(display) {}
+	// 初期設定
+	void initArc() {
+		this->sprite.fillScreen(this->colorBG);
+		this->sprite.setPivot(this->x, this->y);
+	}
 };
 
 // 円弧情報
-ArcInfo arcM(&display);
-ArcInfo arcL(&display);
-ArcInfo arcR(&display);
+MeterArcInfo arcM(&display);
+ArcInfo arcL;
+ArcInfo arcR;
 
 // --------------------プロトタイプ宣言--------------------
 void setDisplay(Prop* p, uint16_t color = textColor);
@@ -85,7 +89,7 @@ struct Props {
 	Prop Gear;         // ギア
 	Prop Newt;         // ギアニュートラル
 	Prop Speed;        // 速度
-	Prop SpFreqIn;     // 速度センサカウンタ
+	//Prop SpFreqIn;     // 速度センサカウンタ
 	Prop Voltage;      // 電圧
 	Prop DebugData;    // デバッグ用値表示
 } props;
@@ -140,7 +144,6 @@ void setup(void) {
 	initDisplayProps();
 	// スプライト設定
 	// 横縦
-	//int w = (props.Speed.y + 60 - offsetY+10) * 2;
 	int w = (135 - offsetY + 10) * 2;
 	int h = w;
 	// 弧の幅
@@ -155,10 +158,10 @@ void setup(void) {
 	// 弧の中心座標
 	arcM.x = w >> 1;
 	arcM.y = h >> 1;
-	arcL.x = arcL.r + arcL.d + 5;
-	arcL.y = arcM.y;
-	arcR.x = -60;
-	arcR.y = arcM.y;
+	arcL.x = CENTER_WIDTH;
+	arcL.y = CENTER_HEIGHT + 10;
+	arcR.x = CENTER_WIDTH;
+	arcR.y = CENTER_HEIGHT + 10;
 	// 角度
 	int a0btm = 20;
 	int a1top = 37;
@@ -175,12 +178,8 @@ void setup(void) {
 	arcR.colorON = TFT_YELLOW;
 	// 大きさ
 	arcM.sprite.createSprite(w, h);
-	arcL.sprite.createSprite(arcL.x-60, h);
-	arcR.sprite.createSprite(arcR.x, h);
 	// 弧の中心・背景色
-	initArc(&arcM);
-	initArc(&arcL);
-	initArc(&arcR);
+	arcM.initArc();
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
@@ -190,11 +189,11 @@ void setup(void) {
 // ------------------------------ループ------------------------------
 void loop() {
 	
-	static Interval intervalDisplay(20);   // 表示用時間
-	static Interval intervalMonitor(3);    // 各種読み取り用時間
-	static Interval intervalTemp(2000);    // 温度表示用時間
-	static Interval intervalVoltage(2000); // 電圧表示用時間
-	static Interval intervalTime(30);      // 時刻表示用時間
+	static Interval intervalDisplay(20);    // 表示用時間
+	static Interval intervalMonitor(3);     // 各種読み取り用時間
+	static Interval intervalTemp(20000);    // 温度表示用時間
+	static Interval intervalVoltage(60000); // 電圧表示用時間
+	static Interval intervalTime(30);       // 時刻表示用時間
 	static Interval intervalBzz(100);       // ブザー用時間
 
 	// 経過時間(ms)取得
@@ -287,29 +286,18 @@ void loop() {
 // ------------------------------メソッド-----------------------------
 // -------------------------------------------------------------------
 
-
-/**
- * 初期設定（透過色での塗りつぶし・弧の中心を設定）
- */
-void initArc(ArcInfo* a) {
-	a->sprite.fillScreen(a->colorBG);
-	a->sprite.setPivot(a->x, a->y);
-}
-
 /**
  * 表示(ウインカー向け)
  */
-void displayArcW(ArcInfo* a, int stdX, int stdY, bool onOff) {
+void displayArcW(ArcInfo* a, bool onOff) {
 	// 弧描画 on,offで色変更
-	a->sprite.fillArc(a->x, a->y, a->r +a-> d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
-	// 出力
-	a->sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, a->colorBG);
+	display.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
 }
 
 /**
  * 表示（メーター向け）
  */
-void displayArcM(ArcInfo* a, int stdX, int stdY, byte sp) {
+void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp) {
 	// 前回速度
 	static byte beforeSp = 0xFF;
 
@@ -365,7 +353,7 @@ void initSetProps(int offsetY){
 	alignRight(&props.Humid);
 
 	// ギア
-	props.Gear.y = 140 + offsetY;
+	props.Gear.y = 10 + offsetY;
 	props.Gear.font = &fonts::DejaVu56;
 	setPropWH(&props.Gear, "0");
 	props.Gear.x = centerHorizontal(props.Gear.width);
@@ -376,7 +364,8 @@ void initSetProps(int offsetY){
 	props.Newt.x = centerHorizontal(props.Newt.width);
 
 	// 速度
-	props.Speed.y = 10 + offsetY;
+	props.Speed = propCopy(&props.Gear, UNDER);
+	props.Speed.y += 10;
 	props.Speed.font = &fonts::Font7;
 	setPropWH(&props.Speed, "00");
 	props.Speed.x = centerHorizontal(props.Speed.width);
@@ -386,9 +375,9 @@ void initSetProps(int offsetY){
 	setPropWH(&SpUnit, "km/h");
 
 	// スピードセンサIN
-	props.SpFreqIn = propCopy(&SpUnit, UNDER, &fonts::Font7);
-	setPropWH(&props.SpFreqIn, "0000");
-	props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
+	//props.SpFreqIn = propCopy(&SpUnit, UNDER, &fonts::Font7);
+	//setPropWH(&props.SpFreqIn, "0000");
+	//props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
 
 	// 電圧
 	props.Voltage.font = &fonts::Font4;
@@ -424,11 +413,11 @@ void initDisplayProps(){
 	display.fillCircle(306 - 3, 6, 1, bgColor);
 	
 	// スピードセンサIN単位
-	Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER, &fonts::Font2);
-	setPropWH(&SpFreqInUnit, "Hz");
-	SpFreqInUnit.x = centerHorizontal(SpFreqInUnit.width);
+	//Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER, &fonts::Font2);
+	//setPropWH(&SpFreqInUnit, "Hz");
+	//SpFreqInUnit.x = centerHorizontal(SpFreqInUnit.width);
 
-	displayString(&SpFreqInUnit, "Hz");  // パルス周波数単位
+	//displayString(&SpFreqInUnit, "Hz");  // パルス周波数単位
 }
 
 void setBuzzer(bool isOn){
@@ -578,10 +567,10 @@ bool displayWinkers() {
 
 	//左ウインカーの表示
 	bool onOff = ((nowStatus & INDICATE_LEFT) == INDICATE_LEFT);
-	displayArcW(&arcL, CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
+	displayArcW(&arcL, onOff);
 	//右ウインカーの表示
 	onOff = ((nowStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
-	displayArcW(&arcR, CENTER_WIDTH, CENTER_HEIGHT + 10, onOff);
+	displayArcW(&arcR, onOff);
 
 	beforeStatus = nowStatus;
 	return true;
@@ -648,10 +637,10 @@ void displaySpeed(){
 	static byte beforeSpeed = 0xFF;
 
 	// 周波数表示
-	if (moduleData[INDEX_FREQ] != beforeFreq) {
-		displayNumberln(&props.SpFreqIn, moduleData[INDEX_FREQ], 4, true);
-		beforeFreq = moduleData[INDEX_FREQ];
-	}
+	//if (moduleData[INDEX_FREQ] != beforeFreq) {
+	//	displayNumberln(&props.SpFreqIn, moduleData[INDEX_FREQ], 4, true);
+	//	beforeFreq = moduleData[INDEX_FREQ];
+	//}
 	// 速度表示
 	byte speed = byte(moduleData[INDEX_FREQ] / 12.5);
 	if(100 <= speed){
