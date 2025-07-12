@@ -116,15 +116,15 @@ void setup(void) {
 	pixels.setPixelColor(0, pixels.Color(1, 1, 0));
 	pixels.show();
 	#ifdef BUZZER_ON
-		pinMode(Pins::BUZZER, OUTPUT);  // ウインカー音
-		 setBuzzer(ON);
-		 delay(80);
-		 setBuzzer(OFF);
-		 delay(80);
-		 setBuzzer(ON);
-		 delay(80);
-		 setBuzzer(OFF);
-		digitalWrite(Pins::BUZZER, LOW);
+		// ウインカー設定
+		pinMode(Pins::BUZZER, OUTPUT);
+		//3回鳴らす
+		for(int i=0;i<3;i++){
+			setBuzzer(ON);
+			delay(80);
+			setBuzzer(OFF);
+			delay(80);
+		}
 	#endif
 	// I2C通信スキャン
 	scanModules();
