@@ -16,7 +16,7 @@
 // --------------------定数--------------------
 // 明るさレベル
 const uint8_t brightLevel[] = {
-	0x01, 0x08, 0x18, 0x38, 0x80
+	0x01, 0x10, 0x20, 0x40, 0x80
 };
 
 // --------------------列挙型--------------------
@@ -74,7 +74,7 @@ ArcInfo arcL;
 ArcInfo arcR;
 
 // --------------------プロトタイプ宣言--------------------
-void setDisplay(Prop* p, uint16_t color = textColor);
+void setDisplay(Prop* p, uint16_t color = textColor, uint16_t markColor = NULL);
 void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
 void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
 void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero=false);
@@ -87,7 +87,7 @@ struct Props {
 	Prop Temp;         // 温度
 	Prop Humid;        // 湿度
 	Prop Gear;         // ギア
-	Prop Newt;         // ギアニュートラル
+	//Prop Newt;         // ギアニュートラル
 	Prop Speed;        // 速度
 	//Prop SpFreqIn;     // 速度センサカウンタ
 	Prop Voltage;      // 電圧
@@ -98,9 +98,9 @@ struct Props {
 // ------------------------------初期設定------------------------------
 void setup(void) {
 	delay(100);
-	
-	Serial.begin(9600);         // デバッグ用シリアル設定
-	Wire1.setSDA(Pins::I2C_SDA); // I2C設定
+
+	// I2C設定
+	Wire1.setSDA(Pins::I2C_SDA);
 	Wire1.setSCL(Pins::I2C_SCL);
 	Wire1.setClock(400000);
 	Wire1.begin();
@@ -132,6 +132,7 @@ void setup(void) {
 	#endif
 	// I2C通信スキャン
 	scanModules();
+
 	// 各モジュール動作開始
 	// RTC
 	rtc.begin(&Wire1);
@@ -139,6 +140,29 @@ void setup(void) {
 	aht.begin(&Wire1, 0, modules[THERM].address);
 	// 時計合わせ
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); 
+
+	DateTime now = rtc.now();
+	display.print("now: ");
+	display.print(now.year());
+	display.print('/');
+	display.print(now.month());
+	display.print('/');
+	display.print(now.day());
+	display.print(' ');
+	display.print(now.hour());
+	display.print(':');
+	display.println(now.minute());
+	display.println("");
+	delay(2000);
+	display.print("3 ");
+	delay(1000);
+	display.print("2 ");
+	delay(1000);
+	display.print("1 ");
+	delay(1000);
+	display.print("Start");
+	delay(1000);
+
 
 	// 各項目の初期表示
 	initDisplayProps();
@@ -149,12 +173,11 @@ void setup(void) {
 	// 弧の幅
 	arcM.d = 10;
 	arcL.d = 10;
-	arcR.d = arcL.d;
+	arcR.d = 10;
 	// 弧の内外半径
-	int rOUT = (w - 1) >> 1;
-	arcM.r = rOUT - arcM.d;
-	arcL.r = rOUT - arcL.d + 25;
-	arcR.r = arcL.r;
+	arcM.r = ((w-1)>>1) - arcM.d;
+	arcL.r = arcM.r + 25;
+	arcR.r = arcM.r + 25;
 	// 弧の中心座標
 	arcM.x = w >> 1;
 	arcM.y = h >> 1;
@@ -163,9 +186,9 @@ void setup(void) {
 	arcR.x = CENTER_WIDTH;
 	arcR.y = CENTER_HEIGHT + 10;
 	// 角度
-	int a0btm = 20;
+	int a0btm = 25;
 	int a1top = 37;
-	int a1btm = 41;
+	int a1btm = 46;
 	arcM.angle0 = 90  + a0btm;
 	arcM.angle1 = 90  - a0btm;
 	arcL.angle0 = 90  + a1btm;
@@ -217,6 +240,9 @@ void loop() {
 			}
 
 			int loopTime = (int)(time - beforeTime);
+			if(100<loopTime){
+				loopTime = 99;
+			}
 			if(loopTimeMax < loopTime){
 				loopTimeMax = loopTime;
 			}
@@ -224,18 +250,24 @@ void loop() {
 			beforeTime = time;
 			
 			setDisplay(&props.DebugData, textColor);
+			display.println("");
 			display.print("loop :");
-			displayNumberln(loopTime, 4);
-			display.print("loopM:");
-			displayNumberln(loopTimeMax, 4);
+			// 表示値を取得
+			char valueStr[6] = "";
+			sprintf(valueStr, "%2d-%2d", loopTime, loopTimeMax);
+			display.println(valueStr);
 			display.print("FreqI:");
-			displayNumberln(moduleData[INDEX_FREQ], 4);
+			displayNumberln(moduleData[INDEX_FREQ], 5);
 			display.print("vltAD:");
-			displayNumberln(moduleData[INDEX_VOLT], 4);
+			displayNumberln(moduleData[INDEX_VOLT], 5);
 			display.print("wnkAD:");
-			displayNumberln(moduleData[INDEX_WINKERS], 4);
+			displayNumberln(moduleData[INDEX_WINKERS], 5);
 			display.print("geaAD:");
-			displayNumberln(moduleData[INDEX_GEARS], 4);
+			
+			for(int i=0; i<5; i++){
+				valueStr[i] = (moduleData[INDEX_GEARS] & (1<<i)) ? '1' : '0';
+			}
+			display.println(valueStr);
 		#endif
 		intervalMonitor.reset();
 	}
@@ -287,7 +319,7 @@ void loop() {
 // -------------------------------------------------------------------
 
 /**
- * 表示(ウインカー向け)
+ * 表示（ウインカー向け）
  */
 void displayArcW(ArcInfo* a, bool onOff) {
 	// 弧描画 on,offで色変更
@@ -314,7 +346,7 @@ void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp) {
 		return;
 	}
 	// 速さに対する弧の角度算出
-	int angleSp = (360 - a->angle0 + a->angle1) * sp / 100;
+	int angleSp = (360 - a->angle0 + a->angle1) * sp / 120;
 	int newAngle0 = a->angle0;
 	int newAngle1 = a->angle1;
 	uint16_t newColor = a->colorON;
@@ -338,9 +370,10 @@ void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp) {
  * 表示情報の初期化
  */
 void initSetProps(int offsetY){
-	// 時:分:秒
+	// 時:分
 	props.Clock.font = &fonts::Font4;
 	setPropWH(&props.Clock, "00");
+	props.Clock.y += 20;
 
 	// 温度
 	props.Temp = propCopy(&props.Clock);
@@ -352,20 +385,8 @@ void initSetProps(int offsetY){
 	setPropWH(&props.Humid, "00%");
 	alignRight(&props.Humid);
 
-	// ギア
-	props.Gear.y = 10 + offsetY;
-	props.Gear.font = &fonts::DejaVu56;
-	setPropWH(&props.Gear, "0");
-	props.Gear.x = centerHorizontal(props.Gear.width);
-
-	// ギアニュートラル
-	props.Newt = propCopy(&props.Gear);
-	setPropWH(&props.Newt, "N");
-	props.Newt.x = centerHorizontal(props.Newt.width);
-
 	// 速度
-	props.Speed = propCopy(&props.Gear, UNDER);
-	props.Speed.y += 10;
+	props.Speed.y = 10 + offsetY;
 	props.Speed.font = &fonts::Font7;
 	setPropWH(&props.Speed, "00");
 	props.Speed.x = centerHorizontal(props.Speed.width);
@@ -373,6 +394,18 @@ void initSetProps(int offsetY){
 	// 速度単位
 	Prop SpUnit = propCopy(&props.Speed, UNDER, &fonts::Font2);
 	setPropWH(&SpUnit, "km/h");
+
+	// ギア
+	props.Gear = propCopy(&SpUnit, UNDER);
+	props.Gear.y += 10;
+	props.Gear.font = &fonts::Font8;
+	setPropWH(&props.Gear, "0");
+	props.Gear.x = centerHorizontal(props.Gear.width);
+
+	// ギアニュートラル
+	//props.Newt = propCopy(&props.Gear);
+	//setPropWH(&props.Newt, "N");
+	//props.Newt.x = centerHorizontal(props.Newt.width);
 
 	// スピードセンサIN
 	//props.SpFreqIn = propCopy(&SpUnit, UNDER, &fonts::Font7);
@@ -390,6 +423,9 @@ void initSetProps(int offsetY){
 	alignBottom(&props.DebugData, props.DebugData.height * 8);
 }
 
+/**
+ * 初期表示表示
+ */
 void initDisplayProps(){
 	// 画面リセット
 	display.fillScreen(bgColor);
@@ -409,8 +445,8 @@ void initDisplayProps(){
 	setPropWH(&TempUnit, "c");
 	alignRight(&TempUnit, 3);
 	displayString(&TempUnit, "c");       // 温度単位
-	display.fillCircle(306 - 3, 6, 3, textColor);
-	display.fillCircle(306 - 3, 6, 1, bgColor);
+	display.fillCircle(303, props.Temp.y + 6, 3, textColor);
+	display.fillCircle(303, props.Temp.y + 6, 1, bgColor);
 	
 	// スピードセンサIN単位
 	//Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER, &fonts::Font2);
@@ -420,6 +456,9 @@ void initDisplayProps(){
 	//displayString(&SpFreqInUnit, "Hz");  // パルス周波数単位
 }
 
+/**
+ * ブザー鳴らす
+ */
 void setBuzzer(bool isOn){
 	// ブザーON
 	#ifdef BUZZER_ON
@@ -433,21 +472,24 @@ void setBuzzer(bool isOn){
 	}
 	pixels.show();
 }
+
 /**
- * ディスプレイ表示設定0
- *
+ * ディスプレイ表示設定
  * @param p 表示設定
  */
-void setDisplay(Prop* p, uint16_t color) {
-	display.setCursor(p->x, p->y);               //描画位置
-	display.setTextSize(p->size);                //テキスト倍率
-	display.setTextColor(color, bgColor);  //フォント色...白
+void setDisplay(Prop* p, uint16_t color, uint16_t markColor) {
+	// 描画位置
+	display.setCursor(p->x, p->y);
+	// テキスト倍率
+	display.setTextSize(p->size);
+	// フォント色指定
+	display.setTextColor(color, (markColor == NULL) ? bgColor : markColor);
+	// フォントセット
 	display.setFont(p->font);
 }
 
 /**
  * フォントの縦横を設定
- *
  * @param p 表示設定
  * @param str 文字列
  */
@@ -486,26 +528,22 @@ void scanModules() {
 	display.println("");
 	display.println("-- done --");
 	display.println("");
-	display.print("3 ");
-	delay(1000);
-	display.print("2 ");
-	delay(1000);
-	display.print("1 ");
-	delay(1000);
-	display.print("Start");
-	delay(500);
 }
 
 /**
  * ギアポジションの表示処理
  */
 void displayGear() {
-	static char before = 'N';
-	char gearArr[5] = {'3', '2', 'N', '4', '1'};
-	char gear = '0';
+	// フォントが対応するまで'N'を'0'、'0'を'-'に置き換え
+	const char NEWTRAL = '0';
+	const char OUT_GEAR = '-';
+
+	static char before = NEWTRAL;
+	char gearArr[5] = {'3', '2', NEWTRAL, '4', '1'};
+	char gear = NEWTRAL;
 	// 現在のギアポジを取得
 	for(int i=0; i<5; i++){
-		if((moduleData[INDEX_GEARS] & (1<<i))){
+		if(!(moduleData[INDEX_GEARS] & (1<<i))){
 			gear = gearArr[i];
 			break;
 		}
@@ -514,20 +552,15 @@ void displayGear() {
 	if(gear == before){
 		return;
 	}
-	// Nの場合
-	if(gear == 'N'){
-		setDisplay(&props.Newt, TFT_GREEN);
-	}
 	// 0の場合（ギア抜け）
-	else if(gear == '0'){
-		Prop* prop = (before == 'N') ? &props.Newt : &props.Gear;
+	else if(gear == OUT_GEAR){
 		// グレーで前回ギアを表示
-		setDisplay(prop, TFT_DARKGREY);
+		setDisplay(&props.Gear, TFT_DARKGREY);
 		gear = before;
 	}
-	// 1～4の場合
+	// 0～4の場合
 	else{
-		setDisplay(&props.Gear, textColor);
+		setDisplay(&props.Gear, (gear!=NEWTRAL) ? textColor : TFT_GREEN);
 	}
 	// 表示
 	display.print(gear);
@@ -698,7 +731,9 @@ void displayTemp() {
 		beforeHumid = newHumid;
 	}
 }
-
+/**
+ * 時分(秒)表示
+ */
 void displayRealTime(){
 	// 時刻データ数
 	const int itemLen = 3;
@@ -726,7 +761,9 @@ void displayRealTime(){
 	}
 }
 
-
+/**
+ * 月日時分秒表示（未使用）
+ */
 void displayRealDateTime(){
 	// 時刻データ数
 	const int itemLen = 5;
@@ -882,5 +919,3 @@ void requestSpeedModule(int reg, int numByte){
 	Wire1.endTransmission(false);
 	Wire1.requestFrom(modules[SPEED].address, numByte);
 }
-
-
