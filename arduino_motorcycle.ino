@@ -142,7 +142,7 @@ void setup(void) {
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); 
 
 	DateTime now = rtc.now();
-	display.print("now: ");
+	display.print("Date: ");
 	display.print(now.year());
 	display.print('/');
 	display.print(now.month());
@@ -152,6 +152,14 @@ void setup(void) {
 	display.print(now.hour());
 	display.print(':');
 	display.println(now.minute());
+	display.print("Batt: ");
+	// 電圧ADC取得・算出
+	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
+	byte voltagex10 = (getData(INDEX_VOLT) * 159) / 1023;
+	char valueChars[6];
+	sprintf(valueChars, "%2d.%01dV", int(voltagex10/10), voltagex10%10);
+	display.println(valueChars);
+
 	display.println("");
 	delay(2000);
 	display.print("3 ");
@@ -286,7 +294,6 @@ void loop() {
 
 	// 時刻表示
 	if (intervalTime.over(time)) {
-		//displayRealDateTime();
 		displayRealTime();
 		intervalTime.reset();
 	}
@@ -675,7 +682,7 @@ void displaySpeed(){
 	//	beforeFreq = moduleData[INDEX_FREQ];
 	//}
 	// 速度表示
-	byte speed = byte(moduleData[INDEX_FREQ] / 12.5);
+	byte speed = byte(moduleData[INDEX_FREQ] * 2 / 25);
 	if(100 <= speed){
 		speed = 99;
 	}
@@ -701,12 +708,12 @@ void displayVoltage() {
 	if (voltagex10 != beforeVoltagex10) {
 		// 電圧表示
 		setDisplay(&props.Voltage, textColor);
-		char valueChars[3];
-		sprintf(valueChars, "%02d", int(voltagex10/10));
+		char valueChars[5];
+		sprintf(valueChars, "%2d.%01d", int(voltagex10/10), voltagex10%10);
 		display.print(valueChars);
-		valueChars[0] = '.';
-		valueChars[1] = '0' + voltagex10%10;
-		display.print(valueChars);
+		//valueChars[0] = '.';
+		//valueChars[1] = '0' + voltagex10%10;
+		//display.print(valueChars);
 		beforeVoltagex10 = voltagex10;
 	}
 }

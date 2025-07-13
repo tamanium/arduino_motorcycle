@@ -30,13 +30,13 @@
 	 * 円弧表示情報（基底）
 	 */
 	struct ArcInfo {
-		int x;                       // 円弧中心x座標
-		int y;                       // 円弧中心y座標
-		int r;                       // 内径
-		int d;                       // 厚さ
-		int angle0;                  // 角度0
-		int angle1;                  // 角度1
-		uint16_t colorON;            // 色
+		int x; // 円弧中心x座標
+		int y; // 円弧中心y座標
+		int r; // 内径
+		int d; // 厚さ
+		int angle0; // 角度0
+		int angle1; // 角度1
+		uint16_t colorON; // 色
 		uint16_t colorBG = TFT_BLUE; // 透過色
 	};
 
@@ -44,8 +44,8 @@
 	 * 表示設定
 	 */
 	struct Prop {
-		int x = 0;        // x座標
-		int y = 0;        // y座標
+		int x = 0; // x座標
+		int y = 0; // y座標
 		uint8_t size = 1; // フォント倍率
 		const lgfx::v1::IFont* font = &fonts::Font0; // フォント
 		uint8_t width = 6;  // 表示文字列の幅（例外あり）
@@ -85,27 +85,19 @@
 		// 処理実行間隔[ms]
 		int interval;
 
-		/**
-		 * コンストラクタ
-		 */ 
+		 // コンストラクタ
 		Interval(int interval) :interval(interval){}
-
-		/**
-		 * 処理時刻が0かどうか
-		 */
+		// 処理時刻が0かどうか
 		bool isZero(){
 			return (this->time == 0);
 		}
-		/**
-		 * 処理時刻に0をセット
-		 */
+		 // 処理時刻に0をセット
 		void setZero(){
 			this->time = 0;
 		}
 
 		/**
 		 * 処理時刻がシステム時刻を超えているか
-		 *
 		 * @param sysTime システム時刻
 		 */
 		bool over(unsigned long sysTime){
