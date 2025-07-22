@@ -10,7 +10,7 @@
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
 
-//#define BUZZER_ON
+#define BUZZER_ON
 #define DEBUG_MODE
 
 // --------------------定数--------------------
@@ -141,25 +141,36 @@ void setup(void) {
 	// 時計合わせ
 	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); 
 
-	DateTime now = rtc.now();
+	display.setTextSize(2);
 	display.print("Date: ");
-	display.print(now.year());
-	display.print('/');
-	display.print(now.month());
-	display.print('/');
-	display.print(now.day());
-	display.print(' ');
-	display.print(now.hour());
-	display.print(':');
-	display.println(now.minute());
+	if(modules[RTCMM].active){
+		DateTime now = rtc.now();
+		display.print(now.year());
+		display.print('/');
+		display.print(now.month());
+		display.print('/');
+		display.print(now.day());
+		display.print(' ');
+		display.print(now.hour());
+		display.print(':');
+		display.println(now.minute());
+	}
+	else{
+		display.println("----/--/-- --:--");
+	}                                     
 	display.print("Batt: ");
-	// 電圧ADC取得・算出
-	// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
-	byte voltagex10 = (getData(INDEX_VOLT) * 159) / 1023;
-	char valueChars[6];
-	sprintf(valueChars, "%2d.%01dV", int(voltagex10/10), voltagex10%10);
-	display.println(valueChars);
 
+	if(modules[SPEED].active){
+		// 電圧ADC取得・算出
+		// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
+		byte voltagex10 = (getData(INDEX_VOLT) * 159) / 1023;
+		char valueChars[6];
+		sprintf(valueChars, "%2d.%01dV", int(voltagex10/10), voltagex10%10);
+		display.println(valueChars);
+	}
+	else{
+		display.println("--.-V");
+	}
 	display.println("");
 	delay(2000);
 	display.print("3 ");
@@ -170,7 +181,6 @@ void setup(void) {
 	delay(1000);
 	display.print("Start");
 	delay(1000);
-
 
 	// 各項目の初期表示
 	initDisplayProps();
@@ -380,7 +390,7 @@ void initSetProps(int offsetY){
 	// 時:分
 	props.Clock.font = &fonts::Font4;
 	setPropWH(&props.Clock, "00");
-	props.Clock.y += 20;
+	props.Clock.y += 35;
 
 	// 温度
 	props.Temp = propCopy(&props.Clock);
@@ -515,21 +525,22 @@ void scanModules() {
 	// 初期表示メッセージ
 	display.fillScreen(bgColor);
 	display.setCursor(0,0);
-	display.setTextSize(2);
+	display.setTextSize(1);
 	display.setTextColor(textColor, bgColor);
 	display.println("Hello");
 	display.println("");
 	delay(500);
 	// スキャン処理
 	display.println("I2C Module Scanning...");
-	for (Module module : modules) {
-		Wire1.beginTransmission(module.address);
+	for (int i=0; i<MODULE_NUM; i++) {
+		Wire1.beginTransmission(modules[i].address);
 		byte error = Wire1.endTransmission();
 		display.setTextColor(textColor, bgColor);
-		display.print(module.name);
+		display.print(modules[i].name);
 		display.print(':');
 		display.setTextColor((error == 0) ? TFT_GREEN : TFT_RED, TFT_BLACK);
 		display.println((error == 0) ? "OK" : "NG");
+		modules[i].active = (error == 0);
 	}
 	display.setTextColor(textColor);
 	display.println("");

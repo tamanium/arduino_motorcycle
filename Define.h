@@ -16,14 +16,15 @@
 	struct Module{
 		char name[12]; // モジュール名
 		byte address;  // I2Cアドレス
+		bool active; // 通信可能かどうか
 	};
 	
 	// モジュール情報配列
 	struct Module modules[MODULE_NUM] = {
-		{"Thermometer", 0x38},
-		{"Attiny1604 ", 0x55},
-		{"RTC memory ", 0x50},
-		{"RTC IC     ", 0x68}
+		{"Thermometer", 0x38, false},
+		{"Attiny1604 ", 0x55, false},
+		{"RTC memory ", 0x50, false},
+		{"RTC IC     ", 0x68, false}
 	};
 	
 	/**
