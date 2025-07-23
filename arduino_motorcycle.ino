@@ -247,6 +247,9 @@ void setup(void) {
 	arcM.sprite.createSprite(w, h);
 	// 弧の中心・背景色
 	arcM.initArc();
+
+	arcL.opt = 0;
+	arcR.opt = CENTER_WIDTH;
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
@@ -399,6 +402,7 @@ void loop() {
 void displayArcW(ArcInfo* a, bool onOff) {
 	// 弧描画 on,offで色変更
 	display.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
+	display.fillRect(a->opt,0,CENTER_WIDTH,8, onOff ? a->colorON : bgColor);
 }
 
 /**

@@ -28,7 +28,7 @@
 	};
 	
 	/**
-	 * 円弧表示情報（基底）
+	 * 円弧表示情報（基底クラス）
 	 */
 	struct ArcInfo {
 		int x; // 円弧中心x座標
@@ -39,6 +39,8 @@
 		int angle1; // 角度1
 		uint16_t colorON; // 色
 		uint16_t colorBG = TFT_BLUE; // 透過色
+
+		int opt; // オプション
 	};
 
 	/**
