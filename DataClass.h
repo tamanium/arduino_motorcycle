@@ -8,11 +8,15 @@
 			int data;            // データ
 			int beforeData;      // 前回データ
 			bool antiChattering; // チャタリング対策するか否か
-			uint8_t chatCounter; // チャタリング対策用カウンタ 
+			uint8_t chatCounter; // チャタリング対策用カウンタ
 		public:
-			DataClass(bool isAntiChat = false);         // コンストラクタ
-			int getData();       // データ取得
-			void setData(int data); // データセット
-			bool isEqual();      // 前回値と同じか
+			// コンストラクタ
+			DataClass(bool isAntiChat = false);
+			// データ取得
+			int getData();
+			// データセット
+			void setData(int data);
+			// 前回値と同じかどうか
+			bool isEqual();
 	};
 #endif

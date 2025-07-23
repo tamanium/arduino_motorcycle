@@ -10,8 +10,11 @@
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
 
+
+// --------------------モード切替用定義--------------------
 #define BUZZER_ON
 #define DEBUG_MODE
+#define TIMER_SET
 
 // --------------------定数--------------------
 // 明るさレベル
@@ -42,17 +45,25 @@ enum{
 };
 
 // --------------------変数--------------------
+// センサーからの取得値
+int moduleData[DATA_SIZE];
+// データクラス：スイッチ
+DataClass switchData(true);
+// データクラス：ウインカーADC値
+DataClass winkersData(false);
 
-int moduleData[DATA_SIZE];             // センサーからの取得値
-DataClass switchData(true);            //データクラス：スイッチ
-DataClass winkersData(false);          //データクラス：ウインカーADC値
+// ディスプレイ
+LGFX display;
+// オンボLED
+Adafruit_NeoPixel pixels(1, Pins::LED);
+// RTC
+RTC_DS1307 rtc;
+// 温湿度計
+Adafruit_AHTX0 aht;
 
-LGFX display;                           // ディスプレイ
-Adafruit_NeoPixel pixels(1, Pins::LED); // オンボLED
-RTC_DS1307 rtc;                         // RTC
-Adafruit_AHTX0 aht;                     // 温湿度計
-
+// フォント色
 uint16_t textColor = TFT_WHITE;
+// 背景色
 uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
@@ -83,15 +94,24 @@ void displayArcM(ArcInfo* a, int stdX, int stdY, byte sp = 0);
 // --------------------インスタンス--------------------
 // 表示設定まとめ
 struct Props {
-	Prop Clock;        // 時:分:秒
-	Prop Temp;         // 温度
-	Prop Humid;        // 湿度
-	Prop Gear;         // ギア
-	//Prop Newt;         // ギアニュートラル
-	Prop Speed;        // 速度
-	//Prop SpFreqIn;     // 速度センサカウンタ
-	Prop Voltage;      // 電圧
-	Prop DebugData;    // デバッグ用値表示
+	// 時:分
+	Prop Clock;
+	// 温度
+	Prop Temp;
+	// 湿度
+	Prop Humid;
+	// ギア
+	Prop Gear;
+	// ギアニュートラル
+	//Prop Newt;
+	// 速度
+	Prop Speed;
+	// 速度センサカウンタ
+	//Prop SpFreqIn;
+	// 電圧
+	Prop Voltage;
+	// デバッグ用値表示
+	Prop DebugData;
 } props;
 
 
@@ -119,8 +139,10 @@ void setup(void) {
 	pixels.begin();
 	pixels.setPixelColor(0, pixels.Color(1, 1, 0));
 	pixels.show();
+	
+	// ウインカー設定
 	#ifdef BUZZER_ON
-		// ウインカー設定
+		// ピンモード定義
 		pinMode(Pins::BUZZER, OUTPUT);
 		//3回鳴らす
 		for(int i=0;i<3;i++){
@@ -138,9 +160,13 @@ void setup(void) {
 	rtc.begin(&Wire1);
 	// 温度計
 	aht.begin(&Wire1, 0, modules[THERM].address);
-	// 時計合わせ
-	//rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); 
 
+	// 時計合わせ
+	#ifdef TIMER_SET
+		rtc.adjust(DateTime(F(__DATE__),F(__TIME__))); 
+	#endif
+
+	// 現在日時表示
 	display.setTextSize(2);
 	display.print("Date: ");
 	if(modules[RTCMM].active){
@@ -157,9 +183,9 @@ void setup(void) {
 	}
 	else{
 		display.println("----/--/-- --:--");
-	}                                     
+	}
+	// バッテリー電圧表示
 	display.print("Batt: ");
-
 	if(modules[SPEED].active){
 		// 電圧ADC取得・算出
 		// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
@@ -292,32 +318,60 @@ void loop() {
 
 	// 温度モニタリング・表示
 	if (intervalTemp.over(time)) {
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("temp");
+		#endif
 		displayTemp();
 		intervalTemp.reset();
 	}
 
 	// 電圧モニタリング・表示
 	if (intervalVoltage.over(time)) {
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("vold");
+		#endif
 		displayVoltage();
 		intervalVoltage.reset();
 	}
 
 	// 時刻表示
 	if (intervalTime.over(time)) {
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("time");
+		#endif
 		displayRealTime();
 		intervalTime.reset();
 	}
 
 	// 各種表示処理
 	if (intervalDisplay.over(time)) {
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("spd ");
+		#endif
 		// 速度表示
 		displaySpeed();
 		// デバッグ用スイッチ表示
 		displaySwitch();
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("gear");
+		#endif
 		// ギア表示
 		displayGear();
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("wnkr");
+		#endif
 		// ウインカー表示・ブザー出力
 		if (displayWinkers() && intervalBzz.isZero()) {
+			#ifdef DEBUG_MODE
+				setDisplay(&props.DebugData, textColor);
+				display.println("bzOn");
+			#endif
 			setBuzzer(ON);
 			intervalBzz.reset();
 		}
@@ -326,6 +380,10 @@ void loop() {
 
 	//ブザーOFF処理
 	if (!intervalBzz.isZero() && intervalBzz.over(time)) {
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("bzOf");
+		#endif
 		setBuzzer(OFF);
 		intervalBzz.setZero();
 	}
