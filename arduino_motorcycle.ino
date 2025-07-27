@@ -12,7 +12,7 @@
 
 
 // --------------------モード切替用定義--------------------
-#define BUZZER_ON
+//#define BUZZER_ON
 #define DEBUG_MODE
 #define TIMER_SET
 
@@ -85,7 +85,7 @@ ArcInfo arcL;
 ArcInfo arcR;
 
 // --------------------プロトタイプ宣言--------------------
-void setDisplay(Prop* p, uint16_t color = textColor, uint16_t markColor = NULL);
+void setDisplay(Prop* p, uint16_t color = textColor, uint16_t markColor = 1);
 void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
 void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
 void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero=false);
@@ -225,9 +225,12 @@ void setup(void) {
 	// 弧の中心座標
 	arcM.x = w >> 1;
 	arcM.y = h >> 1;
-	arcL.x = CENTER_WIDTH;
+	// arcL.x = CENTER_WIDTH;
+	arcL.x = 0;
 	arcL.y = CENTER_HEIGHT + 10;
-	arcR.x = CENTER_WIDTH;
+	
+	//arcR.x = CENTER_WIDTH;
+	arcR.x = DisplaySize::WIDTH-1;
 	arcR.y = CENTER_HEIGHT + 10;
 	// 角度
 	int a0btm = 25;
@@ -248,8 +251,10 @@ void setup(void) {
 	// 弧の中心・背景色
 	arcM.initArc();
 
-	arcL.opt = 0;
-	arcR.opt = CENTER_WIDTH;
+	arcL.h = 50;
+	arcL.w = 40;
+	arcR.h = 50;
+	arcR.w = 40;
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
@@ -401,8 +406,16 @@ void loop() {
  */
 void displayArcW(ArcInfo* a, bool onOff) {
 	// 弧描画 on,offで色変更
-	display.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
-	display.fillRect(a->opt,0,CENTER_WIDTH,8, onOff ? a->colorON : bgColor);
+	// display.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
+	// display.fillRect(a->opt,0,CENTER_WIDTH,8, onOff ? a->colorON : bgColor);
+	display.fillTriangle(a->x, a->y, 
+	a->x < DisplaySize::CENTER_WIDTH ? 
+	a->x+a->h : a->x-a->h,
+	a->y+a->w/2,
+	a->x < DisplaySize::CENTER_WIDTH ? 
+	a->x+a->h : a->x-a->h,
+	a->y-a->w/2,
+	onOff ? a->colorON : bgColor);
 }
 
 /**
@@ -452,7 +465,7 @@ void initSetProps(int offsetY){
 	// 時:分
 	props.Clock.font = &fonts::Font4;
 	setPropWH(&props.Clock, "00");
-	props.Clock.y += 35;
+	props.Clock.y += 25;
 
 	// 温度
 	props.Temp = propCopy(&props.Clock);
@@ -562,7 +575,7 @@ void setDisplay(Prop* p, uint16_t color, uint16_t markColor) {
 	// テキスト倍率
 	display.setTextSize(p->size);
 	// フォント色指定
-	display.setTextColor(color, (markColor == NULL) ? bgColor : markColor);
+	display.setTextColor(color, (markColor == 1) ? bgColor : markColor);
 	// フォントセット
 	display.setFont(p->font);
 }
@@ -623,7 +636,7 @@ void displayGear() {
 	char gear = NEWTRAL;
 	// 現在のギアポジを取得
 	for(int i=0; i<5; i++){
-		if(!(moduleData[INDEX_GEARS] & (1<<i))){
+		if(moduleData[INDEX_GEARS] & (1<<i)){
 			gear = gearArr[i];
 			break;
 		}
@@ -659,6 +672,10 @@ bool displayWinkers() {
 
 	// 現在値取得
 	int nowData = moduleData[INDEX_WINKERS];
+		#ifdef DEBUG_MODE
+			setDisplay(&props.DebugData, textColor);
+			display.println("wnkr1");
+		#endif
 	byte nowStatus = INDICATE_NONE;
 
 	// ハザード機能つけたら以下コメント解除
@@ -678,11 +695,25 @@ bool displayWinkers() {
 		return false;
 	}
 
+	#ifdef DEBUG_MODE
+		setDisplay(&props.DebugData, textColor);
+		display.println("wnkr2");
+	#endif
 	//左ウインカーの表示
 	bool onOff = ((nowStatus & INDICATE_LEFT) == INDICATE_LEFT);
 	displayArcW(&arcL, onOff);
+	
+	#ifdef DEBUG_MODE
+		setDisplay(&props.DebugData, textColor);
+		display.println("wnkr3");
+	#endif
 	//右ウインカーの表示
 	onOff = ((nowStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
+
+	#ifdef DEBUG_MODE
+		setDisplay(&props.DebugData, textColor);
+		display.println("wnkr3");
+	#endif
 	displayArcW(&arcR, onOff);
 
 	beforeStatus = nowStatus;
@@ -745,7 +776,7 @@ void displaySwitch() {
  */
 void displaySpeed(){
 	// 前回パルス周波数
-	static int beforeFreq = -1;
+	//static int beforeFreq = -1;
 	// 前回スピード
 	static byte beforeSpeed = 0xFF;
 

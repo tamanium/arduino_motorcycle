@@ -40,7 +40,8 @@
 		uint16_t colorON; // 色
 		uint16_t colorBG = TFT_BLUE; // 透過色
 
-		int opt; // オプション
+		int h; // 高さ
+		int w; // 幅
 	};
 
 	/**
