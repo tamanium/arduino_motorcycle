@@ -16,23 +16,20 @@ int DataClass::getData(){
 
 void DataClass::setData(int data){
 	// チャタリング対策しない場合
-	if(!antiChattering){
-		this->data = data;
-		return;
+	if(antiChattering){
+		// 前回値と異なる場合
+		if(data != this->beforeData){
+			// カウンタリセット・前回値更新
+			chatCounter = 0;
+			this->beforeData = data;
+			return;
+		}
+		// カウントおよびカウント値を評価
+		if(++chatCounter < 3){
+			// カウント3未満の場合何もしない
+			return;
+		}
 	}
-	
-	// チャタリング対策する場合
-	// 前回値と異なる場合
-	if(data != this->beforeData){
-		// カウンタリセット・前回値更新
-		chatCounter = 0;
-		this->beforeData = data;
-		return;
-	}
-	
-	// カウンタが規定数を超えた場合
-	if(5 < ++chatCounter){
-		// 代入
-		this->data = data;
-	}
+	// 値更新
+	this->data = data;
 }

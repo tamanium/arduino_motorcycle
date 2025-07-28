@@ -12,6 +12,14 @@
 		CENTER_HEIGHT = HEIGHT >> 1
 	};
 
+	// ウインカー値
+	enum{
+		INDICATE_NONE,
+		INDICATE_LEFT,
+		INDICATE_RIGHT,
+		INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT,
+	};
+
 	// モジュール情報
 	struct Module{
 		char name[12]; // モジュール名
@@ -30,7 +38,7 @@
 	/**
 	 * 円弧表示情報（基底クラス）
 	 */
-	struct ArcInfo {
+	struct ShapeInfo {
 		int x; // 円弧中心x座標
 		int y; // 円弧中心y座標
 		int r; // 内径
@@ -42,6 +50,7 @@
 
 		int h; // 高さ
 		int w; // 幅
+		byte LR; // 左右値
 	};
 
 	/**
@@ -73,7 +82,6 @@
 		else if(location == UNDER){
 			newP.y += p->height;
 		}
-
 		if(font != NULL){
 			newP.font = font;
 		}
@@ -85,7 +93,8 @@
 	 */
 	struct Interval {
 		// 処理実行時刻[ms]
-		unsigned long time = 0;
+		// unsigned long time = 0;
+		unsigned long lastTime = 0;
 		// 処理実行間隔[ms]
 		int interval;
 
@@ -93,30 +102,24 @@
 		Interval(int interval) :interval(interval){}
 		// 処理時刻が0かどうか
 		bool isZero(){
-			return (this->time == 0);
+			return (this->lastTime == 0);
 		}
 		 // 処理時刻に0をセット
 		void setZero(){
-			this->time = 0;
+			this->lastTime = 0;
 		}
-
 		/**
 		 * 処理時刻がシステム時刻を超えているか
 		 * @param sysTime システム時刻
 		 */
 		bool over(unsigned long sysTime){
-			if(this->time == 0){
-				this->time = sysTime;
-				return false;
-			}
-			return (this->time <= sysTime);
+			return (this->interval <= sysTime - this->lastTime);
 		}
-
 		/**
-		 * 処理時刻再設定 
+		 * 処理時刻再設定
 		 */
-		void reset(){
-			this->time += this->interval;
+		void reset(unsigned long sysTime){
+			this->lastTime = sysTime;
 		}
 	};
 	

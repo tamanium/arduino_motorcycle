@@ -36,14 +36,6 @@ enum {
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
-// ウインカー値
-enum{
-	INDICATE_NONE,
-	INDICATE_LEFT,
-	INDICATE_RIGHT,
-	INDICATE_BOTH = INDICATE_LEFT | INDICATE_RIGHT,
-};
-
 // --------------------変数--------------------
 // センサーからの取得値
 int moduleData[DATA_SIZE];
@@ -67,7 +59,7 @@ uint16_t textColor = TFT_WHITE;
 uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
-struct MeterArcInfo : ArcInfo {
+struct MeterArcInfo : ShapeInfo {
 	// スプライト
 	LGFX_Sprite sprite;
 	// コンストラクタ
@@ -81,15 +73,14 @@ struct MeterArcInfo : ArcInfo {
 
 // 円弧情報
 MeterArcInfo arcM(&display);
-ArcInfo arcL;
-ArcInfo arcR;
+ShapeInfo arcL;
+ShapeInfo arcR;
 
 // --------------------プロトタイプ宣言--------------------
 void setDisplay(Prop* p, uint16_t color = textColor, uint16_t markColor = 1);
 void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
 void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
-void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero=false);
-void displayArcM(ArcInfo* a, int stdX, int stdY, byte sp = 0);
+void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp = 0);
 
 // --------------------インスタンス--------------------
 // 表示設定まとめ
@@ -184,6 +175,7 @@ void setup(void) {
 	else{
 		display.println("----/--/-- --:--");
 	}
+	display.println("");
 	// バッテリー電圧表示
 	display.print("Batt: ");
 	if(modules[SPEED].active){
@@ -255,6 +247,9 @@ void setup(void) {
 	arcL.w = 40;
 	arcR.h = 50;
 	arcR.w = 40;
+
+	arcL.LR = INDICATE_LEFT;
+	arcR.LR = INDICATE_RIGHT;
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
@@ -268,7 +263,7 @@ void loop() {
 	static Interval intervalMonitor(3);     // 各種読み取り用時間
 	static Interval intervalTemp(20000);    // 温度表示用時間
 	static Interval intervalVoltage(60000); // 電圧表示用時間
-	static Interval intervalTime(30);       // 時刻表示用時間
+	static Interval intervalTime(1000);       // 時刻表示用時間
 	static Interval intervalBzz(100);       // ブザー用時間
 
 	// 経過時間(ms)取得
@@ -321,7 +316,7 @@ void loop() {
 			}
 			display.println(valueStr);
 		#endif
-		intervalMonitor.reset();
+		intervalMonitor.reset(time);
 	}
 
 	// 温度モニタリング・表示
@@ -331,7 +326,7 @@ void loop() {
 			display.println("temp");
 		#endif
 		displayTemp();
-		intervalTemp.reset();
+		intervalTemp.reset(time);
 	}
 
 	// 電圧モニタリング・表示
@@ -341,7 +336,7 @@ void loop() {
 			display.println("vold");
 		#endif
 		displayVoltage();
-		intervalVoltage.reset();
+		intervalVoltage.reset(time);
 	}
 
 	// 時刻表示
@@ -351,7 +346,7 @@ void loop() {
 			display.println("time");
 		#endif
 		displayRealTime();
-		intervalTime.reset();
+		intervalTime.reset(time);
 	}
 
 	// 各種表示処理
@@ -381,9 +376,9 @@ void loop() {
 				display.println("bzOn");
 			#endif
 			setBuzzer(ON);
-			intervalBzz.reset();
+			intervalBzz.reset(time);
 		}
-		intervalDisplay.reset();
+		intervalDisplay.reset(time);
 	}
 
 	//ブザーOFF処理
@@ -404,18 +399,15 @@ void loop() {
 /**
  * 表示（ウインカー向け）
  */
-void displayArcW(ArcInfo* a, bool onOff) {
-	// 弧描画 on,offで色変更
-	// display.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0,a-> angle1, onOff ? a->colorON : bgColor);
-	// display.fillRect(a->opt,0,CENTER_WIDTH,8, onOff ? a->colorON : bgColor);
-	display.fillTriangle(a->x, a->y, 
-	a->x < DisplaySize::CENTER_WIDTH ? 
-	a->x+a->h : a->x-a->h,
-	a->y+a->w/2,
-	a->x < DisplaySize::CENTER_WIDTH ? 
-	a->x+a->h : a->x-a->h,
-	a->y-a->w/2,
-	onOff ? a->colorON : bgColor);
+void displayArcW(ShapeInfo* s, byte nowStatus){
+	bool onOff = ((nowStatus & s->LR) == s->LR);
+	// on,offで色変更
+	display.fillTriangle(s->x, s->y,
+	s->x < DisplaySize::CENTER_WIDTH ? s->x+s->h : s->x-s->h,
+	s->y+s->w/2,
+	s->x < DisplaySize::CENTER_WIDTH ? s->x+s->h : s->x-s->h,
+	s->y-s->w/2,
+	onOff ? s->colorON : bgColor);
 }
 
 /**
@@ -695,30 +687,30 @@ bool displayWinkers() {
 		return false;
 	}
 
+
+
 	#ifdef DEBUG_MODE
 		setDisplay(&props.DebugData, textColor);
 		display.println("wnkr2");
 	#endif
 	//左ウインカーの表示
-	bool onOff = ((nowStatus & INDICATE_LEFT) == INDICATE_LEFT);
-	displayArcW(&arcL, onOff);
+	#ifdef DEBUG_MODE
+		setDisplay(&props.DebugData, textColor);
+		display.println("wnkr3");
+	#endif
+	displayArcW(&arcL, nowStatus);
 	
-	#ifdef DEBUG_MODE
-		setDisplay(&props.DebugData, textColor);
-		display.println("wnkr3");
-	#endif
 	//右ウインカーの表示
-	onOff = ((nowStatus & INDICATE_RIGHT) == INDICATE_RIGHT);
-
 	#ifdef DEBUG_MODE
 		setDisplay(&props.DebugData, textColor);
-		display.println("wnkr3");
+		display.println("wnkr4");
 	#endif
-	displayArcW(&arcR, onOff);
+	displayArcW(&arcR, nowStatus);
 
 	beforeStatus = nowStatus;
 	return true;
 }
+
 
 /**
  * スイッチ動作表示
@@ -735,39 +727,13 @@ void displaySwitch() {
 	display.setTextSize(2);
 	display.setCursor(0, DisplaySize::HEIGHT - 8*2 - 1);
 
-	// キーダウンの場合
-	if (nowSw) {
-		display.setTextColor(TFT_RED, bgColor);
-		if (beforeSw != nowSw) {
-			display.print("ON  ");
-			beforeSw = ON;
-		}
-		// 長押し
-		//else if (beforeLong != sw->isLongPress()) {
-		//	display.print("long");
-		//	beforeLong = sw->isLongPress();
-		//}
-	}
-	// キーアップの場合
-	else {
-		if (beforeSw != nowSw) {
-			display.setTextColor(TFT_BLUE, bgColor);
-			display.print("OFF ");
-			beforeSw = OFF;
-		}
-		// 長押し判定だった場合
-		//if (beforeLong) {
-		//	beforeLong = false;
-		//}
-		// プッシュ
-		// else if (sw->isPush()) {
-		// 	display.setTextColor(TFT_BLUE, TFT_BLACK);
-		// 	display.setCursor((6 * 2) * 4, fromBottom(8 * 2));
-		// 	brightIndex = (++brightIndex) % (sizeof(brightLevel) / sizeof(byte));
-		// 	display.setBrightness(brightLevel[brightIndex]);
-		// 	display.print(brightIndex);
-		// 	beforeSw = OFF;
-		// }
+	// キーアップ・ダウン状態が変更された場合
+	if(nowSw != beforeSw){
+		// 文字色
+		display.setTextColor(nowSw ? TFT_RED : TFT_BLUE, bgColor);
+		// 表示文字
+		display.print(nowSw ? "ON  " : "OFF ");
+		beforeSw = nowSw;
 	}
 }
 
@@ -775,16 +741,8 @@ void displaySwitch() {
  * スピード表示
  */
 void displaySpeed(){
-	// 前回パルス周波数
-	//static int beforeFreq = -1;
 	// 前回スピード
 	static byte beforeSpeed = 0xFF;
-
-	// 周波数表示
-	//if (moduleData[INDEX_FREQ] != beforeFreq) {
-	//	displayNumberln(&props.SpFreqIn, moduleData[INDEX_FREQ], 4, true);
-	//	beforeFreq = moduleData[INDEX_FREQ];
-	//}
 	// 速度表示
 	byte speed = byte(moduleData[INDEX_FREQ] * 2 / 25);
 	if(100 <= speed){
@@ -815,9 +773,6 @@ void displayVoltage() {
 		char valueChars[5];
 		sprintf(valueChars, "%2d.%01d", int(voltagex10/10), voltagex10%10);
 		display.print(valueChars);
-		//valueChars[0] = '.';
-		//valueChars[1] = '0' + voltagex10%10;
-		//display.print(valueChars);
 		beforeVoltagex10 = voltagex10;
 	}
 }
@@ -843,19 +798,20 @@ void displayTemp() {
 	}
 }
 /**
- * 時分(秒)表示
+ * 時分表示
  */
 void displayRealTime(){
 	// 時刻データ数
-	const int itemLen = 3;
+	// const int itemLen = 3;
+	const int itemLen = 2;
 	// 前回日時
-	static uint8_t beforeTime[itemLen] = { 60, 60, 60};
+	// static uint8_t beforeTime[itemLen] = { 60, 60, 60};
+	static uint8_t beforeTime[itemLen] = { 60, 60};
 	// 現在時刻取得
 	DateTime now = rtc.now();
 	if(now.minute() != beforeTime[1]){
 		// 現在時刻を配列化
 		uint8_t newTime[itemLen] = {
-			now.second(),
 			now.minute(),
 			now.hour()
 		};
@@ -864,7 +820,7 @@ void displayRealTime(){
 		// 表示更新分の文字列
 		char valueChars[8];
 		// 表示文字列取得
-		sprintf(valueChars, "%02d:%02d", newTime[2],newTime[1]);
+		sprintf(valueChars, "%02d:%02d", newTime[1],newTime[0]);
 		// 表示
 		display.print(valueChars);
 		// 前回値を更新
@@ -872,67 +828,6 @@ void displayRealTime(){
 	}
 }
 
-/**
- * 月日時分秒表示（未使用）
- */
-void displayRealDateTime(){
-	// 時刻データ数
-	const int itemLen = 5;
-	// 前回日時
-	static uint8_t beforeTime[itemLen] = { 60, 60, 60, 60, 60 };
-	// 現在時刻取得
-	DateTime now = rtc.now();
-	// 秒の値が前回と同じ場合スキップ
-	if (beforeTime[0] == now.second()) {
-		return;
-	}
-	// 現在時刻を配列化
-	uint8_t newTime[itemLen] = {
-		now.second(),
-		now.minute(),
-		now.hour(),
-		now.day(),
-		now.month()
-	};
-
-	// 表示更新分の文字列
-	String resultStr = "";
-	// 表示情報セット
-	setDisplay(&props.Clock, textColor);
-	// 初期処理
-	if(60 <= beforeTime[0]){
-		char defaultStr[12];
-		sprintf(defaultStr, "%02d:%02d:%02d",newTime[2],newTime[1],newTime[0]);
-		display.print(defaultStr);
-		// 前回日時を更新
-		memcpy(beforeTime, newTime, itemLen);
-		return;
-	}
-	// 表示処理
-	for(int i=0; i<3; i++){
-		// 0以外の場合
-		if(newTime[i] != 0){
-			// 10の倍数なら2桁とも。そうでなければ1桁だけ
-			byte value = (newTime[i]%10 == 0) ? newTime[i] : newTime[i]%10;
-			resultStr = String(value) + resultStr;
-			break;
-		}
-		// 0の場合
-		resultStr = "00" + resultStr;
-		if(i!=3-1){
-			resultStr = ":" + resultStr;
-		}
-	}
-	// offsetの値を文字数から文字幅に変換
-	String templateClock = "00:00:00";
-	int offset = resultStr.length();
-	templateClock.remove(templateClock.length()-offset, offset);
-	offset = display.textWidth(templateClock);
-	// カーソルセット
-	display.setCursor(props.Clock.x + offset, props.Clock.y);
-	// 値出力　
-	display.print(resultStr);
-}
 
 /**
  * 表示の設定・文字の表示
@@ -958,35 +853,22 @@ void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero) {
 }
 
 /**
- * 値の表示（左0埋め）
- * 
- * @param p Prop型 表示設定
- * @param valueByte byte型 表示値
- * @param digitNum int型 表示桁数
- */
-void displayNumberln(Prop* p, byte valueByte, byte digitNum, bool spacerZero) {
-	setDisplay(p, textColor);
-	displayNumberln(int(valueByte), digitNum, spacerZero);
-}
-
-/**
  * 値の改行表示（左0埋め）開発用
  * 
  * @param p Prop型 表示設定
  * @param digitNum int型 表示桁数
  * @param spacerZero 0埋めするかどうか
  */
-void displayNumberln(int valueInt, byte digitNum, bool spacerZero){
-	// 表示指定子を設定
-	String _format = (spacerZero) ? "%0" : "%";
-	_format += char('0' + digitNum);
-	_format += 'd';
-	const char* format = _format.c_str();
-	// 表示値を取得
-	char valueStr[5] = "";
-	sprintf(valueStr, format, valueInt);
-	// 表示
+void displayNumberln(int value, byte digitNum, bool spacerZero){
+	// 最大5桁+null終端
+	char valueStr[6];
+	if (spacerZero) {
+		sprintf(valueStr, "%0*d", digitNum, value);
+	} else {
+		sprintf(valueStr, "%*d", digitNum, value);
+	}
 	display.println(valueStr);
+
 }
 
 /**
