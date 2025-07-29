@@ -59,28 +59,30 @@ uint16_t textColor = TFT_WHITE;
 uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
-struct MeterArcInfo : ShapeInfo {
+struct ArcInfo : ShapeInfo {
 	// スプライト
-	LGFX_Sprite sprite;
+	// LGFX_Sprite sprite;
+	int angle0; // 角度0
+	int angle1; // 角度1
 	// コンストラクタ
-	MeterArcInfo(LGFX* display) : sprite(display) {}
+	// MeterArcInfo(LGFX* display) : sprite(display) {}
 	// 初期設定
-	void initArc() {
-		this->sprite.fillScreen(this->colorBG);
-		this->sprite.setPivot(this->x, this->y);
-	}
+	// void initArc() {
+	// 	this->sprite.fillScreen(this->colorBG);
+	// 	this->sprite.setPivot(this->x, this->y);
+	// }
 };
 
 // 円弧情報
-MeterArcInfo arcM(&display);
-ShapeInfo arcL;
-ShapeInfo arcR;
+//MeterArcInfo arcM(&display);
+ArcInfo arcM;
+ShapeInfo triangleL;
+ShapeInfo triangleR;
 
 // --------------------プロトタイプ宣言--------------------
 void setDisplay(Prop* p, uint16_t color = textColor, uint16_t markColor = 1);
 void displayNumberln(int valueInt, byte digiNum, bool spacerZero=false);
 void displayNumberln(Prop* p, int valueInt, byte digitNum, bool spacerZero=false);
-void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp = 0);
 
 // --------------------インスタンス--------------------
 // 表示設定まとめ
@@ -205,51 +207,34 @@ void setup(void) {
 	// スプライト設定
 	// 横縦
 	int w = (135 - offsetY + 10) * 2;
-	int h = w;
 	// 弧の幅
 	arcM.d = 10;
-	arcL.d = 10;
-	arcR.d = 10;
+	triangleL.d = 40;
+	triangleR.d = 40;
 	// 弧の内外半径
 	arcM.r = ((w-1)>>1) - arcM.d;
-	arcL.r = arcM.r + 25;
-	arcR.r = arcM.r + 25;
+	triangleL.r = 50;
+	triangleR.r = 50;
 	// 弧の中心座標
-	arcM.x = w >> 1;
-	arcM.y = h >> 1;
-	// arcL.x = CENTER_WIDTH;
-	arcL.x = 0;
-	arcL.y = CENTER_HEIGHT + 10;
-	
-	//arcR.x = CENTER_WIDTH;
-	arcR.x = DisplaySize::WIDTH-1;
-	arcR.y = CENTER_HEIGHT + 10;
+	arcM.x = CENTER_WIDTH;
+	arcM.y = CENTER_HEIGHT + 10;
+	triangleL.x = 0;
+	triangleL.y = CENTER_HEIGHT + 10;
+	triangleR.x = DisplaySize::WIDTH-1;
+	triangleR.y = CENTER_HEIGHT + 10;
 	// 角度
 	int a0btm = 25;
 	int a1top = 37;
 	int a1btm = 46;
-	arcM.angle0 = 90  + a0btm;
-	arcM.angle1 = 90  - a0btm;
-	arcL.angle0 = 90  + a1btm;
-	arcL.angle1 = 270 - a1top;
-	arcR.angle0 = arcL.angle0 + 180;
-	arcR.angle1 = arcL.angle1 - 180;
+	arcM.angle0 = 90 + a0btm;
+	arcM.angle1 = 90 - a0btm;
 	// 色
 	arcM.colorON = TFT_GREEN;
-	arcL.colorON = TFT_YELLOW;
-	arcR.colorON = TFT_YELLOW;
-	// 大きさ
-	arcM.sprite.createSprite(w, h);
-	// 弧の中心・背景色
-	arcM.initArc();
-
-	arcL.h = 50;
-	arcL.w = 40;
-	arcR.h = 50;
-	arcR.w = 40;
-
-	arcL.LR = INDICATE_LEFT;
-	arcR.LR = INDICATE_RIGHT;
+	triangleL.colorON = TFT_YELLOW;
+	triangleR.colorON = TFT_YELLOW;
+	// 左右の定数
+	triangleL.LR = INDICATE_LEFT;
+	triangleR.LR = INDICATE_RIGHT;
 	// 補助線
 	//display.drawFastHLine(0,CENTER_Y-rOUT+7,320,TFT_RED);
 	//display.drawFastHLine(0,CENTER_Y+rOUT+6,320,TFT_RED);
@@ -402,26 +387,23 @@ void loop() {
 void displayArcW(ShapeInfo* s, byte nowStatus){
 	bool onOff = ((nowStatus & s->LR) == s->LR);
 	// on,offで色変更
+	// xyは外側の点の座標、rは高さ、dは底辺長さ
 	display.fillTriangle(s->x, s->y,
-	s->x < DisplaySize::CENTER_WIDTH ? s->x+s->h : s->x-s->h,
-	s->y+s->w/2,
-	s->x < DisplaySize::CENTER_WIDTH ? s->x+s->h : s->x-s->h,
-	s->y-s->w/2,
+	s->x < DisplaySize::CENTER_WIDTH ? s->x+s->r : s->x-s->r,
+	s->y+s->d/2,
+	s->x < DisplaySize::CENTER_WIDTH ? s->x+s->r : s->x-s->r,
+	s->y-s->d/2,
 	onOff ? s->colorON : bgColor);
 }
 
-/**
- * 表示（メーター向け）
- */
-void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp) {
+void displayMeter(byte sp){
 	// 前回速度
 	static byte beforeSp = 0xFF;
 
 	// 初期処理
 	if(beforeSp == 0xFF){
 		// 弧描画（薄緑）
-		a->sprite.fillArc(a->x, a->y, a->r + a->d, a->r, a->angle0, a->angle1, 0x01e0);
-		a->sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, a->colorBG);
+		display.fillArc(arcM.x, arcM.y, arcM.r + arcM.d, arcM.r, arcM.angle0, arcM.angle1, 0x01e0);
 		beforeSp = 0;
 		return;
 	}
@@ -430,23 +412,22 @@ void displayArcM(MeterArcInfo* a, int stdX, int stdY, byte sp) {
 		return;
 	}
 	// 速さに対する弧の角度算出
-	int angleSp = (360 - a->angle0 + a->angle1) * sp / 120;
-	int newAngle0 = a->angle0;
-	int newAngle1 = a->angle1;
-	uint16_t newColor = a->colorON;
+	int angleSp = (360 - arcM.angle0 + arcM.angle1) * sp / 120;
+	int newAngle0 = arcM.angle0;
+	int newAngle1 = arcM.angle1;
+	uint16_t newColor = arcM.colorON;
 	if(beforeSp < sp){
 		// 速度が上がった場合
-		newAngle1 = a->angle0 + angleSp;
+		newAngle1 = arcM.angle0 + angleSp;
 	}
 	else{
 		// 速度が下がった場合
-		newAngle0 = a->angle0 + angleSp;
+		newAngle0 = arcM.angle0 + angleSp;
 		// 色を薄緑に変更
 		newColor = 0x01e0;
 	}
 	// 出力
-	a->sprite.fillArc(a->x, a->y, a->r + a->d, a->r, newAngle0, newAngle1, newColor);
-	a->sprite.pushRotateZoom(stdX, stdY, 0, 1, 1, a->colorBG);
+	display.fillArc(arcM.x, arcM.y, arcM.r + arcM.d, arcM.r, newAngle0, newAngle1, newColor);
 	beforeSp = sp;
 }
 
@@ -491,11 +472,6 @@ void initSetProps(int offsetY){
 	//setPropWH(&props.Newt, "N");
 	//props.Newt.x = centerHorizontal(props.Newt.width);
 
-	// スピードセンサIN
-	//props.SpFreqIn = propCopy(&SpUnit, UNDER, &fonts::Font7);
-	//setPropWH(&props.SpFreqIn, "0000");
-	//props.SpFreqIn.x = centerHorizontal(props.SpFreqIn.width);
-
 	// 電圧
 	props.Voltage.font = &fonts::Font4;
 	setPropWH(&props.Voltage, "00.0V");
@@ -531,13 +507,6 @@ void initDisplayProps(){
 	displayString(&TempUnit, "c");       // 温度単位
 	display.fillCircle(303, props.Temp.y + 6, 3, textColor);
 	display.fillCircle(303, props.Temp.y + 6, 1, bgColor);
-	
-	// スピードセンサIN単位
-	//Prop SpFreqInUnit = propCopy(&props.SpFreqIn, UNDER, &fonts::Font2);
-	//setPropWH(&SpFreqInUnit, "Hz");
-	//SpFreqInUnit.x = centerHorizontal(SpFreqInUnit.width);
-
-	//displayString(&SpFreqInUnit, "Hz");  // パルス周波数単位
 }
 
 /**
@@ -687,8 +656,6 @@ bool displayWinkers() {
 		return false;
 	}
 
-
-
 	#ifdef DEBUG_MODE
 		setDisplay(&props.DebugData, textColor);
 		display.println("wnkr2");
@@ -698,14 +665,14 @@ bool displayWinkers() {
 		setDisplay(&props.DebugData, textColor);
 		display.println("wnkr3");
 	#endif
-	displayArcW(&arcL, nowStatus);
+	displayArcW(&triangleL, nowStatus);
 	
 	//右ウインカーの表示
 	#ifdef DEBUG_MODE
 		setDisplay(&props.DebugData, textColor);
 		display.println("wnkr4");
 	#endif
-	displayArcW(&arcR, nowStatus);
+	displayArcW(&triangleR, nowStatus);
 
 	beforeStatus = nowStatus;
 	return true;
@@ -741,18 +708,12 @@ void displaySwitch() {
  * スピード表示
  */
 void displaySpeed(){
-	// 前回スピード
-	static byte beforeSpeed = 0xFF;
-	// 速度表示
+	// 速度算出
 	byte speed = byte(moduleData[INDEX_FREQ] * 2 / 25);
-	if(100 <= speed){
-		speed = 99;
-	}
-	if (speed != beforeSpeed) {
-		displayNumberln(&props.Speed, speed, 2, true);
-		displayArcM(&arcM, CENTER_WIDTH, CENTER_HEIGHT + 10, speed);
-		beforeSpeed = speed;
-	}
+	// 速度出力
+	displayNumberln(&props.Speed, speed, 2, true);
+	// メーター表示
+	displayMeter(speed);
 }
 
 /**

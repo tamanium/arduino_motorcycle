@@ -43,13 +43,9 @@
 		int y; // 円弧中心y座標
 		int r; // 内径
 		int d; // 厚さ
-		int angle0; // 角度0
-		int angle1; // 角度1
 		uint16_t colorON; // 色
 		uint16_t colorBG = TFT_BLUE; // 透過色
 
-		int h; // 高さ
-		int w; // 幅
 		byte LR; // 左右値
 	};
 
@@ -113,7 +109,7 @@
 		 * @param sysTime システム時刻
 		 */
 		bool over(unsigned long sysTime){
-			return (this->interval <= sysTime - this->lastTime);
+			return ((unsigned long)this->interval <= sysTime - this->lastTime);
 		}
 		/**
 		 * 処理時刻再設定
