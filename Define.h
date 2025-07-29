@@ -88,8 +88,7 @@
 	 * 処理実行時刻管理
 	 */
 	struct Interval {
-		// 処理実行時刻[ms]
-		// unsigned long time = 0;
+		// 前回処理実行時刻[ms]
 		unsigned long lastTime = 0;
 		// 処理実行間隔[ms]
 		int interval;
@@ -109,6 +108,9 @@
 		 * @param sysTime システム時刻
 		 */
 		bool over(unsigned long sysTime){
+			if(this->lastTime == 0){
+				return true;
+			}
 			return ((unsigned long)this->interval <= sysTime - this->lastTime);
 		}
 		/**

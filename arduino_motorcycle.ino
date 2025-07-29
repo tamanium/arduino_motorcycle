@@ -12,9 +12,9 @@
 
 
 // --------------------モード切替用定義--------------------
-//#define BUZZER_ON
+#define BUZZER_ON
 #define DEBUG_MODE
-#define TIMER_SET
+// #define TIMER_SET
 
 // --------------------定数--------------------
 // 明るさレベル
@@ -60,21 +60,12 @@ uint16_t bgColor = TFT_BLACK;
 
 // 円弧表示情報
 struct ArcInfo : ShapeInfo {
-	// スプライト
-	// LGFX_Sprite sprite;
-	int angle0; // 角度0
-	int angle1; // 角度1
-	// コンストラクタ
-	// MeterArcInfo(LGFX* display) : sprite(display) {}
-	// 初期設定
-	// void initArc() {
-	// 	this->sprite.fillScreen(this->colorBG);
-	// 	this->sprite.setPivot(this->x, this->y);
-	// }
+	// 角度0,1
+	int angle0;
+	int angle1;
 };
 
-// 円弧情報
-//MeterArcInfo arcM(&display);
+// 各種図形情報
 ArcInfo arcM;
 ShapeInfo triangleL;
 ShapeInfo triangleR;
@@ -710,6 +701,9 @@ void displaySwitch() {
 void displaySpeed(){
 	// 速度算出
 	byte speed = byte(moduleData[INDEX_FREQ] * 2 / 25);
+	if(100 <= speed){
+		speed = 99;
+	}
 	// 速度出力
 	displayNumberln(&props.Speed, speed, 2, true);
 	// メーター表示
@@ -732,7 +726,7 @@ void displayVoltage() {
 		// 電圧表示
 		setDisplay(&props.Voltage, textColor);
 		char valueChars[5];
-		sprintf(valueChars, "%2d.%01d", int(voltagex10/10), voltagex10%10);
+		sprintf(valueChars, "%02d.%1d", int(voltagex10/10), voltagex10%10);
 		display.print(valueChars);
 		beforeVoltagex10 = voltagex10;
 	}
