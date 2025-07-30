@@ -157,13 +157,13 @@ void setup(void) {
 		DateTime now = rtc.now();
 		display.print(now.year());
 		display.print('/');
-		display.print(now.month());
-		display.print('/');
-		display.print(now.day());
+		
+		char valueChars[6];
+		sprintf(valueChars, "%02d/%02d", now.month(), now.month());
+		display.print(valueChars);
 		display.print(' ');
-		display.print(now.hour());
-		display.print(':');
-		display.println(now.minute());
+		sprintf(valueChars, "%02d:%02d", now.hour(), now.minute());
+		display.print(valueChars);
 	}
 	else{
 		display.println("----/--/-- --:--");
@@ -279,14 +279,14 @@ void loop() {
 			display.print("loop :");
 			// 表示値を取得
 			char valueStr[6] = "";
-			sprintf(valueStr, "%2d-%2d", loopTime, loopTimeMax);
+			sprintf(valueStr, "%2d-%2d", loopTime%100, loopTimeMax%100);
 			display.println(valueStr);
 			display.print("FreqI:");
 			displayNumberln(moduleData[INDEX_FREQ], 5);
 			display.print("vltAD:");
 			displayNumberln(moduleData[INDEX_VOLT], 5);
 			display.print("wnkAD:");
-			displayNumberln(moduleData[INDEX_WINKERS], 5);
+			displayNumberln(moduleData[INDEX_WINKERS]%100000, 5);
 			display.print("geaAD:");
 			
 			for(int i=0; i<5; i++){
