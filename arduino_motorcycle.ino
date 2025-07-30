@@ -176,7 +176,7 @@ void setup(void) {
 		// Vcc=5.22, 分圧逆数=3.05, 倍率10 => 係数=159
 		byte voltagex10 = (getData(INDEX_VOLT) * 159) / 1023;
 		char valueChars[6];
-		sprintf(valueChars, "%2d.%01dV", int(voltagex10/10), voltagex10%10);
+		sprintf(valueChars, "%02d.%01dV", int(voltagex10/10), voltagex10%10);
 		display.println(valueChars);
 	}
 	else{
@@ -195,32 +195,34 @@ void setup(void) {
 
 	// 各項目の初期表示
 	initDisplayProps();
-	// スプライト設定
 	// 横縦
 	int w = (135 - offsetY + 10) * 2;
 	// 弧の幅
 	arcM.d = 10;
-	triangleL.d = 40;
-	triangleR.d = 40;
 	// 弧の内外半径
 	arcM.r = ((w-1)>>1) - arcM.d;
-	triangleL.r = 50;
-	triangleR.r = 50;
 	// 弧の中心座標
 	arcM.x = CENTER_WIDTH;
 	arcM.y = CENTER_HEIGHT + 10;
-	triangleL.x = 0;
-	triangleL.y = CENTER_HEIGHT + 10;
-	triangleR.x = DisplaySize::WIDTH-1;
-	triangleR.y = CENTER_HEIGHT + 10;
 	// 角度
 	int a0btm = 25;
-	int a1top = 37;
-	int a1btm = 46;
 	arcM.angle0 = 90 + a0btm;
 	arcM.angle1 = 90 - a0btm;
 	// 色
 	arcM.colorON = TFT_GREEN;
+
+	// 底辺
+	triangleL.d = 40;
+	triangleR.d = 40;
+	// 高さ
+	triangleL.r = 50;
+	triangleR.r = 50;
+	// 外角の座標
+	triangleL.x = 0;
+	triangleL.y = CENTER_HEIGHT + 10;
+	triangleR.x = DisplaySize::WIDTH-1;
+	triangleR.y = CENTER_HEIGHT + 10;
+	// 色
 	triangleL.colorON = TFT_YELLOW;
 	triangleR.colorON = TFT_YELLOW;
 	// 左右の定数
@@ -390,14 +392,6 @@ void displayArcW(ShapeInfo* s, byte nowStatus){
 void displayMeter(byte sp){
 	// 前回速度
 	static byte beforeSp = 0xFF;
-
-	// 初期処理
-	if(beforeSp == 0xFF){
-		// 弧描画（薄緑）
-		display.fillArc(arcM.x, arcM.y, arcM.r + arcM.d, arcM.r, arcM.angle0, arcM.angle1, 0x01e0);
-		beforeSp = 0;
-		return;
-	}
 	// 速度が同じ場合、スキップ
 	if(beforeSp == sp){
 		return;
@@ -498,6 +492,9 @@ void initDisplayProps(){
 	displayString(&TempUnit, "c");       // 温度単位
 	display.fillCircle(303, props.Temp.y + 6, 3, textColor);
 	display.fillCircle(303, props.Temp.y + 6, 1, bgColor);
+	
+	// メーターの弧描画（薄緑）
+	display.fillArc(arcM.x, arcM.y, arcM.r + arcM.d, arcM.r, arcM.angle0, arcM.angle1, 0x01e0);
 }
 
 /**
@@ -757,14 +754,12 @@ void displayTemp() {
  */
 void displayRealTime(){
 	// 時刻データ数
-	// const int itemLen = 3;
 	const int itemLen = 2;
 	// 前回日時
-	// static uint8_t beforeTime[itemLen] = { 60, 60, 60};
 	static uint8_t beforeTime[itemLen] = { 60, 60};
 	// 現在時刻取得
 	DateTime now = rtc.now();
-	if(now.minute() != beforeTime[1]){
+	if(now.minute() != beforeTime[0]){
 		// 現在時刻を配列化
 		uint8_t newTime[itemLen] = {
 			now.minute(),
