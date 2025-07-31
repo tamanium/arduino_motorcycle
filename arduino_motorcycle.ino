@@ -5,14 +5,17 @@
 #include <Adafruit_AHTX0.h>     // 温湿度計
 #include <Adafruit_NeoPixel.h>  // オンボLED
 
+
 // --------------------自作クラス・ピン定義--------------------
 #include "Define.h"      // 値定義
 #include "MyLovyanGFX.h" // ディスプレイ設定
 #include "DataClass.h"   // データ処理クラス
+#include "FontGear55x75.h" // 自作フォント
 
+const lgfx::v1::RLEfont FontG = { chrtbl_fg, widtbl_fg, 0, chr_hgt_fg, baseline_fg };
 
 // --------------------モード切替用定義--------------------
-#define BUZZER_ON
+//#define BUZZER_ON
 #define DEBUG_MODE
 // #define TIMER_SET
 
@@ -448,7 +451,7 @@ void initSetProps(int offsetY){
 	// ギア
 	props.Gear = propCopy(&SpUnit, UNDER);
 	props.Gear.y += 10;
-	props.Gear.font = &fonts::Font8;
+	props.Gear.font = &FontG;
 	setPropWH(&props.Gear, "0");
 	props.Gear.x = centerHorizontal(props.Gear.width);
 
@@ -577,7 +580,7 @@ void scanModules() {
  */
 void displayGear() {
 	// フォントが対応するまで'N'を'0'、'0'を'-'に置き換え
-	const char NEWTRAL = '0';
+	const char NEWTRAL = 'N';
 	const char OUT_GEAR = '-';
 
 	static char before = NEWTRAL;
@@ -595,7 +598,7 @@ void displayGear() {
 		return;
 	}
 	// 0の場合（ギア抜け）
-	else if(gear == OUT_GEAR){
+	if(gear == OUT_GEAR){
 		// グレーで前回ギアを表示
 		setDisplay(&props.Gear, TFT_DARKGREY);
 		gear = before;
