@@ -15,9 +15,9 @@
 const lgfx::v1::RLEfont FontG = { chrtbl_fg, widtbl_fg, 0, chr_hgt_fg, baseline_fg };
 
 // --------------------モード切替用定義--------------------
-//#define BUZZER_ON
+#define BUZZER_ON
 #define DEBUG_MODE
-// #define TIMER_SET
+#define TIMER_SET
 
 // --------------------定数--------------------
 // 明るさレベル
