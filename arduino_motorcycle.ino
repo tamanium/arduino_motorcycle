@@ -579,7 +579,6 @@ void scanModules() {
  * ギアポジションの表示処理
  */
 void displayGear() {
-	// フォントが対応するまで'N'を'0'、'0'を'-'に置き換え
 	const char NEWTRAL = 'N';
 	const char OUT_GEAR = '-';
 
